@@ -7,6 +7,28 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [14.2.0] — 2025-04-XX
+
+### Scanner Accuracy Fixes (Node.js)
+
+All fixes target the Node.js scanner only. Flutter, Kotlin, React, Angular, SwiftUI, and Python scanners are untouched.
+
+### Fixed
+- **pkg_has() false positives** — now parses JSON dependency sections (`dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies`) instead of raw regex matching the entire package.json. Prevents false matches on scripts, description, or comment fields. Results cached for performance.
+- **ESM vs CommonJS false positive** — for TypeScript projects, reads `tsconfig.json` `"module"` field as source of truth. Previously counted `import`/`export` statements in `.ts` files, which always look like ESM even when `module: "commonjs"` compiles them to `require()`.
+- **NestJS false positive** — now verifies `@Module()`/`@Injectable()`/`@Controller()` decorators exist in source code. Previously, just having `@nestjs/core` in package.json was enough — but it could be unused, a devDependency for testing, or a false match.
+- **Architecture detection misses** — recursive directory scan at any depth (up to 6 levels) under `src/` instead of only checking top-level `src/controllers`, `src/services`. Also counts file name patterns (`*Controller*`, `*Repository*`, `*Service*`) as fallback when directory names don't match (e.g. `src/model/repositories/` instead of `src/repositories/`).
+- **High-risk files basenames** — now stores relative paths (`src/api/index.ts`) instead of just basenames (`index.ts`). Detects entry points from `package.json` `"main"` field and router aggregator files (`src/routes/index.ts`, `src/api/index.ts`).
+- **Model layer description** — for routes-models pattern, Model layer now correctly says "Business logic + data access" instead of "no business logic" (which was wrong for Express-style projects where models contain both).
+- **Mixed arch typo** — `controller_file_count` → `ctrl_file_count` in mixed architecture warning message.
+
+### Added
+- **API Documentation scanner** — new dedicated scanner that distinguishes decorator-based (`@nestjs/swagger`), JSDoc-based (`swagger-jsdoc`), TSOA, Fastify JSON Schema (`@fastify/swagger`), and manual/static (`swagger-ui-express`). Emits correct guidance per style in `architecture.md` instead of generic "all DTOs need @ApiProperty()".
+- **DI detection for non-NestJS** — detects tsyringe, Inversify, Awilix, TypeDI, BottleJS. Previously hardcoded `N/A` for all non-NestJS/non-AdonisJS projects.
+- **`detectedSwaggerStyle`** field in ScanResult — tracks which API documentation approach the project uses.
+
+---
+
 ## [14.1.0] — 2024-12-XX
 
 ### TypeScript CLI Release

@@ -62,6 +62,7 @@ export interface ScanResult {
     detectedSubtype: string;
     detectedAuth: string;
     detectedSwagger: boolean;
+    detectedSwaggerStyle: string;
     detectedMicroservices: boolean;
     detectedAPIType: string;
     detectedQueue: string;
@@ -171,7 +172,8 @@ export function createDefaultScanResult(): ScanResult {
         detectedLinter: '', detectedFormatter: '', detectedPackageManager: '',
         detectedI18N: '', detectedCodegen: false, detectedCodegenCmd: '',
         detectedFlavors: '', detectedUISystem: '', detectedSubtype: '',
-        detectedAuth: '', detectedSwagger: false, detectedMicroservices: false,
+        detectedAuth: '', detectedSwagger: false, detectedSwaggerStyle: '',
+        detectedMicroservices: false,
         detectedAPIType: 'REST', detectedQueue: '', detectedValidator: false,
         detectedCSSApproach: '', detectedBuildTool: '', detectedSSR: false,
         detectedHTTPClient: '', detectedMonorepo: '', detectedArchPattern: '',

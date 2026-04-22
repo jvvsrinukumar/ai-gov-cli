@@ -10,8 +10,8 @@ import { computeContentBlocks } from './content-blocks.js';
 import { runGovernance } from './generators/index.js';
 import { log } from './utils/logger.js';
 
-const VERSION = '14.1.0';
-const HOOK_VERSION = '14.1.0';
+const VERSION = '14.2.0';
+const HOOK_VERSION = '14.2.0';
 
 const program = new Command();
 

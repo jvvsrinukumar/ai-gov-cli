@@ -55,7 +55,10 @@ function buildKeyPackages(profile: BaseProfile, scan: ScanResult): string {
     add(scan.detectedLogger, 'logging');
     add(scan.detectedValidationLib, 'validation');
     add(scan.detectedCloudProvider, 'cloud');
-    if (scan.detectedSwagger) parts.push('`Swagger/OpenAPI` (docs)');
+    if (scan.detectedSwagger) {
+        const styleLabel = scan.detectedSwaggerStyle ? ` — ${scan.detectedSwaggerStyle}` : '';
+        parts.push(`\`Swagger/OpenAPI\` (docs${styleLabel})`);
+    }
     if (scan.detectedAPIType !== 'REST' && scan.detectedAPIType) parts.push(`\`${scan.detectedAPIType}\` (API type)`);
     return parts.join(' | ');
 }
@@ -128,7 +131,12 @@ function buildLayerResps(
             } else if (l === 'Service') {
                 resps += `\n\n### ${l} (Business Logic)\n- All business rules live here; receives DB session, operates on models\n- Returns domain objects; never exposes HTTP or framework concepts`;
             } else if (l === 'Model' || l === 'Repository') {
-                resps += `\n\n### ${l} (Data Definition / ORM)\n- Database table definitions (ORM models); no business logic\n- Relationships, constraints, indexes defined here`;
+                // v14.2: For routes-models, Model layer has business logic + data access
+                if (scan.detectedArchPattern === 'routes-models') {
+                    resps += `\n\n### ${l} (Business Logic + Data Access)\n- Contains business rules AND database queries (combined in routes-models pattern)\n- ORM models, query logic, and domain operations live here`;
+                } else {
+                    resps += `\n\n### ${l} (Data Definition / ORM)\n- Database table definitions (ORM models); no business logic\n- Relationships, constraints, indexes defined here`;
+                }
             } else {
                 resps += `\n\n### ${l}\n- Intermediate layer — see architecture.md for specifics`;
             }

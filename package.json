@@ -1,6 +1,6 @@
 {
   "name": "ai-gov",
-  "version": "14.1.0",
+  "version": "14.2.0",
   "description": "AI Governance Framework for Claude Code — scan-adaptive steering, hooks, and spec templates",
   "type": "module",
   "bin": {

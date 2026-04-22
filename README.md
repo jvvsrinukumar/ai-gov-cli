@@ -2,7 +2,7 @@
 
 > Scan-adaptive governance framework for Claude Code. Detects your stack, generates steering files, hooks, spec templates, and a master CLAUDE.md — all tailored to what's actually in your project.
 
-**Version:** 14.1.0
+**Version:** 14.2.0
 **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python
 **Agent:** Claude Code
 
@@ -115,7 +115,7 @@ Checks: CLAUDE.md exists, settings.json valid, all 10 hooks present, jq installe
 
 ```
 ============================================
- AI Governance v14.1.0 (Scan-Adaptive · Claude Code)
+ AI Governance v14.2.0 (Scan-Adaptive · Claude Code)
 ============================================
 
 --- Scanning project ---
@@ -152,7 +152,7 @@ State (Riverpod / BLoC / Provider / GetX), DI (get_it / injectable / Riverpod), 
 UI system (Compose vs XML), DI (Hilt / Koin / Dagger), state (StateFlow vs LiveData), ORM (Room / Realm / SQLDelight), linter (detekt / ktlint / spotless), navigation, WorkManager, Firebase services, SDK versions, multi-module, flavors
 
 ### Node.js
-Language (TS/JS), module system (ESM/CJS), framework (NestJS / Express / Fastify / Koa / Hapi / Hono / AdonisJS), ORM (Prisma / TypeORM / Drizzle / Mongoose / Sequelize / MikroORM), DB drivers, auth (Passport / JWT / Auth0 / Firebase / Cognito), API type (REST / GraphQL / gRPC), queues (BullMQ / RabbitMQ / Kafka / SQS), real-time (Socket.IO / ws), schedulers, upload libs, email, cloud (AWS / Firebase / GCP), logging (winston / pino / morgan), validation (class-validator / Joi / Zod / Yup), architecture pattern (layered / routes-models / NestJS standard / NestJS clean), monorepo (Lerna / Nx / Turborepo / pnpm workspaces), mixed architecture detection
+Language (TS/JS), module system (ESM/CJS — tsconfig-aware for TS), framework (NestJS with source verification / Express / Fastify / Koa / Hapi / Hono / AdonisJS), DI (NestJS DI / AdonisJS IoC / tsyringe / Inversify / Awilix / TypeDI / BottleJS), ORM (Prisma / TypeORM / Drizzle / Mongoose / Sequelize / MikroORM), DB drivers, auth (Passport / JWT / Auth0 / Firebase / Cognito), API docs style (decorators / JSDoc / TSOA / Fastify schema / manual), API type (REST / GraphQL / gRPC), queues (BullMQ / RabbitMQ / Kafka / SQS), real-time (Socket.IO / ws), schedulers, upload libs, email, cloud (AWS / Firebase / GCP), logging (winston / pino / morgan), validation (class-validator / Joi / Zod / Yup), architecture pattern (layered / routes-models / NestJS standard / NestJS clean — recursive depth-6 scan with file pattern fallback), monorepo (Lerna / Nx / Turborepo / pnpm workspaces), mixed architecture detection
 
 ### React
 Next.js (App Router / Pages Router), RSC detection, state (Zustand / Redux Toolkit / Jotai / MobX + React Query), router (TanStack / React Router), forms (React Hook Form / Formik + Zod), CSS (Tailwind / styled-components / Emotion), build tool (Vite / CRA / Next.js), service style (function vs class)
@@ -336,9 +336,22 @@ ai-governance/
 └── jest.config.cjs
 ```
 
-**44 source files · ~4,100 lines of TypeScript · 40 tests**
+**44 source files · ~4,300 lines of TypeScript · 40 tests**
 
 ---
+
+## v14.2 Fixes (scanner accuracy)
+
+All fixes target the Node.js scanner. Other stacks untouched.
+
+- `pkgHas()` parses JSON dependency sections instead of raw regex — no more false positives from scripts/comments
+- ESM vs CommonJS reads `tsconfig.json` `module` field for TypeScript projects — stops falsely detecting ESM
+- NestJS detection verifies `@Module()`/`@Injectable()` decorators exist in source code
+- Architecture detection scans recursively (depth 6) + counts file name patterns as fallback
+- High-risk files stored as relative paths + detects entry points from `package.json` main
+- New API Documentation scanner distinguishes decorator-based, JSDoc, TSOA, Fastify schema, and manual styles
+- DI detection for non-NestJS projects (tsyringe, Inversify, Awilix, TypeDI, BottleJS)
+- Model layer description fixed for routes-models pattern ("Business logic + data access" not "no business logic")
 
 ## v14.1 Fixes (from bash script)
 

@@ -1,12 +1,33 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
 import { join, basename } from 'path';
 
-/** Check if package.json (or src/package.json) contains a dependency */
-export function pkgHas(projectDir: string, pkg: string): boolean {
+/** Cached parsed package.json — avoids re-reading/re-parsing on every pkgHas call */
+const pkgJsonCache = new Map<string, { deps: Set<string>; raw: string }>();
+
+function getPkgData(projectDir: string): { deps: Set<string>; raw: string } | null {
+    if (pkgJsonCache.has(projectDir)) return pkgJsonCache.get(projectDir)!;
     const f = findPackageJson(projectDir);
-    if (!f) return false;
-    const content = readFileSync(f, 'utf-8');
-    return new RegExp(`"${escapeRegex(pkg)}"`, 'm').test(content);
+    if (!f) return null;
+    const raw = readFileSync(f, 'utf-8');
+    const deps = new Set<string>();
+    try {
+        const pkg = JSON.parse(raw);
+        for (const section of ['dependencies', 'devDependencies', 'peerDependencies', 'optionalDependencies']) {
+            if (pkg[section] && typeof pkg[section] === 'object') {
+                for (const name of Object.keys(pkg[section])) deps.add(name);
+            }
+        }
+    } catch { /* malformed JSON — fall back to empty */ }
+    const result = { deps, raw };
+    pkgJsonCache.set(projectDir, result);
+    return result;
+}
+
+/** v14.2: Check if package.json dependency sections contain a package (parsed JSON, not regex) */
+export function pkgHas(projectDir: string, pkg: string): boolean {
+    const data = getPkgData(projectDir);
+    if (!data) return false;
+    return data.deps.has(pkg);
 }
 
 /** Extract version of a dependency from package.json */
