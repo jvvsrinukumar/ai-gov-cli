@@ -1,0 +1,9 @@
+src/
+bin/
+tests/
+tsconfig.json
+jest.config.cjs
+.gitignore
+.DS_Store
+*.ts.map
+*.d.ts.map
