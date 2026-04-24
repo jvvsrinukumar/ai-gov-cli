@@ -11,24 +11,20 @@ AI coding tools generate code at machine speed. This framework ensures that spee
 ## Quick Start
 
 ```bash
-# Install globally
-npm install -g @anthropic-governance/cli
+# 1. Clone the CLI (one-time per developer)
+git clone https://github.com/jvvsrinukumar/ai-gov-cli.git
+cd ai-gov-cli
+npm install
+npm run build
+npm link              # makes 'ai-gov' available globally
 
-# Or run without installing
-npx @anthropic-governance/cli init
-
-# Inside your project
+# 2. Go to your project and run governance
 cd /path/to/your/project
-ai-gov init                    # auto-detects stack, generates governance
-```
+ai-gov init           # auto-detects stack, generates governance
 
-Then start Claude Code normally:
-
-```bash
+# 3. Start Claude Code — it reads the rules automatically
 claude
 ```
-
-Claude reads `.claude/CLAUDE.md` automatically and follows your governance rules.
 
 ### Other Commands
 
