@@ -1,5 +1,5 @@
 import { join } from 'path';
-import { chmodSync, existsSync, readdirSync } from 'fs';
+import { chmodSync, existsSync, readdirSync, readSync } from 'fs';
 import type { GovernanceConfig } from '../types.js';
 import { safeWrite, type WriteOptions } from '../utils/safe-write.js';
 import { log } from '../utils/logger.js';
@@ -18,14 +18,40 @@ import { generateExtensions } from './extensions.js';
 import { generateMonorepoGovernance } from './monorepo.js';
 import { generateAllHooks } from './hooks/index.js';
 
+function syncReadLine(): string {
+    try {
+        const buf = Buffer.alloc(256);
+        const n = readSync(0, buf, 0, 256, null);
+        return buf.subarray(0, n).toString().trim();
+    } catch {
+        return '';
+    }
+}
+
 export function runGovernance(config: GovernanceConfig): void {
     console.log('');
     log.info('=== Governance Framework (Claude Code) ===');
     const dir = config.projectDir;
+
+    // Build per-file conflict prompt closure for 'ask' mode
+    let _approveAll = false;
+    let _skipAll = false;
+    const onConflict = (rel: string): boolean => {
+        if (_approveAll) return true;
+        if (_skipAll) return false;
+        process.stdout.write(`\n  Conflict: ${rel}\n  Update? [y=yes / n=no / a=all / s=skip all] `);
+        const answer = syncReadLine().toLowerCase();
+        if (answer === 'a') { _approveAll = true; return true; }
+        if (answer === 's') { _skipAll = true; return false; }
+        return answer === 'y';
+    };
+
     const opts: WriteOptions = {
         overwrite: config.overwrite, dryRun: config.dryRun,
         updateHooks: config.updateHooks, hookVersion: config.hookVersion,
         projectDir: dir,
+        conflictMode: config.conflictMode,
+        onConflict: config.conflictMode === 'ask' ? onConflict : undefined,
     };
 
     // Ensure .gitattributes for LF line endings on hooks

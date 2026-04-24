@@ -1,7 +1,7 @@
 import { Command } from 'commander';
-import { existsSync, readFileSync, appendFileSync } from 'fs';
+import { existsSync, readFileSync, appendFileSync, readSync } from 'fs';
 import { join, resolve, basename } from 'path';
-import type { Stack, GovernanceConfig } from './types.js';
+import type { Stack, GovernanceConfig, ConflictMode } from './types.js';
 import { createDefaultScanResult } from './types.js';
 import { detectStack } from './detect-stack.js';
 import { loadBaseProfile } from './profiles.js';
@@ -53,9 +53,36 @@ program
         const isBackend = stack === 'nodejs' || stack === 'python';
         const blocks = computeContentBlocks(stack, profile, scan);
 
+        // Conflict resolution: prompt g/k/o when .claude/ already exists
+        let conflictMode: ConflictMode = 'keep';
+        const claudeDir = join(projectDir, '.claude');
+        if (!options.overwrite && !options.dryRun && !options.updateHooks && existsSync(claudeDir)) {
+            console.log('');
+            console.log('  .claude/ already exists. How should ai-gov handle existing files?');
+            console.log('');
+            console.log('  g  Generate — create new files, ask permission for each changed file');
+            console.log('  k  Keep    — create new files only, leave all existing untouched  (default)');
+            console.log('  o  Overwrite — replace all files with the latest generated version');
+            console.log('');
+            process.stdout.write('  Choice [g/k/o]: ');
+            const buf = Buffer.alloc(64);
+            let n = 0;
+            try { n = readSync(0, buf, 0, 64, null); } catch { /* non-TTY, keep default */ }
+            const choice = buf.subarray(0, n).toString().trim().toLowerCase();
+            if (choice === 'o') {
+                conflictMode = 'overwrite';
+                options.overwrite = true;
+            } else if (choice === 'g') {
+                conflictMode = 'ask';
+            }
+            // else 'k' or anything else → keep (default)
+            console.log('');
+        }
+
         const config: GovernanceConfig = {
             stack, profile, scan, project, blocks, isBackend,
             hookVersion: HOOK_VERSION, projectDir, specFirstEnabled,
+            conflictMode,
             overwrite: options.overwrite, dryRun: options.dryRun,
             updateHooks: options.updateHooks,
         };

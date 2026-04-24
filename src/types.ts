@@ -151,6 +151,8 @@ export interface ContentBlocks {
     layerExecOrder: string;
 }
 
+export type ConflictMode = 'keep' | 'ask' | 'overwrite';
+
 export interface GovernanceConfig {
     stack: Stack;
     profile: BaseProfile;
@@ -161,6 +163,7 @@ export interface GovernanceConfig {
     hookVersion: string;
     projectDir: string;
     specFirstEnabled: boolean;
+    conflictMode: ConflictMode;
     overwrite: boolean;
     dryRun: boolean;
     updateHooks: boolean;
