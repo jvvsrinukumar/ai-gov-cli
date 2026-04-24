@@ -5,13 +5,13 @@ import type { Stack, GovernanceConfig } from './types.js';
 import { createDefaultScanResult } from './types.js';
 import { detectStack } from './detect-stack.js';
 import { loadBaseProfile } from './profiles.js';
-import { scanProject } from './scanners/index.js';
+import { scanProject, checkSpecFirstEnabled } from './scanners/index.js';
 import { computeContentBlocks } from './content-blocks.js';
 import { runGovernance } from './generators/index.js';
 import { log } from './utils/logger.js';
 
-const VERSION = '14.2.0';
-const HOOK_VERSION = '14.2.0';
+const VERSION = '14.3.0';
+const HOOK_VERSION = '14.3.0';
 
 const program = new Command();
 
@@ -47,6 +47,7 @@ program
         const scan = createDefaultScanResult();
 
         scanProject(stack, projectDir, profile, scan);
+        const specFirstEnabled = checkSpecFirstEnabled(projectDir);
 
         const project = collectProjectInfo(stack, projectDir);
         const isBackend = stack === 'nodejs' || stack === 'python';
@@ -54,7 +55,7 @@ program
 
         const config: GovernanceConfig = {
             stack, profile, scan, project, blocks, isBackend,
-            hookVersion: HOOK_VERSION, projectDir,
+            hookVersion: HOOK_VERSION, projectDir, specFirstEnabled,
             overwrite: options.overwrite, dryRun: options.dryRun,
             updateHooks: options.updateHooks,
         };

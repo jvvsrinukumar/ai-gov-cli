@@ -108,9 +108,29 @@ ${responseRule}
         rules += `\n- **Max 200 lines per file** — if a file exceeds 200 lines, decompose: ${hints[stack]}. Excludes: test files, generated files, config/theme files, barrel/index files`;
     }
 
+    // v14.2: Conditional test rule — stack-aware message when no test runner configured
+    const testRule = scan.detectedHasTests
+        ? `- A task is **not complete** without a test`
+        : `- ⚠️ **No test runner configured** — \`${profile.testCmd}\` may be a no-op. ${getTestSetupHint(stack)} Test mandate suspended until configured.`;
+
     rules += `\n- **Never** leave TODO comments in production code
-- A task is **not complete** without a test
+${testRule}
 - **When adding, modifying, or removing a hook** — update \`.claude/hooks/README.md\``;
+
+    // v14.2: Mixed-arch dual-mode override — replaces all rules above
+    if (scan.mixedArch && stack === 'nodejs' && scan.detectedArchPattern === 'routes-models') {
+        rules = `- **This project has DUAL architecture — read \`architecture.md\` before coding**
+- **Bug fix / existing code** → Route → Model (match what exists)
+- **New feature / refactor** → Route → Controller → Service → Repo (new standard)
+- **Never** query the database directly from Routes — go through Model (legacy) or Repo (new)
+- **Never** write business logic in Routes
+- **Never** return raw database objects in API responses — map to response schemas
+- **Never** access tenant-scoped data without \`org_id\` filtering
+- **Never** leave TODO comments in production code
+${testRule}
+- **When adding, modifying, or removing a hook** — update \`.claude/hooks/README.md\``;
+    }
+
     return rules;
 }
 
@@ -406,6 +426,18 @@ function buildTaskTestPhase(
     }
     t += `\n- [ ] **[S] [Test]** ${ui} tests for main screen`;
     return t;
+}
+
+function getTestSetupHint(stack: Stack): string {
+    const hints: Partial<Record<Stack, string>> = {
+        flutter: 'Run `flutter test` to verify. Tests go in `test/`.',
+        kotlin: 'Run `./gradlew test` to verify. Add JUnit/Mockito to test dependencies.',
+        nodejs: 'To add: `npm install --save-dev jest` and set `"test": "jest"` in package.json.',
+        react: 'To add: `npm install --save-dev jest @testing-library/react` and configure.',
+        angular: 'Run `ng test` to verify. Karma+Jasmine should be pre-configured.',
+        python: 'To add: `pip install pytest` and create `tests/` directory.',
+    };
+    return hints[stack] ?? 'Configure a test runner for this stack.';
 }
 
 function buildLayerExecOrder(

@@ -160,6 +160,7 @@ export interface GovernanceConfig {
     isBackend: boolean;
     hookVersion: string;
     projectDir: string;
+    specFirstEnabled: boolean;
     overwrite: boolean;
     dryRun: boolean;
     updateHooks: boolean;

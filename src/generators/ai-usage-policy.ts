@@ -40,7 +40,7 @@ ${c.blocks.highRiskDisplay}
 
 ## PR Checklist
 - [ ] Claude Code was used
-- [ ] Change type: Feature / Bug Fix / Refactor / Hotfix
+- [ ] Change type: Feature / Edit Feature / Bug Fix / Refactor / Hotfix
 - [ ] Files created/modified listed
 - [ ] Architecture compliance confirmed
 - [ ] Tests written (or reason explained)

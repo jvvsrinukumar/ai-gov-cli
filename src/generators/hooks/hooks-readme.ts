@@ -15,17 +15,26 @@ export function generateHooksReadme(c: GovernanceConfig): string {
         fileSizeStatus = `No-op (not applicable for ${c.stack})`;
     }
 
+    const totalCount = c.specFirstEnabled
+        ? '11 scripts / 11 registrations (all use `bash` prefix for Windows compatibility)'
+        : '11 scripts / 10 registrations (check-spec-exists.sh generated but not registered — spec-first opt-in)';
+
+    const specRow = c.specFirstEnabled
+        ? `| \`check-spec-exists.sh\` | PreToolUse Edit\\|Write\\|Bash | Yes | Block without spec + tasks.md + spec freshness |`
+        : `| \`check-spec-exists.sh\` | — (not registered) | — | Spec-first not active: no spec history found. To enable: create \`specs/<feature>/\` and re-run governance script |`;
+
     return `# Hooks — ${c.project.appName}
 
 **Hook Version:** ${c.hookVersion}
-Total: 10 scripts / 10 registrations (all use \`bash\` prefix for Windows compatibility)
+Total: ${totalCount}
 
 | Hook | Trigger | Blocks? | Purpose |
 |------|---------|:-------:|---------|
 | \`protect-files.sh\` | PreToolUse Edit\\|Write\\|Bash | Warn only | Warn on high-risk file edits |
+| \`check-secrets.sh\` | PreToolUse Edit\\|Write\\|Bash | Yes | Block AWS keys, API tokens, passwords in source |
 | \`session-continuity.sh\` | PreToolUse Edit\\|Write\\|Bash | No | Remind to resume from last task |
 | \`block-dangerous-commands.sh\` | PreToolUse Edit\\|Write\\|Bash | Yes | Block force push, rm -rf, pkg install |
-| \`check-spec-exists.sh\` | PreToolUse Edit\\|Write\\|Bash | Yes | Block without spec + tasks.md + spec freshness |
+${specRow}
 | \`format-code.sh\` | PostToolUse Edit\\|Write | No | ${fmtStatus} |
 | \`analyze-code.sh\` | PostToolUse Edit\\|Write | No | ${analyzeStatus} |
 | \`check-feature-readme.sh\` | PostToolUse Edit\\|Write | No | Ensure README exists and is updated |

@@ -23,17 +23,21 @@ export function generateSettingsJson(config: GovernanceConfig, opts: WriteOption
 
     // v14.1: All commands use bash prefix for Windows compatibility
     const bp = 'bash "$CLAUDE_PROJECT_DIR"/.claude';
+    const preToolUseHooks: object[] = [
+        { type: 'command', command: `${bp}/hooks/protect-files.sh`, timeout: 10, statusMessage: 'Checking file protection...' },
+        { type: 'command', command: `${bp}/hooks/check-secrets.sh`, timeout: 10, statusMessage: 'Scanning for secrets...' },
+        { type: 'command', command: `${bp}/hooks/session-continuity.sh`, timeout: 10, statusMessage: 'Checking session continuity...' },
+        { type: 'command', command: `${bp}/hooks/block-dangerous-commands.sh`, timeout: 10, statusMessage: 'Validating command safety...' },
+    ];
+    if (config.specFirstEnabled) {
+        preToolUseHooks.push({ type: 'command', command: `${bp}/hooks/check-spec-exists.sh`, timeout: 10, statusMessage: 'Checking spec exists...' });
+    }
     const baseSettings = {
         hooks: {
             PreToolUse: [
                 {
                     matcher: 'Edit|Write|Bash',
-                    hooks: [
-                        { type: 'command', command: `${bp}/hooks/protect-files.sh`, timeout: 10, statusMessage: 'Checking file protection...' },
-                        { type: 'command', command: `${bp}/hooks/session-continuity.sh`, timeout: 10, statusMessage: 'Checking session continuity...' },
-                        { type: 'command', command: `${bp}/hooks/block-dangerous-commands.sh`, timeout: 10, statusMessage: 'Validating command safety...' },
-                        { type: 'command', command: `${bp}/hooks/check-spec-exists.sh`, timeout: 10, statusMessage: 'Checking spec exists...' },
-                    ],
+                    hooks: preToolUseHooks,
                 },
             ],
             PostToolUse: [
