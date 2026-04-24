@@ -1,11 +1,12 @@
 import { Command } from 'commander';
-import { existsSync, readFileSync, appendFileSync, readSync } from 'fs';
+import { existsSync, readFileSync, appendFileSync } from 'fs';
 import { join, resolve, basename } from 'path';
 import type { Stack, GovernanceConfig, ConflictMode } from './types.js';
 import { createDefaultScanResult } from './types.js';
 import { detectStack } from './detect-stack.js';
 import { loadBaseProfile } from './profiles.js';
 import { scanProject, checkSpecFirstEnabled } from './scanners/index.js';
+import { isInteractiveTTY, readTTYLine } from './utils/tty.js';
 import { computeContentBlocks } from './content-blocks.js';
 import { runGovernance } from './generators/index.js';
 import { log } from './utils/logger.js';
@@ -56,26 +57,31 @@ program
         // Conflict resolution: prompt g/k/o when .claude/ already exists
         let conflictMode: ConflictMode = 'keep';
         const claudeDir = join(projectDir, '.claude');
-        if (!options.overwrite && !options.dryRun && !options.updateHooks && existsSync(claudeDir)) {
+        if (!options.overwrite && !options.dryRun && !options.updateHooks && existsSync(claudeDir) && isInteractiveTTY()) {
             console.log('');
             console.log('  .claude/ already exists. How should ai-gov handle existing files?');
             console.log('');
-            console.log('  g  Generate — create new files, ask permission for each changed file');
-            console.log('  k  Keep    — create new files only, leave all existing untouched  (default)');
+            console.log('  g  Generate — create new files, ask permission for each changed file  [default]');
+            console.log('  k  Keep    — create new files only, leave all existing untouched');
             console.log('  o  Overwrite — replace all files with the latest generated version');
             console.log('');
-            process.stdout.write('  Choice [g/k/o]: ');
-            const buf = Buffer.alloc(64);
-            let n = 0;
-            try { n = readSync(0, buf, 0, 64, null); } catch { /* non-TTY, keep default */ }
-            const choice = buf.subarray(0, n).toString().trim().toLowerCase();
+            let choice = '';
+            while (!['g', 'k', 'o'].includes(choice)) {
+                process.stdout.write('  Choice [G/k/o] (Enter = g): ');
+                choice = readTTYLine().toLowerCase();
+                if (choice === '') choice = 'g';  // bare Enter = default
+                if (!['g', 'k', 'o'].includes(choice)) {
+                    console.log('  Please enter g, k, or o.');
+                }
+            }
             if (choice === 'o') {
                 conflictMode = 'overwrite';
                 options.overwrite = true;
-            } else if (choice === 'g') {
-                conflictMode = 'ask';
+            } else if (choice === 'k') {
+                conflictMode = 'keep';
+            } else {
+                conflictMode = 'ask';  // 'g' or default
             }
-            // else 'k' or anything else → keep (default)
             console.log('');
         }
 

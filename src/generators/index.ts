@@ -1,5 +1,7 @@
 import { join } from 'path';
-import { chmodSync, existsSync, readdirSync, readSync } from 'fs';
+import { chmodSync, existsSync, readdirSync } from 'fs';
+import { createPatch } from 'diff';
+import { isInteractiveTTY, readTTYLine } from '../utils/tty.js';
 import type { GovernanceConfig } from '../types.js';
 import { safeWrite, type WriteOptions } from '../utils/safe-write.js';
 import { log } from '../utils/logger.js';
@@ -18,16 +20,6 @@ import { generateExtensions } from './extensions.js';
 import { generateMonorepoGovernance } from './monorepo.js';
 import { generateAllHooks } from './hooks/index.js';
 
-function syncReadLine(): string {
-    try {
-        const buf = Buffer.alloc(256);
-        const n = readSync(0, buf, 0, 256, null);
-        return buf.subarray(0, n).toString().trim();
-    } catch {
-        return '';
-    }
-}
-
 export function runGovernance(config: GovernanceConfig): void {
     console.log('');
     log.info('=== Governance Framework (Claude Code) ===');
@@ -36,11 +28,44 @@ export function runGovernance(config: GovernanceConfig): void {
     // Build per-file conflict prompt closure for 'ask' mode
     let _approveAll = false;
     let _skipAll = false;
-    const onConflict = (rel: string): boolean => {
+    const onConflict = (rel: string, existing: string, incoming: string): boolean => {
         if (_approveAll) return true;
         if (_skipAll) return false;
-        process.stdout.write(`\n  Conflict: ${rel}\n  Update? [y=yes / n=no / a=all / s=skip all] `);
-        const answer = syncReadLine().toLowerCase();
+
+        process.stdout.write(`\n  Conflict: ${rel}\n`);
+
+        // Non-interactive (CI / piped stdin): default to keep
+        if (!isInteractiveTTY()) {
+            process.stdout.write('  (non-interactive — keeping existing)\n');
+            return false;
+        }
+
+        let answer = '';
+        while (!['y', 'n', 'a', 's'].includes(answer)) {
+            process.stdout.write('  Update? [y=yes / n=no / d=diff / a=all / s=skip all] ');
+            answer = readTTYLine().toLowerCase();
+            if (answer === '') answer = 'n';  // bare Enter = no (keep existing)
+            if (answer === 'd') {
+                // Show unified diff: current disk vs generated
+                const patch = createPatch(rel, existing, incoming, 'current', 'generated');
+                const lines = patch.split('\n').slice(2); // strip the file header lines
+                console.log('');
+                for (const line of lines) {
+                    if (line.startsWith('+') && !line.startsWith('+++')) {
+                        process.stdout.write(`\x1b[32m${line}\x1b[0m\n`);       // green
+                    } else if (line.startsWith('-') && !line.startsWith('---')) {
+                        process.stdout.write(`\x1b[31m${line}\x1b[0m\n`);       // red
+                    } else if (line.startsWith('@@')) {
+                        process.stdout.write(`\x1b[36m${line}\x1b[0m\n`);       // cyan
+                    } else {
+                        process.stdout.write(`${line}\n`);
+                    }
+                }
+                console.log('');
+                answer = ''; // re-prompt after showing diff
+            }
+        }
+
         if (answer === 'a') { _approveAll = true; return true; }
         if (answer === 's') { _skipAll = true; return false; }
         return answer === 'y';
