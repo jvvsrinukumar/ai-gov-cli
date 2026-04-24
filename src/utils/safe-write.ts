@@ -10,7 +10,7 @@ export interface WriteOptions {
     hookVersion: string;
     projectDir: string;
     conflictMode?: ConflictMode;
-    onConflict?: (rel: string) => boolean;
+    onConflict?: (rel: string, existing: string, incoming: string) => boolean;
 }
 
 export function safeWrite(filePath: string, content: string, opts: WriteOptions): boolean {
@@ -39,7 +39,7 @@ export function safeWrite(filePath: string, content: string, opts: WriteOptions)
         if (mode === 'ask' && opts.onConflict) {
             const existing = readFileSync(filePath, 'utf-8');
             if (existing === content) return false;  // identical — no conflict, no prompt
-            if (opts.onConflict(rel)) {
+            if (opts.onConflict(rel, existing, content)) {
                 writeFileSync(filePath, content);
                 log.approved(rel);
                 return true;

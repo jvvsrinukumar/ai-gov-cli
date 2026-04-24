@@ -2,16 +2,22 @@ import type { GovernanceConfig } from '../../types.js';
 
 export function generateCheckFileSize(c: GovernanceConfig): string {
     const p = c.profile;
-    const frontendStacks = ['flutter', 'kotlin', 'react', 'angular'];
+    const activeStacks = ['flutter', 'kotlin', 'react', 'angular', 'nodejs', 'python'];
 
-    // Non-frontend stacks → no-op
-    if (!frontendStacks.includes(c.stack)) {
+    // Stacks without meaningful per-file size limits → no-op
+    if (!activeStacks.includes(c.stack)) {
         return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
 # Stack ${c.stack} — file size check not applicable
 exit 0
 `;
     }
+
+    // Backend stacks skip fewer file types (routes ARE worth checking for size)
+    const isBackend = c.stack === 'nodejs' || c.stack === 'python';
+    const skipNamePattern = isBackend
+        ? '^(config|index|app|server|main)'
+        : '^(theme|config|routes|route|di|injection|module|index|barrel|main|app)';
 
     // Build generated file skip lines
     const genSkips = (p.generatedPatterns || '').split(/\s+/).filter(Boolean)
@@ -35,8 +41,8 @@ echo "$BN" | grep -qE '\\.test\\.|\\. spec\\.|_test\\.|\\. stories\\.' && exit 0
 # Skip generated files
 ${genSkips}
 
-# Skip config/theme/barrel/index files
-echo "$BN" | grep -qiE '^(theme|config|routes|route|di|injection|module|index|barrel|main|app)' && exit 0
+# Skip config/entry files
+echo "$BN" | grep -qiE '${skipNamePattern}' && exit 0
 
 # Skip type definition files (interfaces, models, types)
 echo "$BN" | grep -qiE '(\\.type\\.|\\. types\\.|\\. model\\.|\\. models\\.|\\. interface\\.|\\. dto\\.)' && exit 0

@@ -12,7 +12,16 @@ export function generateArchitecture(c: GovernanceConfig): string {
     } else if (c.isBackend && s.detectedSubtype === 'nestjs') {
         structBlock = `\`\`\`\n${p.sourceDir}<resource>/\n├── <resource>.controller.ts\n├── <resource>.service.ts\n├── <resource>.repository.ts\n├── dto/\n└── <resource>.module.ts\n\`\`\``;
     } else if (c.isBackend) {
-        structBlock = `\`\`\`\n${p.sourceDir}\n├── controller/    # HTTP handlers\n├── service/       # Business logic\n├── models/        # Data models\n└── config/        # Configuration\n\`\`\``;
+        const arch = s.detectedArchPattern || '';
+        if (arch === 'routes-models' && !s.mixedArch) {
+            structBlock = `\`\`\`\n${p.sourceDir}\n├── routes/        # Route handlers\n├── models/        # Business logic + data access\n└── config/        # Configuration\n\`\`\``;
+        } else if (arch === 'routes-only' && !s.mixedArch) {
+            structBlock = `\`\`\`\n${p.sourceDir}\n├── routes/        # Route handlers\n└── config/        # Configuration\n\`\`\``;
+        } else if (s.mixedArch) {
+            structBlock = `\`\`\`\n${p.sourceDir}\n├── routes/        # Legacy: route handlers (dominant)\n├── models/        # Legacy: business logic + data\n├── controller/    # New: thin HTTP handlers\n├── service/       # New: business logic\n└── config/        # Configuration\n\`\`\``;
+        } else {
+            structBlock = `\`\`\`\n${p.sourceDir}\n├── controller/    # HTTP handlers\n├── service/       # Business logic\n├── models/        # Data models\n└── config/        # Configuration\n\`\`\``;
+        }
     } else {
         structBlock = `\`\`\`\n${p.sourceDir}<feature>/\n├── data/          # DataSource, DTOs, API service\n├── domain/        # Domain models, UseCase interfaces\n├── presentation/  # ${p.layerUI}s / ${p.layerState}\n└── README.md\n\`\`\``;
     }

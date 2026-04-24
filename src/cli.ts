@@ -137,7 +137,7 @@ program
 
         const hooksDir = join(dir, '.claude', 'hooks');
         if (existsSync(hooksDir)) {
-            const hooks = ['protect-files.sh', 'block-dangerous-commands.sh', 'check-spec-exists.sh',
+            const hooks = ['protect-files.sh', 'check-secrets.sh', 'block-dangerous-commands.sh', 'check-spec-exists.sh',
                 'session-continuity.sh', 'format-code.sh', 'analyze-code.sh',
                 'check-feature-readme.sh', 'check-consistency.sh', 'check-file-size.sh', 'post-task-checklist.sh'];
             for (const h of hooks) {
