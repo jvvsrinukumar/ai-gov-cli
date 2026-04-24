@@ -2,7 +2,7 @@
 
 > Scan-adaptive governance framework for Claude Code. Detects your stack, generates steering files, hooks, spec templates, and a master CLAUDE.md — all tailored to what's actually in your project.
 
-**Version:** 14.2.0
+**Version:** 14.3.0
 **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python
 **Agent:** Claude Code
 
@@ -115,7 +115,7 @@ Checks: CLAUDE.md exists, settings.json valid, all 10 hooks present, jq installe
 
 ```
 ============================================
- AI Governance v14.2.0 (Scan-Adaptive · Claude Code)
+ AI Governance v14.3.0 (Scan-Adaptive · Claude Code)
 ============================================
 
 --- Scanning project ---
@@ -155,13 +155,13 @@ UI system (Compose vs XML), DI (Hilt / Koin / Dagger), state (StateFlow vs LiveD
 Language (TS/JS), module system (ESM/CJS — tsconfig-aware for TS), framework (NestJS with source verification / Express / Fastify / Koa / Hapi / Hono / AdonisJS), DI (NestJS DI / AdonisJS IoC / tsyringe / Inversify / Awilix / TypeDI / BottleJS), ORM (Prisma / TypeORM / Drizzle / Mongoose / Sequelize / MikroORM), DB drivers, auth (Passport / JWT / Auth0 / Firebase / Cognito), API docs style (decorators / JSDoc / TSOA / Fastify schema / manual), API type (REST / GraphQL / gRPC), queues (BullMQ / RabbitMQ / Kafka / SQS), real-time (Socket.IO / ws), schedulers, upload libs, email, cloud (AWS / Firebase / GCP), logging (winston / pino / morgan), validation (class-validator / Joi / Zod / Yup), architecture pattern (layered / routes-models / NestJS standard / NestJS clean — recursive depth-6 scan with file pattern fallback), monorepo (Lerna / Nx / Turborepo / pnpm workspaces), mixed architecture detection
 
 ### React
-Next.js (App Router / Pages Router), RSC detection, state (Zustand / Redux Toolkit / Jotai / MobX + React Query), router (TanStack / React Router), forms (React Hook Form / Formik + Zod), CSS (Tailwind / styled-components / Emotion), build tool (Vite / CRA / Next.js), service style (function vs class)
+Next.js (App Router / Pages Router), RSC detection, state (Zustand / Redux Toolkit / Jotai / MobX + React Query), router (TanStack / React Router), forms (React Hook Form / Formik + Zod), CSS (Tailwind / styled-components / Emotion), UI component libs (MUI / Mantine / Chakra UI / Ant Design), build tool (Vite / CRA / Next.js), service style (function vs class), scaffold (Plop / Hygen)
 
 ### Angular
-Version detection, Signals support, state (NgRx / NGXS / Angular Signals / RxJS), SSR, UI libs (Angular Material / PrimeNG), i18n (ngx-translate), architecture depth (simple vs full with UseCase + Repository)
+Version detection, Signals (17+), state (NgRx / NGXS / Akita / Angular Signals / RxJS), SSR, UI libs (Angular Material / PrimeNG / ng-bootstrap / ng-select), i18n (ngx-translate), test framework (Jest / Karma+Jasmine / Playwright), monorepo (Nx), architecture depth (simple vs full with UseCase + Repository)
 
 ### Python
-Framework (FastAPI / Django / Flask), ORM (SQLAlchemy / Tortoise / Peewee), migrations (Alembic), auth (JWT), cache (Redis), queue (Celery), linter/formatter (ruff / black), test (pytest), validation (Pydantic), HTTP client (httpx / aiohttp), package manager (poetry / uv / pipenv / pip), deep API path detection (v14.1)
+Framework (FastAPI / Django / Flask), ORM (SQLModel / SQLAlchemy / Tortoise / Peewee), migrations (Alembic), auth (JWT / passlib), cache (Redis), queue (Celery), linter/formatter (ruff / black), test (pytest), validation (Pydantic), HTTP client (httpx / aiohttp), logging (structlog / loguru), package manager (poetry / uv / pipenv / pip), deep API path detection
 
 ### SwiftUI
 TCA detection, DI (Resolver / Swinject / Factory), state (@Observable / ObservableObject), async/await, network (Alamofire / Moya / URLSession), local DB (SwiftData / GRDB / Realm), @MainActor, min iOS version
@@ -336,13 +336,26 @@ ai-governance/
 └── jest.config.cjs
 ```
 
-**44 source files · ~4,300 lines of TypeScript · 40 tests**
+**44 source files · ~4,300 lines of TypeScript · 103 tests**
 
 ---
 
-## v14.2 Fixes (scanner accuracy)
+## v14.3 Changes (production readiness)
 
-All fixes target the Node.js scanner. Other stacks untouched.
+- **103 generator smoke tests** — full coverage of every generator and hook script
+- **ESLint 9 flat config** — `eslint.config.js` with `typescript-eslint`; 0 lint errors
+- **Error boundary** — `runGovernance()` catches all errors and prints clean message; `DEBUG=1` for full stack
+- **`check-secrets.sh` in doctor** — doctor verifies the secrets hook is present
+- **`/audit` command** — `ai-gov init` writes `.claude/commands/audit.md` with project-specific governance health check
+- **`architecture.md` structure fix** — `structBlock` now matches actual arch pattern (2-layer for routes-models, 4-layer for layered)
+- **`check-file-size.sh` fixed for backend** — Node.js and Python now active; backend skip pattern keeps `routes/` files in scope
+- **`analyze-code.sh` warn mode** — WARNING comment when linter in deps but no config, instead of silent no-op
+- **`format-code.sh` config awareness** — reads `profile.formatCmd` set by scanner (only set when formatter is usable); no longer bypasses config check
+- **Removed unused deps** — `glob` and `yaml` removed from `package.json`
+
+## v14.2 Fixes (Node.js scanner accuracy)
+
+All fixes below target the Node.js scanner specifically. Flutter, Kotlin, React, Angular, SwiftUI, and Python scanners were fully audited in v14.3 and confirmed production-ready — no equivalent issues exist in those stacks.
 
 - `pkgHas()` parses JSON dependency sections instead of raw regex — no more false positives from scripts/comments
 - ESM vs CommonJS reads `tsconfig.json` `module` field for TypeScript projects — stops falsely detecting ESM

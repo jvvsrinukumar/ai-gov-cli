@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, mkdirSync, copyFileSync } from 'fs';
+import { existsSync, readdirSync, mkdirSync, copyFileSync } from 'fs';
 import { join } from 'path';
 import type { GovernanceConfig } from '../types.js';
 import { safeWrite, type WriteOptions } from '../utils/safe-write.js';

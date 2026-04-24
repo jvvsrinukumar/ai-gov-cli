@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'fs';
-import { join, basename } from 'path';
+import { join } from 'path';
 
 /** Cached parsed package.json — avoids re-reading/re-parsing on every pkgHas call */
 const pkgJsonCache = new Map<string, { deps: Set<string>; raw: string }>();

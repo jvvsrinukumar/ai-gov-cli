@@ -93,7 +93,15 @@ program
             updateHooks: options.updateHooks,
         };
 
-        runGovernance(config);
+        try {
+            runGovernance(config);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error(`\n  Error: ${msg}`);
+            console.error('  Run with DEBUG=1 for stack trace.');
+            if (process.env.DEBUG) console.error(err);
+            process.exit(1);
+        }
 
         // Summary
         console.log('');
@@ -148,7 +156,7 @@ program
         // Check jq
         const { execSync } = await import('child_process');
         let jqOk = false;
-        try { execSync('command -v jq', { stdio: 'pipe' }); jqOk = true; } catch { }
+        try { execSync('command -v jq', { stdio: 'pipe' }); jqOk = true; } catch { /* not installed */ }
         check('jq installed (required by hooks)', jqOk);
 
         console.log('');

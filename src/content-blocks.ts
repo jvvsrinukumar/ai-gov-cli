@@ -392,7 +392,7 @@ function buildTaskLogicPhase(profile: BaseProfile, isBackend: boolean, lc: numbe
 }
 
 function buildTaskStatePhase(
-    stack: Stack, profile: BaseProfile, isBackend: boolean, lc: number
+    stack: Stack, profile: BaseProfile, isBackend: boolean, _lc: number
 ): string {
     const mid = profile.layerNames[1];
     if (isBackend) {

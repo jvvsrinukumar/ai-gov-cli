@@ -71,6 +71,7 @@ export function generateSettingsJson(config: GovernanceConfig, opts: WriteOption
             for (const trigger of ['PreToolUse', 'PostToolUse', 'Stop'] as const) {
                 const arr = custom[trigger];
                 if (Array.isArray(arr) && arr.length > 0) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (baseSettings.hooks as any)[trigger].push(...arr);
                     log.merged(`custom-hooks.json ${trigger} into settings.json`);
                 }

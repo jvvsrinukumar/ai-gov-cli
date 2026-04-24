@@ -19,6 +19,7 @@ import { generateSpecTemplates } from './spec-templates.js';
 import { generateExtensions } from './extensions.js';
 import { generateMonorepoGovernance } from './monorepo.js';
 import { generateAllHooks } from './hooks/index.js';
+import { generateAuditCommand } from './commands/audit.js';
 
 export function runGovernance(config: GovernanceConfig): void {
     console.log('');
@@ -109,6 +110,9 @@ export function runGovernance(config: GovernanceConfig): void {
 
     log.section('Extensions:');
     generateExtensions(config, opts);
+
+    log.section('Commands:');
+    safeWrite(join(dir, '.claude', 'commands', 'audit.md'), generateAuditCommand(config), opts);
 
     log.section('Spec templates:');
     generateSpecTemplates(config, opts);
