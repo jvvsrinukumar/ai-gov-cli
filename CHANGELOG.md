@@ -7,6 +7,31 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [15.1.0] — 2026-04-25
+
+### Added
+- **7 slash commands** — `.claude/commands/` now includes `new-feature`, `edit-feature`, `fix`, `refactor`, `hotfix`, `explore`, `audit`. Claude Code reads these when a developer uses the corresponding `/command` in chat.
+- **`/new-feature` plan mode + 3-gate spec** — enters plan mode immediately, requires explicit developer approval at Requirements → Design → Tasks gates before any file is written.
+- **`/audit` 11-step governance audit** — inventories features, reads actual code, compares against steering files, checks spec/test coverage, scans for dead files, writes dated `docs/governance-audit-YYYY-MM-DD.md`.
+- **`require-task-type.sh` hook** — `UserPromptSubmit` hook that detects unclassified development tasks and injects governance command suggestions. Runs in warn mode (exit 0) by default; change to exit 1 to block.
+- **Flutter legacy zone detection** — scanner detects dual-zone projects (`lib/screens/` legacy MVC + `lib/features/` clean arch), sets `hasLegacyZones`, `legacyZones`, `cleanZones`, `legacyZoneNote` in `ScanResult`.
+- **`flutter-legacy` test fixture** — adds `tests/fixtures/flutter-legacy/` with dual-zone structure for scanner tests.
+
+### Fixed
+- **g/k/o conflict resolution** — when `.claude/` already exists, `ai-gov init` prompts: Generate (ask per file with diff preview), Keep (skip existing), or Overwrite (replace all). Uses `/dev/tty` for reliable TTY input; falls back to `process.stdin` on Windows/CI.
+- **110/110 tests pass** — `flutter-legacy` fixture added to unblock 3 previously failing scanner tests.
+
+---
+
+## [15.0.0] — 2026-04-24
+
+### Added
+- **Persistent audit records** — `/audit` command writes a dated markdown file to `docs/` so governance findings survive across sessions.
+- **Honest README** — README updated to accurately describe what the CLI generates vs. what Claude Code reads at runtime.
+- **Plan mode enforcement in commands** — `EnterPlanMode` / `ExitPlanMode` tool calls embedded directly in slash command markdown so Claude Code enforces them automatically.
+
+---
+
 ## [14.3.0] — 2026-04-24
 
 ### Production Readiness

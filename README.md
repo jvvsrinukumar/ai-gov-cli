@@ -2,7 +2,7 @@
 
 > Scan-adaptive governance framework for Claude Code. Detects your stack, generates steering files, hooks, spec templates, and a master CLAUDE.md — all tailored to what's actually in your project.
 
-**Version:** 15.0.0
+**Version:** 15.1.0
 **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python
 **Agent:** Claude Code
 
@@ -36,6 +36,7 @@ What you get:
 
 - **Node.js** >= 18
 - **jq** — all hooks depend on it
+- **Windows only** — Git Bash or WSL2 required for hooks to fire. The CLI (`ai-gov init`) runs fine on bare Windows, but hooks are bash scripts invoked via `bash script.sh`. Without Git Bash or WSL2 in PATH, hooks are silently skipped and governance enforcement is inactive.
 
 ```bash
 # macOS
@@ -46,6 +47,8 @@ sudo apt install jq
 
 # Windows (winget)
 winget install jqlang.jq
+# Also install Git Bash: https://git-scm.com/download/win
+# Or enable WSL2: wsl --install
 ```
 
 ### Option 1: npx (no install)

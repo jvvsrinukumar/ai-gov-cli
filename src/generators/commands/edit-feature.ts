@@ -1,8 +1,7 @@
 import type { GovernanceConfig } from '../../types.js';
 
 export function generateEditFeatureCommand(c: GovernanceConfig): string {
-    const { profile, scan } = c;
-    const featuresDir = profile.featuresDir.replace(/\/$/, '');
+    const { profile } = c;
     const stackDisplay = profile.stackDisplay;
     const layerFlow = profile.layerFlow;
     const testCmd = profile.testCmd || 'run tests';

@@ -1,13 +1,10 @@
 import type { GovernanceConfig } from '../../types.js';
 
 export function generateExploreCommand(c: GovernanceConfig): string {
-    const { profile, project } = c;
-    const stackDisplay = profile.stackDisplay;
-    const testCmd = profile.testCmd || 'run tests';
-    const featuresDir = profile.featuresDir.replace(/\/$/, '');
-    const appName = project.appName.toLowerCase().replace(/\s+/g, '-');
+  const { profile } = c;
+  const stackDisplay = profile.stackDisplay;
 
-    return `# /explore — Understand Before Acting (Plan Mode · Read-Only Phase)
+  return `# /explore — Understand Before Acting (Plan Mode · Read-Only Phase)
 
 **Stack:** ${stackDisplay}
 

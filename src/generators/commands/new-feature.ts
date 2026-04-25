@@ -51,12 +51,12 @@ function getPhases(c: GovernanceConfig): string {
 function getExampleFeature(c: GovernanceConfig): string {
     switch (c.stack) {
         case 'flutter': return 'user_profile';
-        case 'kotlin':  return 'user_profile';
-        case 'react':   return 'user-profile';
+        case 'kotlin': return 'user_profile';
+        case 'react': return 'user-profile';
         case 'angular': return 'user-profile';
-        case 'nodejs':  return 'user-auth';
-        case 'python':  return 'user_auth';
-        default:        return 'my-feature';
+        case 'nodejs': return 'user-auth';
+        case 'python': return 'user_auth';
+        default: return 'my-feature';
     }
 }
 
@@ -100,7 +100,7 @@ ${fd}/${featureName}/router${ext}`;
 }
 
 export function generateNewFeatureCommand(c: GovernanceConfig): string {
-    const { profile, scan, project } = c;
+    const { profile } = c;
     const exampleFeature = getExampleFeature(c);
     const phases = getPhases(c);
     const featuresDir = profile.featuresDir.replace(/\/$/, '');
