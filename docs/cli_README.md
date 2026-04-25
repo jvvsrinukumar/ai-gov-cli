@@ -1,10 +1,10 @@
 # Governed AI Development — Architectural Guardrails for Claude Code
 
-> **The first framework that makes AI stop, plan, and ask before writing code.**
+> **A structured context injection system with shell-based hard stops and plan mode enforcement for AI-assisted development.**
 
-AI coding tools generate code at machine speed. This framework ensures that speed doesn't come at the cost of architecture, consistency, or maintainability.
+AI coding tools generate code at machine speed. This framework makes that speed more consistent — same architecture, same patterns, same file structure across sessions. It does not make Claude deterministic or correct. It gives Claude a better starting point each session and enforces hard stops on the most dangerous operations.
 
-**Version:** 14.3.0 · **Agent:** Claude Code · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · Python
+**Version:** 15.1.0 · **Agent:** Claude Code · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · Python
 
 ---
 
@@ -35,6 +35,17 @@ ai-gov init --update-hooks     # update only stale hooks after version upgrade
 ai-gov init --overwrite        # regenerate everything
 ```
 
+### Governance Commands (inside Claude Code)
+
+After init, run these inside a `claude` session:
+
+```
+/audit          ← 12-step project truth check — scores governance, architecture,
+                  code patterns, feature structure, test coverage, dead code.
+                  Self-healing: directly updates .claude/steering/ where stale.
+                  Safe to rerun every sprint — scorecard improves as issues fixed.
+```
+
 ---
 
 ## What Problem This Solves
@@ -53,6 +64,7 @@ This framework makes Claude Code **predictable** — same architecture, same pat
 ├── settings.json                ← 11 hook registrations
 ├── custom-hooks.json            ← Your custom hooks (never overwritten)
 ├── steering/                    ← Architecture, naming, hard rules, workflow (8 files)
+│   └── architecture.md          ← includes Zone Rules if legacy zones detected (v14.3+)
 ├── hooks/                       ← 11 enforcement scripts
 └── extensions/                  ← jira-sync, verify, retrospective
 
@@ -60,17 +72,20 @@ specs/
 └── _template/                   ← requirements.md, design.md, tasks.md
 ```
 
+> **Legacy Zone Detection (v14.3+):** If your project has mixed architecture (e.g. `lib/screens/` alongside `lib/features/` in Flutter, or NgModule alongside standalone in Angular), the CLI detects this at `init` time and bakes "Zone Rules" into `architecture.md` and `coding-standards.md` — specifying which patterns to follow in each zone.
+
 ---
 
-## 5 Task Types
+## 6 Governance Commands (all use plan mode)
 
-| Type | Trigger | What Claude Does |
-|------|---------|-----------------|
-| **New Feature** | "create", "build X" | Spec first → plan → STOP for approval → implement by phase |
-| **Edit Feature** | "update feature", "add X to Y" | Read existing spec → update → STOP → implement new tasks only |
-| **Bug Fix** | "fix", "broken" | Read file → root cause → minimal fix → no refactoring |
-| **Refactor** | "refactor", "clean up" | Impact analysis → STOP for approval → tests must pass |
-| **Hotfix** | "urgent", "prod issue" | Fix immediately → document after → flag for review |
+| Command | Gates | What Claude Does |
+|---------|-------|-----------------|
+| **`/new-feature [name]`** | 3 | Spec first → 3-gate approval → implement by phase |
+| **`/edit-feature [name]`** | 3 | Read existing spec → update → STOP → implement new tasks only |
+| **`/explore [scope]`** | 1 | Read code → code map + findings → choose: create spec / update spec / fix / refactor |
+| **`/fix [description]`** | 1 | Read → root cause + proposed fix → STOP for approval → apply |
+| **`/refactor [scope]`** | 1 | Read → impact analysis → STOP for approval → tests before → refactor → tests after |
+| **`/hotfix [issue]`** | 1 | Fast diagnosis → STOP for confirmation → apply → post-fix summary |
 
 ---
 
@@ -96,12 +111,12 @@ specs/
 
 | Stack | What Gets Detected |
 |-------|-------------------|
-| **Flutter** | BLoC/Riverpod/Provider/GetX, get_it, go_router, Dio, Hive/Drift/Isar, freezed, FVM |
-| **Kotlin** | Compose/XML, Hilt/Koin/Dagger, StateFlow/LiveData, Room/Realm, Firebase |
-| **Node.js** | NestJS/Express/Fastify, Prisma/TypeORM/Mongoose, 17 detection categories, monorepo |
-| **React** | Next.js App/Pages Router, Zustand/Redux/React Query, Tailwind |
-| **Angular** | Angular 14-18+, Signals, NgRx/NGXS, Angular Material, standalone |
-| **Python** | FastAPI, SQLAlchemy, JWT, Redis/Celery, poetry/uv/pipenv, ruff/black |
+| **Flutter** | BLoC/Riverpod/Provider/GetX, get_it+injectable, go_router/auto_route, Dio, Hive/Drift/Isar, freezed, FVM, easy_localization, legacy zones (lib/screens, lib/pages) |
+| **Kotlin** | Compose/XML, Hilt/Koin/Dagger, StateFlow/LiveData, Room/Realm, Firebase, Kotlin Multiplatform |
+| **Node.js** | NestJS/Express/Fastify, Prisma/TypeORM/Drizzle/Mongoose, tsyringe/inversify/typedi, BullMQ/Bull, winston/pino, class-validator, monorepo, 17 detection categories |
+| **React** | Next.js App/Pages Router, Zustand/Redux/Jotai/React Query, Tailwind/MUI/Mantine/Chakra/Ant Design, React Hook Form+Zod, vitest/Jest, legacy class components |
+| **Angular** | Angular 14-18+, Signals, NgRx/NGXS/Akita, Angular Material, standalone/NgModule, Nx workspace, SSR, ngx-translate, legacy module detection |
+| **Python** | FastAPI/Django/Flask, SQLAlchemy/SQLModel, JWT/passlib/OAuth2, Redis/Celery/RQ, poetry/uv/pipenv, ruff/black, pytest, httpx, structlog/loguru |
 
 ---
 
@@ -109,25 +124,43 @@ specs/
 
 | Document | What It Covers |
 |----------|---------------|
-| **[Setup Guide](docs/setup-guide.md)** | Step-by-step for macOS, Linux, Windows |
-| **[Prompt Guide](docs/prompt-guide.md)** | How to prompt Claude Code — all 5 task types |
-| **[Deep Dive](docs/deep-dive.md)** | Complete technical reference — scanners, hooks, templates |
-| **[Developer Commands](docs/developer-commands.md)** | Claude Code commands + daily workflow |
-| **[Team Feedback Guide](docs/team-feedback-guide.md)** | 30 questions to collect developer feedback |
-| **[CHANGELOG](CHANGELOG.md)** | Version history v10 → v14.3 |
-| **[CONTRIBUTING](CONTRIBUTING.md)** | How to add scanners, hooks, generators |
+| **[Setup Guide](docs/cli_setup_guide.md)** | Step-by-step for macOS, Linux, Windows — what Claude shows on first launch |
+| **[Governance Commands](docs/cli_governance_commands.md)** | Full reference — 5 slash commands, plan mode, 3-gate spec approval, phase-selective implementation, require-task-type hook, enforcement chain, stack-specific phases |
+| **[Prompt Guide](docs/cli_prompt_guide.md)** | Quick reference — commands, fallback syntax, anti-patterns |
+| **[Deep Dive](docs/cli_deep_dive.md)** | Complete technical reference — scanners, hooks, templates, /audit 12-step |
+| **[Developer Commands](docs/cli_developer_commands.md)** | Claude Code built-in commands + graphify + daily workflow cheatsheet |
+| **[CHANGELOG](docs/cli_CHANGELOG.md)** | Version history v10 → v14.3 |
 
 ---
 
 ## Honest Assessment
 
-**What this does well:** Architectural consistency (~85%), prevents catastrophic mistakes, forces planning before coding, session continuity.
+### What is actually enforced (deterministic — cannot be bypassed by prompting)
 
-**What this doesn't do:** Doesn't make AI write better algorithms, doesn't replace code review, ~15-20% bypass rate, adds overhead to trivial tasks.
+- **Shell hooks** — block secrets, force-push, rm -rf, dangerous package installs. Fire at the OS level regardless of what the user says.
+- **Plan mode gates** — `EnterPlanMode` physically blocks `Write`, `Edit`, `Bash`. All 6 commands use it. The gate is real, not a polite instruction.
 
-**When to use:** Teams of 2+, projects 6+ months, enterprise work.
+### What is best-effort (Claude reads and tries to follow — may drift)
 
-**Not a fit:** Throwaway scripts, hackathons, solo prototypes under 10 files.
+- **Steering files** — markdown injected into Claude's context each session. Claude follows them until context pressure, long sessions, or assertive prompting overrides them. There is no enforcement mechanism in the files themselves.
+- **`/audit` health scores** — Claude reads source files and estimates patterns. For large codebases (50+ files, 3000+ line models), Claude samples and approximates. The scores are Claude's best judgment, not static analysis output.
+- **Step 11 self-healing** — Claude writes directly to `.claude/steering/` based on its own gap analysis. If the analysis is wrong, the steering files confidently describe a project that doesn't exist. No human review gate before the write.
+
+### Known limitations
+
+- **jq dependency** — all 11 hooks silently fail if jq is not installed. Check with `jq --version` after setup.
+- **CLI only** — hooks, session-continuity, and slash commands require Claude Code terminal mode. They do not work in the VS Code or Cursor IDE extension.
+- **Installation friction** — requires Node.js 18+, npm, jq, Claude Code CLI, and this repo built and linked. Windows requires WSL2 first.
+
+### When to use
+
+| Situation | Fit |
+|-----------|-----|
+| 2-5 devs, 6+ month project, all on Claude Code CLI | Good fit |
+| Solo developer wanting session continuity + secrets blocking | Good fit (worth the setup) |
+| Enterprise / managed machines / IDE extension users | Poor fit — hooks won't fire |
+| Hackathon / prototype / under 10 files | No value — overhead dominates |
+| Expecting CI-grade enforcement | Wrong tool — use real linters and CI checks instead |
 
 ---
 

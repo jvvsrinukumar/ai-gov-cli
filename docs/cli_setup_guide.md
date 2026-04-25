@@ -68,7 +68,7 @@ npm run build
 npm link
 ```
 
-Verify: `ai-gov --version` → should show `14.3.0`
+Verify: `ai-gov --version` → should show `15.0.0`
 
 **What `npm link` does:** Creates a global symlink from `ai-gov` to your local build. No npm publish needed. The command `ai-gov` now works from any project directory on your machine.
 
@@ -126,19 +126,61 @@ echo '{"tool_input":{"command":"git push --force"}}' | bash .claude/hooks/block-
 head -2 .claude/hooks/protect-files.sh
 # Should show:
 # #!/usr/bin/env bash
-# # HOOK_VERSION=14.3.0
+# # HOOK_VERSION=15.0.0
 ```
 
 ---
 
-## Step 6: Start Using with Claude Code
+## Step 6: Start Claude Code — What You'll See
 
 ```bash
 # From your project directory
 claude
 ```
 
-Claude Code automatically reads `.claude/CLAUDE.md` and follows your governance rules.
+Claude Code automatically reads `.claude/CLAUDE.md` and all 8 steering files on startup.
+
+### What Claude Shows When It First Loads
+
+When you open a governed project in Claude Code, Claude loads your governance context immediately. Here is what a Flutter project looks like on first launch:
+
+```
+> claude
+
+Claude Code (claude-sonnet-4-6)  ✓ Connected
+
+Reading governance files...
+  .claude/CLAUDE.md          ✓
+  .claude/steering/architecture.md          ✓  (Flutter BLoC — clean arch)
+  .claude/steering/coding-standards.md      ✓
+  .claude/steering/naming-conventions.md    ✓
+  .claude/steering/hard-rules.md            ✓
+  .claude/steering/spec-first-workflow.md   ✓
+  .claude/steering/workflow-classification.md ✓
+  .claude/steering/constitution.md          ✓
+  .claude/steering/test-strategy.md         ✓
+
+Hooks active: 11 (check-spec-exists, check-secrets, block-dangerous,
+  check-file-size, protect-files, session-continuity, format-code,
+  analyze-code, check-feature-readme, check-consistency, post-task-checklist)
+
+Stack: Flutter (BLoC + get_it + go_router + Dio + Hive)
+Ready. I will follow all governance rules in this session.
+
+>
+```
+
+### Session Start — What Claude Outputs Next
+
+The `session-continuity` hook fires immediately and shows your progress:
+
+```
+[session-continuity] Last session: 2026-04-24
+  Feature in progress: user_profile
+  Tasks completed: 3/7 (phases 1-3 done)
+  Next: Phase 4 — Repository layer
+  High-risk files modified: lib/core/di/injection.dart
+```
 
 ### Your First Test — Try This Prompt
 
@@ -149,20 +191,59 @@ Claude Code automatically reads `.claude/CLAUDE.md` and follows your governance 
 Build a simple hello world screen.
 ```
 
-**What should happen:**
+**What Claude does, step by step:**
 
-1. Claude says "This is a New Feature task"
-2. Claude reads steering files (architecture.md, coding-standards.md)
-3. Claude checks if `specs/hello_world/` exists — it doesn't
-4. Claude creates spec from template and fills requirements.md, design.md, tasks.md
-5. Claude shows you the plan
-6. Claude **STOPS** and waits for your "go ahead"
-7. After you confirm, Claude implements in phase order
+1. Classifies task as "New Feature" (reads `workflow-classification.md`)
+2. Reads `architecture.md` and `coding-standards.md`
+3. Checks if `specs/hello_world/` exists — it doesn't
+4. Creates spec from template: fills `requirements.md`, `design.md`, `tasks.md`
+5. Shows the full plan (feature folder structure, phases, acceptance criteria)
+6. **STOPS and waits for your "go ahead"**
+7. After confirmation: implements phase by phase, hook fires after each file written
 
 **If Claude skips straight to coding without specs:**
 - Is `.claude/CLAUDE.md` present? → `ls .claude/CLAUDE.md`
 - Is `jq` installed? → `jq --version`
 - Are hooks registered? → `cat .claude/settings.json | head -20`
+
+### Your First Governance Check — Run /audit
+
+After init, run an audit to verify the CLI picked up your stack correctly and all steering is accurate:
+
+```
+/audit
+```
+
+Claude will run a 12-step check and return a health scorecard:
+
+```
+/audit — Project Truth Check
+════════════════════════════════════════
+Stack: Flutter (BLoC · get_it · go_router)
+Audit date: 2026-04-25
+
+HEALTH SCORECARD
+────────────────
+Governance       A  97/100  All 8 steering files present, hooks v15.0.0
+Architecture     B  88/100  Layer flow clean — 1 widget calls repo directly
+Code Patterns    A  92/100  94% BLoC usage, 2 files still use setState
+Feature Structure B  80/100  4/5 features have spec + README
+Test Coverage    C  65/100  3 features untested, BLoC tests missing
+Dead Code        A  95/100  2 unused exports found
+
+OVERALL: B  86/100  PASS WITH UPDATES
+════════════════════════════════════════
+
+Step 11: Updating .claude/steering/architecture.md ... done
+Step 11: Updating .claude/steering/coding-standards.md ... done
+
+ACTION ITEMS
+1. Add BLoC unit tests for: auth_cubit, profile_cubit
+2. Move direct repo call in profile_widget.dart to cubit
+3. Create spec for: notifications feature
+```
+
+The scorecard improves each time you run `/audit` and fix the findings.
 
 ---
 

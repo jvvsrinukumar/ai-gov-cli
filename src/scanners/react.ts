@@ -157,6 +157,40 @@ export function scanReact(
         }
     }
 
+    // Legacy zone detection — flat src/components alongside src/features = dual-mode
+    const hasFeaturesDir = profile.featuresDir !== profile.sourceDir ||
+        existsSync(join(projectDir, 'src', 'features')) || existsSync(join(projectDir, 'features'));
+    const hasComponentsDir = existsSync(join(projectDir, 'src', 'components')) || existsSync(join(projectDir, 'components'));
+    const hasPagesDir = existsSync(join(projectDir, 'src', 'pages')) || existsSync(join(projectDir, 'pages'));
+
+    if (hasFeaturesDir && hasComponentsDir) {
+        // Check if components dir has class-based components (legacy React pattern)
+        const compRoot = existsSync(join(projectDir, 'src', 'components'))
+            ? join(projectDir, 'src', 'components') : join(projectDir, 'components');
+        const classCompCount = findFilesRecursive(compRoot, 4, f => /\.(tsx?|jsx?)$/.test(f))
+            .filter(f => /extends\s+(React\.)?Component/.test(readFileSafe(f))).length;
+        if (classCompCount > 0) {
+            scan.hasLegacyZones = true;
+            scan.legacyZones = ['components/ (class-based)'];
+            scan.cleanZones  = [profile.featuresDir];
+            scan.legacyZoneNote = `Dual-mode: ${classCompCount} class component(s) in components/ (legacy) alongside functional feature modules in ${profile.featuresDir} (modern hooks)`;
+            log.detected(`Legacy zones: ${classCompCount} class component(s)`);
+        }
+    } else if (!hasFeaturesDir && hasComponentsDir && hasPagesDir) {
+        // Pre-features flat structure — no clean zone yet
+        const compRoot = existsSync(join(projectDir, 'src', 'components'))
+            ? join(projectDir, 'src', 'components') : join(projectDir, 'components');
+        const classCompCount = findFilesRecursive(compRoot, 4, f => /\.(tsx?|jsx?)$/.test(f))
+            .filter(f => /extends\s+(React\.)?Component/.test(readFileSafe(f))).length;
+        if (classCompCount > 0) {
+            scan.hasLegacyZones = true;
+            scan.legacyZones = ['components/ (class-based)', 'pages/ (flat routing)'];
+            scan.cleanZones  = [];
+            scan.legacyZoneNote = `Legacy-only structure: ${classCompCount} class component(s) — no features/ clean arch zone detected`;
+            log.detected(`Legacy zones: class components only`);
+        }
+    }
+
     // Scaffold
     if (fileExists(projectDir, 'plopfile.js') || fileExists(projectDir, 'plopfile.ts') || fileExists(projectDir, 'plopfile.mjs')) {
         scan.scaffoldTool = 'Plop'; scan.scaffoldCmdFeature = 'npx plop feature';

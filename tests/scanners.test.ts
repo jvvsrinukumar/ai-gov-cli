@@ -213,3 +213,23 @@ describe('Python FastAPI scanner', () => {
         expect(scan.detectedValidator).toBe(true);
     });
 });
+
+describe('Flutter legacy zone scanner', () => {
+    const { scan } = runScan('flutter', 'flutter-legacy');
+
+    test('detects legacy zones (lib/screens, lib/models, lib/services)', () => {
+        expect(scan.hasLegacyZones).toBe(true);
+        expect(scan.legacyZones).toContain('lib/screens/');
+        expect(scan.legacyZones).toContain('lib/models/');
+        expect(scan.legacyZones).toContain('lib/services/');
+    });
+
+    test('detects clean zone (lib/features)', () => {
+        expect(scan.cleanZones).toContain('lib/features/');
+    });
+
+    test('legacyZoneNote describes dual-mode', () => {
+        expect(scan.legacyZoneNote).toContain('Dual-mode');
+        expect(scan.legacyZoneNote).toContain('lib/features/');
+    });
+});

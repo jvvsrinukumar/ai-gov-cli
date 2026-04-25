@@ -20,6 +20,12 @@ import { generateExtensions } from './extensions.js';
 import { generateMonorepoGovernance } from './monorepo.js';
 import { generateAllHooks } from './hooks/index.js';
 import { generateAuditCommand } from './commands/audit.js';
+import { generateNewFeatureCommand } from './commands/new-feature.js';
+import { generateEditFeatureCommand } from './commands/edit-feature.js';
+import { generateFixCommand } from './commands/fix.js';
+import { generateRefactorCommand } from './commands/refactor.js';
+import { generateHotfixCommand } from './commands/hotfix.js';
+import { generateExploreCommand } from './commands/explore.js';
 
 export function runGovernance(config: GovernanceConfig): void {
     console.log('');
@@ -113,6 +119,12 @@ export function runGovernance(config: GovernanceConfig): void {
 
     log.section('Commands:');
     safeWrite(join(dir, '.claude', 'commands', 'audit.md'), generateAuditCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'new-feature.md'), generateNewFeatureCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'edit-feature.md'), generateEditFeatureCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'fix.md'), generateFixCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'refactor.md'), generateRefactorCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'hotfix.md'), generateHotfixCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'explore.md'), generateExploreCommand(config), opts);
 
     log.section('Spec templates:');
     generateSpecTemplates(config, opts);

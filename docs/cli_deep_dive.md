@@ -152,11 +152,51 @@ Hook reads `profile.formatCmd` which the scanner sets **only** when the formatte
 Same pattern as format-code.sh. When linter is in deps but no config file exists on disk, the hook emits a WARNING comment explaining the situation rather than silently doing nothing.
 
 ### /audit Command (v14.3+)
-`ai-gov init` writes `.claude/commands/audit.md` — a Claude Code custom slash command activated by typing `/audit`. Performs a governance health check scoped to `.claude/` only (does NOT deep scan source files). Two use cases:
-1. **First run** — verify all files are generated correctly after `ai-gov init`
-2. **Post-update** — check which hooks are stale (HOOK_VERSION mismatch) after `ai-gov init --update-hooks`
+`ai-gov init` writes `.claude/commands/audit.md` — a Claude Code custom slash command activated by typing `/audit`. This is the **project truth check** — not just a governance file check. Claude reads actual source files, counts real code patterns, detects structural gaps, and directly updates `.claude/steering/` files to reflect reality.
 
-The command has project-specific data baked in at generation time: arch pattern, detected tools, hook version, expected hook list, high-risk files. Output is a structured PASS/ACTION NEEDED report.
+**Design principle:** `ai-gov init` uses a fast structural scan (folder names). `/audit` does the deep behavioral scan (reads code). Together they produce 100% accurate steering before development starts — with no round-trip back to the CLI needed.
+
+**12 audit steps:**
+
+| Step | What Claude does |
+|------|-----------------|
+| 1 | Reads governance files — exist & non-empty |
+| 2 | Checks hook versions — STALE/missing |
+| 3 | Checks architecture alignment — steering matches detected flow |
+| 4 | Checks settings.json hook registration |
+| 5 | Spot-checks steering freshness (ORM, test, linter coverage) |
+| 6 | **Deep code pattern scan** — reads actual source files, counts legacy vs modern signals per folder (setState/BLoC for Flutter, class/functional for React, fat/thin components for Angular, fat routes/layered for Node.js, fat routers/service layer for Python) |
+| 7 | **Feature folder structure audit** — every feature folder matches expected layer structure? Missing layers flagged per feature |
+| 8 | **Directory accuracy check** — did init scan detect the right sourceDir/featuresDir? Lists undocumented significant directories |
+| 9 | **Dead code scan** — empty folders, orphaned files, tests without source, placeholder-named files |
+| 10 | **New feature blueprint** — exact folder/file tree for the next feature, using actual patterns found in Step 6 |
+| 11 | **Steering self-update** — Claude directly writes accurate zone rules, undocumented dirs, and correct patterns into `.claude/steering/architecture.md` and `.claude/steering/coding-standards.md` |
+| 12 | Final report with Health Score (A–D) and VERDICT |
+
+**VERDICT types:**
+- `PASS` — everything accurate, development can start
+- `PASS WITH UPDATES` — steering gaps were auto-fixed by the audit, development can start
+- `ACTION NEEDED` — developer must decide something (dead code, incomplete features) — steering gaps already fixed
+
+**`ai-gov init --overwrite` is NOT suggested for code pattern gaps** — Claude fixes those directly in Step 11. Only `--update-hooks` is suggested when hook versions are stale.
+
+### Legacy Zone Detection (v14.3+)
+Scanners detect when a project has both legacy and clean-architecture zones coexisting. Detected at `ai-gov init` time and baked into steering files — Claude reads correct patterns for each zone on every prompt.
+
+**Flutter:** `lib/screens/` or `lib/pages/` alongside `lib/features/` → dual-mode (legacy MVC + clean arch)
+**React:** Class components (`extends Component`) in `src/components/` alongside `src/features/` → dual-mode
+**Angular:** `app.module.ts` (NgModule) alongside `app.config.ts` (standalone) → migration in progress
+**Node.js:** `routes/ + controllers/` coexistence → already handled via `mixedArch` flag (v14.2)
+
+**Steering files updated:**
+- `architecture.md` → adds "Zone Rules — Dual-Mode Project" table with per-zone rules
+- `coding-standards.md` → adds "Zone Rules" section: legacy zone (match existing), clean zone (follow layer flow)
+
+**Hard rules baked in:** new features go in clean zone; bug fixes in legacy zone must not refactor.
+
+**`/audit` Step 6** verifies zone rules are still present in steering files after being detected at init. Missing → −10 health score penalty.
+
+**New scan fields:** `hasLegacyZones: boolean`, `legacyZones: string[]`, `cleanZones: string[]`, `legacyZoneNote: string`
 
 ### 200-Line File Size (v14.3+, all stacks)
 All stacks active: Flutter, Kotlin, React, Angular, Node.js, Python. SwiftUI = no-op.
@@ -206,27 +246,28 @@ All commands use `bash` prefix for Windows compatibility. custom-hooks.json entr
 
 ## Test Suite (v14.3+)
 
-**103 tests across 2 test files.**
+**110 tests across 2 test files.**
 
-### tests/scanners.test.ts — 40 tests
+### tests/scanners.test.ts — 43 tests
 Stack fixtures in `tests/fixtures/` (minimal manifest files per stack):
 
 | Fixture | File | Key assertions |
 |---|---|---|
 | flutter-bloc | pubspec.yaml | state=BLoC, DI=get_it+injectable, router=go_router |
 | flutter-riverpod | pubspec.yaml | state=Riverpod, DI=Riverpod |
+| flutter-legacy | pubspec.yaml + lib/screens,models,services,features | hasLegacyZones=true, legacyZones, cleanZones |
 | react-nextjs | package.json | nextRouter=App Router, RSC=true, state=Zustand+React Query |
 | nodejs-nestjs | package.json | subtype=nestjs, ORM=Prisma, lang=TypeScript |
 | kotlin-compose | app/build.gradle.kts | UISystem=compose, DI=Hilt, state=StateFlow |
 | angular-17 | package.json | signalState=true, state=NgRx |
 | python-fastapi | pyproject.toml | subtype=fastapi, ORM=SQLAlchemy, packageManager=poetry |
 
-### tests/generators.test.ts — 63 tests
+### tests/generators.test.ts — 67 tests
 Uses `makeConfig(stack, scanOverrides?, extras?)` helper — builds a minimal `GovernanceConfig` from a stack name and optional scan field overrides, then calls the generator and asserts key output strings.
 
 **Suites:**
-- `generateArchitecture` (8) — verifies structBlock adapts per `detectedArchPattern` (routes-models, layered, mixedArch, nestjs-standard, nestjs-usecase, python, flutter, kotlin)
-- `generateRootClaudeMd` (1), `generateMasterClaudeMd` (4), `generateCodingStandards` (4), `generateConstitution` (2)
+- `generateArchitecture` (10) — verifies structBlock adapts per `detectedArchPattern` (routes-models, layered, mixedArch, nestjs-standard, nestjs-usecase, python, flutter, kotlin); verifies legacy zone section emitted/absent
+- `generateRootClaudeMd` (1), `generateMasterClaudeMd` (4), `generateCodingStandards` (6), `generateConstitution` (2)
 - `generateWorkflow` (3), `generateAIUsagePolicy` (2), `generateSpecFirstWorkflow` (2)
 - `generateSettingsJson` (4) — writes to tmpdir, asserts JSON structure and hook registration
 - `generateCheckFileSize` (6) — verifies active vs no-op per stack, backend vs frontend skip patterns

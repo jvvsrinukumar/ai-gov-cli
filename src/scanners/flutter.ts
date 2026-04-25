@@ -120,6 +120,29 @@ export function scanFlutter(
         profile.errorPattern = 'Either<Failure, T> from fpdart — Left(failure) / Right(data)';
     }
 
+    // Legacy zone detection — lib/screens + lib/models + lib/services = legacy MVC
+    const libDir = join(projectDir, 'lib');
+    const hasScreens  = existsSync(join(libDir, 'screens'));
+    const hasRootModels   = existsSync(join(libDir, 'models'));
+    const hasRootServices = existsSync(join(libDir, 'services'));
+    const hasPages    = existsSync(join(libDir, 'pages'));
+    const hasFeatures = existsSync(join(libDir, 'features'));
+
+    if (hasScreens || hasPages || (hasRootModels && hasRootServices)) {
+        const legacy: string[] = [];
+        if (hasScreens) legacy.push('lib/screens/');
+        if (hasPages)   legacy.push('lib/pages/');
+        if (hasRootModels)   legacy.push('lib/models/');
+        if (hasRootServices) legacy.push('lib/services/');
+        scan.hasLegacyZones = true;
+        scan.legacyZones = legacy;
+        scan.cleanZones  = hasFeatures ? ['lib/features/'] : [];
+        scan.legacyZoneNote = hasFeatures
+            ? `Dual-mode: legacy MVC zones (${legacy.join(', ')}) coexist with clean architecture (lib/features/)`
+            : `Legacy-only structure: ${legacy.join(', ')} — no lib/features/ clean arch zone detected`;
+        log.detected(`Legacy zones: ${legacy.join(', ')}`);
+    }
+
     // High-risk
     scan.highRiskFiles.push('main.dart');
     if (fileExists(projectDir, 'lib', 'app.dart')) scan.highRiskFiles.push('app.dart');

@@ -55,7 +55,7 @@ function makeConfig(
         project: DEFAULT_PROJECT,
         blocks,
         isBackend: stack === 'nodejs' || stack === 'python',
-        hookVersion: '14.3.0',
+        hookVersion: '15.1.0',
         projectDir: extras.projectDir ?? '/tmp/test-project',
         specFirstEnabled: extras.specFirstEnabled ?? false,
         conflictMode: 'keep',
@@ -134,6 +134,24 @@ describe('generateArchitecture', () => {
             expect(out).toContain('## General Rules');
         }
     });
+
+    test('flutter legacy zones: emits Zone Rules section in architecture.md', () => {
+        const out = generateArchitecture(makeConfig('flutter', {
+            hasLegacyZones: true,
+            legacyZones: ['lib/screens/', 'lib/models/', 'lib/services/'],
+            cleanZones: ['lib/features/'],
+            legacyZoneNote: 'Dual-mode: legacy MVC zones (lib/screens/, lib/models/, lib/services/) coexist with clean architecture (lib/features/)',
+        }));
+        expect(out).toContain('## Zone Rules — Dual-Mode Project');
+        expect(out).toContain('lib/screens/');
+        expect(out).toContain('lib/features/');
+        expect(out).toContain('Never add new features to legacy zones');
+    });
+
+    test('no legacy zones: Zone Rules section absent', () => {
+        const out = generateArchitecture(makeConfig('flutter'));
+        expect(out).not.toContain('## Zone Rules — Dual-Mode Project');
+    });
 });
 
 // ─── CLAUDE.md ────────────────────────────────────────────────────────────────
@@ -199,6 +217,24 @@ describe('generateCodingStandards', () => {
             const out = generateCodingStandards(makeConfig(stack));
             expect(out.length).toBeGreaterThan(200);
         }
+    });
+
+    test('flutter legacy zones: emits Zone Rules section in coding-standards.md', () => {
+        const out = generateCodingStandards(makeConfig('flutter', {
+            hasLegacyZones: true,
+            legacyZones: ['lib/screens/', 'lib/models/'],
+            cleanZones: ['lib/features/'],
+            legacyZoneNote: 'Dual-mode detected',
+        }));
+        expect(out).toContain('## Zone Rules — Dual-Mode Project');
+        expect(out).toContain('lib/screens/');
+        expect(out).toContain('lib/features/');
+        expect(out).toContain('Bug fixes only');
+    });
+
+    test('no legacy zones: Zone Rules section absent from coding-standards.md', () => {
+        const out = generateCodingStandards(makeConfig('flutter'));
+        expect(out).not.toContain('## Zone Rules — Dual-Mode Project');
     });
 });
 
@@ -369,7 +405,7 @@ describe('generateCheckFileSize', () => {
 describe('generateCheckSecrets', () => {
     test('contains HOOK_VERSION header', () => {
         const out = generateCheckSecrets(makeConfig('nodejs'));
-        expect(out).toContain('HOOK_VERSION=14.3.0');
+        expect(out).toContain('HOOK_VERSION=15.1.0');
     });
 
     test('contains AWS AKIA key pattern', () => {
@@ -411,7 +447,7 @@ describe('generateProtectFiles', () => {
 
     test('contains HOOK_VERSION', () => {
         const out = generateProtectFiles(makeConfig('nodejs'));
-        expect(out).toContain('HOOK_VERSION=14.3.0');
+        expect(out).toContain('HOOK_VERSION=15.1.0');
     });
 });
 
@@ -514,7 +550,7 @@ describe('generateBlockDangerous', () => {
     test('contains rm -rf guard', () => {
         const out = generateBlockDangerous(makeConfig('nodejs'));
         expect(out).toContain('rm');
-        expect(out).toContain('HOOK_VERSION=14.3.0');
+        expect(out).toContain('HOOK_VERSION=15.1.0');
     });
 
     test('all stacks: non-empty valid bash', () => {

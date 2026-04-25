@@ -106,6 +106,23 @@ export function scanAngular(
         scan.detectedMonorepo = 'Nx'; log.detected('Monorepo: Nx');
     }
 
+    // Legacy zone detection — NgModule style alongside standalone components = dual-mode
+    const hasNgModule    = existsSync(join(srcDir, 'app', 'app.module.ts'));
+    const hasStandalone  = existsSync(join(srcDir, 'app', 'app.config.ts'));
+    if (hasNgModule && hasStandalone) {
+        scan.hasLegacyZones = true;
+        scan.legacyZones = ['NgModule-based components'];
+        scan.cleanZones  = ['Standalone components (app.config.ts)'];
+        scan.legacyZoneNote = `Dual-mode Angular: NgModule pattern (app.module.ts) coexists with standalone components (app.config.ts) — migration in progress`;
+        log.detected('Legacy zones: NgModule + standalone dual-mode');
+    } else if (hasNgModule && !hasStandalone) {
+        scan.hasLegacyZones = true;
+        scan.legacyZones = ['NgModule-based (all components)'];
+        scan.cleanZones  = [];
+        scan.legacyZoneNote = `Legacy NgModule-only project — no standalone components detected. Consider migrating with ng generate @angular/core:standalone`;
+        log.detected('Legacy zones: NgModule-only');
+    }
+
     // Scaffold
     if (pkgHas(projectDir, '@angular/cli')) {
         scan.scaffoldTool = 'Angular CLI'; scan.scaffoldCmdFeature = 'ng generate component features/feature-name';

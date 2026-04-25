@@ -16,8 +16,8 @@ export function generateHooksReadme(c: GovernanceConfig): string {
     }
 
     const totalCount = c.specFirstEnabled
-        ? '11 scripts / 11 registrations (all use `bash` prefix for Windows compatibility)'
-        : '11 scripts / 10 registrations (check-spec-exists.sh generated but not registered — spec-first opt-in)';
+        ? '12 scripts / 12 registrations (all use `bash` prefix for Windows compatibility)'
+        : '12 scripts / 11 registrations (check-spec-exists.sh generated but not registered — spec-first opt-in)';
 
     const specRow = c.specFirstEnabled
         ? `| \`check-spec-exists.sh\` | PreToolUse Edit\\|Write\\|Bash | Yes | Block without spec + tasks.md + spec freshness |`
@@ -30,6 +30,7 @@ Total: ${totalCount}
 
 | Hook | Trigger | Blocks? | Purpose |
 |------|---------|:-------:|---------|
+| \`require-task-type.sh\` | UserPromptSubmit | Warn (configurable) | Advise governance command when unclassified dev task detected |
 | \`protect-files.sh\` | PreToolUse Edit\\|Write\\|Bash | Warn only | Warn on high-risk file edits |
 | \`check-secrets.sh\` | PreToolUse Edit\\|Write\\|Bash | Yes | Block AWS keys, API tokens, passwords in source |
 | \`session-continuity.sh\` | PreToolUse Edit\\|Write\\|Bash | No | Remind to resume from last task |
@@ -50,6 +51,8 @@ This works on macOS, Linux, Windows Git Bash, and WSL2. No \`chmod +x\` required
 - **Spec freshness** — \`check-spec-exists.sh\` warns when code >24h newer than spec or file count drifts from design.md
 - **Hook versioning** — Each hook has \`# HOOK_VERSION=X.Y.Z\`. Run \`--update-hooks\` to update stale hooks only
 - **Custom hooks** — Add to \`.claude/custom-hooks.json\` (never overwritten). Merged into \`settings.json\` on each run
+- **require-task-type.sh** — UserPromptSubmit hook (v14.3+). Detects unclassified dev tasks and recommends the correct governance command (/new-feature, /fix, etc.). Default: warn mode. To switch to block mode: change \`exit 0\` to \`exit 1\` at the bottom of the script.
+- **Governance commands** — 5 slash commands generated in \`.claude/commands/\`: \`/new-feature\` (plan mode + 3-gate spec), \`/edit-feature\`, \`/fix\`, \`/refactor\`, \`/hotfix\`
 
 ## Exit Codes
 - \`exit 0\` — allow

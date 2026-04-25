@@ -13,6 +13,7 @@ import { generateCheckFileSize } from './check-file-size.js';
 import { generatePostTaskChecklist } from './post-task-checklist.js';
 import { generateHooksReadme } from './hooks-readme.js';
 import { generateCheckSecrets } from './check-secrets.js';
+import { generateRequireTaskType } from './require-task-type.js';
 
 export function generateAllHooks(config: GovernanceConfig, opts: WriteOptions): void {
     const hooksDir = join(config.projectDir, '.claude', 'hooks');
@@ -29,5 +30,6 @@ export function generateAllHooks(config: GovernanceConfig, opts: WriteOptions): 
     w('check-consistency.sh', generateCheckConsistency(config));
     w('check-file-size.sh', generateCheckFileSize(config));
     w('post-task-checklist.sh', generatePostTaskChecklist(config));
+    w('require-task-type.sh', generateRequireTaskType(config));
     w('README.md', generateHooksReadme(config));
 }

@@ -21,8 +21,17 @@ export function generateSettingsJson(config: GovernanceConfig, opts: WriteOption
         log.kept('.claude/custom-hooks.json (user-owned)');
     }
 
-    // v14.1: All commands use bash prefix for Windows compatibility
+    // v14.3: All commands use bash prefix for Windows compatibility
     const bp = 'bash "$CLAUDE_PROJECT_DIR"/.claude';
+
+    const userPromptSubmitHooks = [
+        {
+            hooks: [
+                { type: 'command', command: `${bp}/hooks/require-task-type.sh`, timeout: 5, statusMessage: 'Checking task classification...' },
+            ],
+        },
+    ];
+
     const preToolUseHooks: object[] = [
         { type: 'command', command: `${bp}/hooks/protect-files.sh`, timeout: 10, statusMessage: 'Checking file protection...' },
         { type: 'command', command: `${bp}/hooks/check-secrets.sh`, timeout: 10, statusMessage: 'Scanning for secrets...' },
@@ -34,6 +43,7 @@ export function generateSettingsJson(config: GovernanceConfig, opts: WriteOption
     }
     const baseSettings = {
         hooks: {
+            UserPromptSubmit: userPromptSubmitHooks,
             PreToolUse: [
                 {
                     matcher: 'Edit|Write|Bash',

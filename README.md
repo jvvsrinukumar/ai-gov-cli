@@ -2,7 +2,7 @@
 
 > Scan-adaptive governance framework for Claude Code. Detects your stack, generates steering files, hooks, spec templates, and a master CLAUDE.md — all tailored to what's actually in your project.
 
-**Version:** 14.3.0
+**Version:** 15.0.0
 **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python
 **Agent:** Claude Code
 
@@ -115,7 +115,7 @@ Checks: CLAUDE.md exists, settings.json valid, all 10 hooks present, jq installe
 
 ```
 ============================================
- AI Governance v14.3.0 (Scan-Adaptive · Claude Code)
+ AI Governance v15.0.0 (Scan-Adaptive · Claude Code)
 ============================================
 
 --- Scanning project ---
