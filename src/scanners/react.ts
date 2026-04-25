@@ -1,7 +1,7 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import type { BaseProfile, ScanResult } from '../types.js';
-import { pkgHas, fileExists, dirExists, readFileSafe, findFilesRecursive, countFiles } from '../utils/file-helpers.js';
+import { pkgHas, fileExists, dirExists, readFileSafe, findFilesRecursive } from '../utils/file-helpers.js';
 import { log } from '../utils/logger.js';
 
 export function scanReact(
@@ -23,6 +23,24 @@ export function scanReact(
             log.detected('Next.js Pages Router');
         }
         profile.stackDisplay = 'React (Next.js)';
+
+        // Next.js backend deps — ORM, auth, API layer in same package.json
+        log.scanning('Next.js backend deps');
+        if (pkgHas(projectDir, '@prisma/client')) { scan.detectedORM = 'Prisma'; log.detected('ORM: Prisma'); }
+        else if (pkgHas(projectDir, 'drizzle-orm')) { scan.detectedORM = 'Drizzle'; log.detected('ORM: Drizzle'); }
+        else if (pkgHas(projectDir, 'typeorm')) { scan.detectedORM = 'TypeORM'; log.detected('ORM: TypeORM'); }
+        else if (pkgHas(projectDir, 'mongoose')) { scan.detectedORM = 'Mongoose'; log.detected('ORM: Mongoose'); }
+        else if (pkgHas(projectDir, '@vercel/postgres') || pkgHas(projectDir, 'pg')) { scan.detectedORM = 'pg (raw SQL)'; log.detected('DB: pg'); }
+
+        if (pkgHas(projectDir, 'next-auth') || pkgHas(projectDir, '@auth/nextjs')) { scan.detectedAuth = 'NextAuth.js'; log.detected('Auth: NextAuth.js'); }
+        else if (pkgHas(projectDir, '@clerk/nextjs')) { scan.detectedAuth = 'Clerk'; log.detected('Auth: Clerk'); }
+        else if (pkgHas(projectDir, '@supabase/auth-helpers-nextjs') || pkgHas(projectDir, '@supabase/ssr')) { scan.detectedAuth = 'Supabase Auth'; log.detected('Auth: Supabase'); }
+        else if (pkgHas(projectDir, 'lucia')) { scan.detectedAuth = 'Lucia'; log.detected('Auth: Lucia'); }
+
+        if (pkgHas(projectDir, '@trpc/server')) { scan.detectedAPIType = 'tRPC'; log.detected('API: tRPC'); }
+        else if (pkgHas(projectDir, 'graphql') && (pkgHas(projectDir, '@apollo/server') || pkgHas(projectDir, 'graphql-yoga'))) {
+            scan.detectedAPIType = 'GraphQL'; log.detected('API: GraphQL');
+        }
     }
 
     // State — server + client
@@ -69,6 +87,14 @@ export function scanReact(
     else if (pkgHas(projectDir, 'styled-components')) scan.detectedCSSApproach = 'styled-components';
     else if (pkgHas(projectDir, '@emotion/react')) scan.detectedCSSApproach = 'Emotion';
     if (scan.detectedCSSApproach) log.detected(`CSS: ${scan.detectedCSSApproach}`);
+
+    // UI component libraries
+    const uiLibs: string[] = [];
+    if (pkgHas(projectDir, '@mui/material') || pkgHas(projectDir, '@mui/joy')) uiLibs.push('MUI');
+    if (pkgHas(projectDir, '@mantine/core')) uiLibs.push('Mantine');
+    if (pkgHas(projectDir, '@chakra-ui/react')) uiLibs.push('Chakra UI');
+    if (pkgHas(projectDir, 'antd')) uiLibs.push('Ant Design');
+    if (uiLibs.length) { scan.detectedUILibs = uiLibs.join(', '); log.detected(`UI libs: ${scan.detectedUILibs}`); }
 
     // Build tool
     if (!scan.detectedBuildTool) {
@@ -128,6 +154,40 @@ export function scanReact(
         if (fileExists(projectDir, f)) {
             const bn = f.split('/').pop()!;
             if (!scan.highRiskFiles.includes(bn)) scan.highRiskFiles.push(bn);
+        }
+    }
+
+    // Legacy zone detection — flat src/components alongside src/features = dual-mode
+    const hasFeaturesDir = profile.featuresDir !== profile.sourceDir ||
+        existsSync(join(projectDir, 'src', 'features')) || existsSync(join(projectDir, 'features'));
+    const hasComponentsDir = existsSync(join(projectDir, 'src', 'components')) || existsSync(join(projectDir, 'components'));
+    const hasPagesDir = existsSync(join(projectDir, 'src', 'pages')) || existsSync(join(projectDir, 'pages'));
+
+    if (hasFeaturesDir && hasComponentsDir) {
+        // Check if components dir has class-based components (legacy React pattern)
+        const compRoot = existsSync(join(projectDir, 'src', 'components'))
+            ? join(projectDir, 'src', 'components') : join(projectDir, 'components');
+        const classCompCount = findFilesRecursive(compRoot, 4, f => /\.(tsx?|jsx?)$/.test(f))
+            .filter(f => /extends\s+(React\.)?Component/.test(readFileSafe(f))).length;
+        if (classCompCount > 0) {
+            scan.hasLegacyZones = true;
+            scan.legacyZones = ['components/ (class-based)'];
+            scan.cleanZones  = [profile.featuresDir];
+            scan.legacyZoneNote = `Dual-mode: ${classCompCount} class component(s) in components/ (legacy) alongside functional feature modules in ${profile.featuresDir} (modern hooks)`;
+            log.detected(`Legacy zones: ${classCompCount} class component(s)`);
+        }
+    } else if (!hasFeaturesDir && hasComponentsDir && hasPagesDir) {
+        // Pre-features flat structure — no clean zone yet
+        const compRoot = existsSync(join(projectDir, 'src', 'components'))
+            ? join(projectDir, 'src', 'components') : join(projectDir, 'components');
+        const classCompCount = findFilesRecursive(compRoot, 4, f => /\.(tsx?|jsx?)$/.test(f))
+            .filter(f => /extends\s+(React\.)?Component/.test(readFileSafe(f))).length;
+        if (classCompCount > 0) {
+            scan.hasLegacyZones = true;
+            scan.legacyZones = ['components/ (class-based)', 'pages/ (flat routing)'];
+            scan.cleanZones  = [];
+            scan.legacyZoneNote = `Legacy-only structure: ${classCompCount} class component(s) — no features/ clean arch zone detected`;
+            log.detected(`Legacy zones: class components only`);
         }
     }
 

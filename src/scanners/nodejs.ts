@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import type { BaseProfile, ScanResult } from '../types.js';
 import { pkgHas, findPackageJson, readFileSafe, fileExists, dirExists, findFilesRecursive, countFiles } from '../utils/file-helpers.js';
@@ -163,7 +163,7 @@ function scanFramework(projectDir: string, profile: BaseProfile, scan: ScanResul
 }
 
 // v14.2: DI detection for non-NestJS projects
-function scanDI(projectDir: string, profile: BaseProfile, scan: ScanResult): void {
+function scanDI(projectDir: string, profile: BaseProfile, _scan: ScanResult): void {
     if (profile.diFramework && profile.diFramework !== 'N/A') return; // Already set by framework
     if (pkgHas(projectDir, 'tsyringe')) { profile.diFramework = 'tsyringe'; log.detected('DI: tsyringe'); }
     else if (pkgHas(projectDir, 'inversify')) { profile.diFramework = 'Inversify'; log.detected('DI: Inversify'); }
@@ -262,12 +262,6 @@ function scanArchitecture(projectDir: string, profile: BaseProfile, scan: ScanRe
 
     if (!existsSync(srcDir)) return;
 
-    // v14.2: Recursive scan at any depth (up to 6 levels) instead of top-level only
-    const findDirRecursive = (name: string | RegExp): boolean => {
-        return findFilesRecursive(srcDir, 6, () => false).length >= 0 && // just need dir check
-            existsSync(srcDir) && findDirsRecursive(srcDir, name, 6);
-    };
-
     let hasCtrls = false, hasSvcs = false, hasRepos = false, hasRoutes = false, hasModels = false;
 
     // Check directories at any depth
@@ -329,7 +323,6 @@ function scanArchitecture(projectDir: string, profile: BaseProfile, scan: ScanRe
 function hasDirNamed(root: string, pattern: RegExp, maxDepth: number, depth = 0): boolean {
     if (depth > maxDepth || !existsSync(root)) return false;
     try {
-        const { readdirSync } = require('fs');
         for (const entry of readdirSync(root, { withFileTypes: true })) {
             if (entry.name === 'node_modules' || entry.name === 'dist' || entry.name === 'build') continue;
             if (entry.isDirectory()) {
@@ -341,10 +334,6 @@ function hasDirNamed(root: string, pattern: RegExp, maxDepth: number, depth = 0)
     return false;
 }
 
-/** Compatibility shim — not used but kept for findDirRecursive reference */
-function findDirsRecursive(root: string, _name: string | RegExp, _maxDepth: number): boolean {
-    return false; // hasDirNamed is used instead
-}
 
 function setLayered(profile: BaseProfile, scan: ScanResult): void {
     profile.layerFlow = 'Controller → Service → Repository → DataSource';
@@ -496,7 +485,7 @@ function scanTesting(projectDir: string, profile: BaseProfile, scan: ScanResult)
     }
 }
 
-function scanNaming(projectDir: string, profile: BaseProfile, scan: ScanResult): void {
+function scanNaming(projectDir: string, profile: BaseProfile, _scan: ScanResult): void {
     log.scanning('Naming conventions');
     const srcDir = join(projectDir, 'src');
     if (!existsSync(srcDir)) return;
@@ -536,7 +525,7 @@ function scanAPIType(projectDir: string, scan: ScanResult): void {
     if (pkgHas(projectDir, '@nestjs/microservices')) { scan.detectedMicroservices = true; log.detected('Microservices'); }
 }
 
-function scanSourceDir(projectDir: string, profile: BaseProfile, scan: ScanResult): void {
+function scanSourceDir(projectDir: string, profile: BaseProfile, _scan: ScanResult): void {
     for (const c of ['src/modules', 'src/features', 'src/api', 'src']) {
         if (existsSync(join(projectDir, c))) { profile.sourceDir = `${c}/`; log.detected(`Source dir: ${profile.sourceDir}`); break; }
     }
@@ -596,7 +585,7 @@ function scanScaffold(projectDir: string, scan: ScanResult): void {
     if (scan.scaffoldTool) log.detected(`Scaffold: ${scan.scaffoldTool}`);
 }
 
-function scanBuildCommands(projectDir: string, profile: BaseProfile, scan: ScanResult): void {
+function scanBuildCommands(projectDir: string, profile: BaseProfile, _scan: ScanResult): void {
     const pkgFile = findPackageJson(projectDir);
     if (pkgFile) {
         const content = readFileSafe(pkgFile);

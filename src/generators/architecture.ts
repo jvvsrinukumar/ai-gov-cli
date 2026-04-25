@@ -6,13 +6,32 @@ export function generateArchitecture(c: GovernanceConfig): string {
     const codegenSection = p.codegenCmd ? `---\n\n## Code Generation\nExtensions: \`${p.generatedExts}\`\n\`\`\`bash\n${p.codegenCmd}\n\`\`\`\n**Never edit generated files.** Edit source and regenerate.\n` : '';
     const mixedArchSection = s.mixedArch ? `\n> **${s.mixedArchNote}**\n` : '';
 
+    // Legacy zone section — emitted when scanner detects dual-mode or legacy-only zones
+    const legacyZoneSection = s.hasLegacyZones ? (() => {
+        const legacyRows = s.legacyZones.map(z => `| \`${z}\` | Legacy pattern — match existing code style when working here |`).join('\n');
+        const cleanRows  = s.cleanZones.length
+            ? s.cleanZones.map(z => `| \`${z}\` | Clean architecture — follow the layer flow above |`).join('\n')
+            : '';
+        const table = [legacyRows, cleanRows].filter(Boolean).join('\n');
+        return `\n---\n\n## Zone Rules — Dual-Mode Project\n\n> **${s.legacyZoneNote}**\n\n| Zone | Rule |\n|------|------|\n${table}\n\n**Hard rules:**\n- Match the zone's existing patterns. Do NOT refactor legacy code as a side effect of a bug fix or feature.\n- New features go in the clean zone (${s.cleanZones[0] || 'new code'}). Never add new features to legacy zones.\n- If asked to fix a bug in a legacy zone, fix only the bug — no layer extractions, no pattern upgrades.\n`;
+    })() : '';
+
     let structBlock: string;
     if (c.isBackend && c.stack === 'python') {
         structBlock = `\`\`\`\n${p.featuresDir.replace('app/', '')}  # Routers\napp/\n├── ${p.featuresDir.replace('app/', '')}  # Routers — one file per resource\n├── core/          # Security, middleware, exceptions\n├── db/            # Engine, session, base mixins\n├── models/        # SQLAlchemy ORM models\n├── schemas/       # Pydantic request/response schemas\n├── services/      # Business logic\n└── integrations/  # External service clients\n\`\`\``;
     } else if (c.isBackend && s.detectedSubtype === 'nestjs') {
         structBlock = `\`\`\`\n${p.sourceDir}<resource>/\n├── <resource>.controller.ts\n├── <resource>.service.ts\n├── <resource>.repository.ts\n├── dto/\n└── <resource>.module.ts\n\`\`\``;
     } else if (c.isBackend) {
-        structBlock = `\`\`\`\n${p.sourceDir}\n├── controller/    # HTTP handlers\n├── service/       # Business logic\n├── models/        # Data models\n└── config/        # Configuration\n\`\`\``;
+        const arch = s.detectedArchPattern || '';
+        if (arch === 'routes-models' && !s.mixedArch) {
+            structBlock = `\`\`\`\n${p.sourceDir}\n├── routes/        # Route handlers\n├── models/        # Business logic + data access\n└── config/        # Configuration\n\`\`\``;
+        } else if (arch === 'routes-only' && !s.mixedArch) {
+            structBlock = `\`\`\`\n${p.sourceDir}\n├── routes/        # Route handlers\n└── config/        # Configuration\n\`\`\``;
+        } else if (s.mixedArch) {
+            structBlock = `\`\`\`\n${p.sourceDir}\n├── routes/        # Legacy: route handlers (dominant)\n├── models/        # Legacy: business logic + data\n├── controller/    # New: thin HTTP handlers\n├── service/       # New: business logic\n└── config/        # Configuration\n\`\`\``;
+        } else {
+            structBlock = `\`\`\`\n${p.sourceDir}\n├── controller/    # HTTP handlers\n├── service/       # Business logic\n├── models/        # Data models\n└── config/        # Configuration\n\`\`\``;
+        }
     } else {
         structBlock = `\`\`\`\n${p.sourceDir}<feature>/\n├── data/          # DataSource, DTOs, API service\n├── domain/        # Domain models, UseCase interfaces\n├── presentation/  # ${p.layerUI}s / ${p.layerState}\n└── README.md\n\`\`\``;
     }
@@ -59,6 +78,6 @@ ${p.statePattern}
 - Never skip a layer
 - Never expose raw DTOs to ${p.layerNames[0]} layer
 - Dependencies flow inward: ${p.layerFlow}
-${apiDocsSection}
+${apiDocsSection}${legacyZoneSection}
 `;
 }

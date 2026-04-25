@@ -13,6 +13,16 @@ export function generateCodingStandards(c: GovernanceConfig): string {
         fileSizeSection = `\n## File Size — 200-Line Maximum\nEvery source file must stay under **200 lines**.\n\n### How to Decompose\n| When | Action |\n|------|--------|\n${tables[c.stack]}\n\n### Excluded from 200-Line Rule\n- Test files\n- Generated files (\`${p.generatedPatterns || '*.generated.*'}\`)\n- Configuration files\n- Barrel/index files\n- Type definition files`;
     }
 
+    // Zone-specific rules for dual-mode / legacy projects
+    const s = c.scan;
+    const zoneRulesSection = s.hasLegacyZones && s.legacyZones.length ? (() => {
+        const legacyList = s.legacyZones.map(z => `- \`${z}\``).join('\n');
+        const cleanList  = s.cleanZones.length
+            ? s.cleanZones.map(z => `- \`${z}\``).join('\n')
+            : '- *(none yet — all code is legacy)*';
+        return `\n## Zone Rules — Dual-Mode Project\n\n### Legacy zones (match existing style):\n${legacyList}\n\nWhen working in a legacy zone:\n- Use the patterns already present in that zone. Do not introduce new abstractions.\n- Keep business logic where it currently lives (even if that breaks the clean arch layer flow).\n- Bug fixes only — no refactoring.\n\n### Clean zones (follow layer flow):\n${cleanList}\n\nWhen working in a clean zone:\n- Strictly follow the layer flow: \`${p.layerFlow}\`\n- Never put business logic in \`${p.layerUI}\` layer.\n- All new features must start here.\n`;
+    })() : '';
+
     return `# Coding Standards — ${p.stackDisplay}
 
 ## Naming
@@ -41,5 +51,5 @@ ${b.testLayers}
 
 ## Imports
 ${p.importStyle}
-`;
+${zoneRulesSection}`;
 }

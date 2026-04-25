@@ -1,5 +1,7 @@
 import { join } from 'path';
 import { chmodSync, existsSync, readdirSync } from 'fs';
+import { createPatch } from 'diff';
+import { isInteractiveTTY, readTTYLine } from '../utils/tty.js';
 import type { GovernanceConfig } from '../types.js';
 import { safeWrite, type WriteOptions } from '../utils/safe-write.js';
 import { log } from '../utils/logger.js';
@@ -17,15 +19,71 @@ import { generateSpecTemplates } from './spec-templates.js';
 import { generateExtensions } from './extensions.js';
 import { generateMonorepoGovernance } from './monorepo.js';
 import { generateAllHooks } from './hooks/index.js';
+import { generateAuditCommand } from './commands/audit.js';
+import { generateNewFeatureCommand } from './commands/new-feature.js';
+import { generateEditFeatureCommand } from './commands/edit-feature.js';
+import { generateFixCommand } from './commands/fix.js';
+import { generateRefactorCommand } from './commands/refactor.js';
+import { generateHotfixCommand } from './commands/hotfix.js';
+import { generateExploreCommand } from './commands/explore.js';
 
 export function runGovernance(config: GovernanceConfig): void {
     console.log('');
     log.info('=== Governance Framework (Claude Code) ===');
     const dir = config.projectDir;
+
+    // Build per-file conflict prompt closure for 'ask' mode
+    let _approveAll = false;
+    let _skipAll = false;
+    const onConflict = (rel: string, existing: string, incoming: string): boolean => {
+        if (_approveAll) return true;
+        if (_skipAll) return false;
+
+        process.stdout.write(`\n  Conflict: ${rel}\n`);
+
+        // Non-interactive (CI / piped stdin): default to keep
+        if (!isInteractiveTTY()) {
+            process.stdout.write('  (non-interactive — keeping existing)\n');
+            return false;
+        }
+
+        let answer = '';
+        while (!['y', 'n', 'a', 's'].includes(answer)) {
+            process.stdout.write('  Update? [y=yes / n=no / d=diff / a=all / s=skip all] ');
+            answer = readTTYLine().toLowerCase();
+            if (answer === '') answer = 'n';  // bare Enter = no (keep existing)
+            if (answer === 'd') {
+                // Show unified diff: current disk vs generated
+                const patch = createPatch(rel, existing, incoming, 'current', 'generated');
+                const lines = patch.split('\n').slice(2); // strip the file header lines
+                console.log('');
+                for (const line of lines) {
+                    if (line.startsWith('+') && !line.startsWith('+++')) {
+                        process.stdout.write(`\x1b[32m${line}\x1b[0m\n`);       // green
+                    } else if (line.startsWith('-') && !line.startsWith('---')) {
+                        process.stdout.write(`\x1b[31m${line}\x1b[0m\n`);       // red
+                    } else if (line.startsWith('@@')) {
+                        process.stdout.write(`\x1b[36m${line}\x1b[0m\n`);       // cyan
+                    } else {
+                        process.stdout.write(`${line}\n`);
+                    }
+                }
+                console.log('');
+                answer = ''; // re-prompt after showing diff
+            }
+        }
+
+        if (answer === 'a') { _approveAll = true; return true; }
+        if (answer === 's') { _skipAll = true; return false; }
+        return answer === 'y';
+    };
+
     const opts: WriteOptions = {
         overwrite: config.overwrite, dryRun: config.dryRun,
         updateHooks: config.updateHooks, hookVersion: config.hookVersion,
         projectDir: dir,
+        conflictMode: config.conflictMode,
+        onConflict: config.conflictMode === 'ask' ? onConflict : undefined,
     };
 
     // Ensure .gitattributes for LF line endings on hooks
@@ -58,6 +116,15 @@ export function runGovernance(config: GovernanceConfig): void {
 
     log.section('Extensions:');
     generateExtensions(config, opts);
+
+    log.section('Commands:');
+    safeWrite(join(dir, '.claude', 'commands', 'audit.md'), generateAuditCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'new-feature.md'), generateNewFeatureCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'edit-feature.md'), generateEditFeatureCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'fix.md'), generateFixCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'refactor.md'), generateRefactorCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'hotfix.md'), generateHotfixCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'explore.md'), generateExploreCommand(config), opts);
 
     log.section('Spec templates:');
     generateSpecTemplates(config, opts);

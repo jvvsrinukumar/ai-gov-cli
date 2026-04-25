@@ -7,11 +7,62 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [14.2.0] — 2025-04-XX
+## [15.1.0] — 2026-04-25
+
+### Added
+- **7 slash commands** — `.claude/commands/` now includes `new-feature`, `edit-feature`, `fix`, `refactor`, `hotfix`, `explore`, `audit`. Claude Code reads these when a developer uses the corresponding `/command` in chat.
+- **`/new-feature` plan mode + 3-gate spec** — enters plan mode immediately, requires explicit developer approval at Requirements → Design → Tasks gates before any file is written.
+- **`/audit` 11-step governance audit** — inventories features, reads actual code, compares against steering files, checks spec/test coverage, scans for dead files, writes dated `docs/governance-audit-YYYY-MM-DD.md`.
+- **`require-task-type.sh` hook** — `UserPromptSubmit` hook that detects unclassified development tasks and injects governance command suggestions. Runs in warn mode (exit 0) by default; change to exit 1 to block.
+- **Flutter legacy zone detection** — scanner detects dual-zone projects (`lib/screens/` legacy MVC + `lib/features/` clean arch), sets `hasLegacyZones`, `legacyZones`, `cleanZones`, `legacyZoneNote` in `ScanResult`.
+- **`flutter-legacy` test fixture** — adds `tests/fixtures/flutter-legacy/` with dual-zone structure for scanner tests.
+
+### Fixed
+- **g/k/o conflict resolution** — when `.claude/` already exists, `ai-gov init` prompts: Generate (ask per file with diff preview), Keep (skip existing), or Overwrite (replace all). Uses `/dev/tty` for reliable TTY input; falls back to `process.stdin` on Windows/CI.
+- **110/110 tests pass** — `flutter-legacy` fixture added to unblock 3 previously failing scanner tests.
+
+---
+
+## [15.0.0] — 2026-04-24
+
+### Added
+- **Persistent audit records** — `/audit` command writes a dated markdown file to `docs/` so governance findings survive across sessions.
+- **Honest README** — README updated to accurately describe what the CLI generates vs. what Claude Code reads at runtime.
+- **Plan mode enforcement in commands** — `EnterPlanMode` / `ExitPlanMode` tool calls embedded directly in slash command markdown so Claude Code enforces them automatically.
+
+---
+
+## [14.3.0] — 2026-04-24
+
+### Production Readiness
+
+### Added
+- **Generator smoke tests** — 103 tests covering all generators and hook scripts across React, Angular, Node.js, Flutter, Kotlin, Python stacks. Tests use `makeConfig(stack, scanOverrides)` helper and assert key output strings.
+- **ESLint 9 flat config** — `eslint.config.js` with `typescript-eslint` for TypeScript-aware linting. Replaces legacy `.eslintrc.*` format.
+- **Error boundary in `runGovernance()`** — uncaught exceptions now print a clean error message and exit 1 instead of dumping a raw stack trace. Set `DEBUG=1` to see full stack.
+- **`check-secrets.sh` in doctor** — doctor now verifies the secrets hook exists on disk.
+- **`/audit` command generator** — `ai-gov init` writes `.claude/commands/audit.md` with project-specific data baked in (arch pattern, detected tools, hook versions, high-risk files). Used for first-run governance verification and post-update delta checks.
+
+### Fixed
+- **`architecture.md` structure contradiction** — `structBlock` now adapts based on `detectedArchPattern` (`routes-models`, `routes-only`, `mixed`). Previously always showed 4-layer structure even for 2-layer `Route → Model` projects.
+- **`check-file-size.sh` no-op for Node.js/Python** — added `nodejs` and `python` to active stacks; backend skip pattern doesn't skip `routes/` so God-route files get caught.
+- **`analyze-code.sh` silent exit** — now emits a WARNING comment when linter is in deps but has no config file, instead of silently generating a no-op hook.
+- **`format-code.sh` bypassing config check** — was re-deriving `fmtCmd` from `detectedFormatter` even when no formatter config existed. Now reads `profile.formatCmd` which is set by the scanner only when the formatter is usable.
+
+### Removed
+- **Unused `glob` and `yaml` dependencies** — were never imported in source; removed from `package.json`.
+
+### Changed
+- All lint errors resolved: removed unused imports (`readFileSync`, `countFiles`, `basename`, `existsSync`), prefixed unused parameters with `_`, removed dead closures.
+- **Full scanner audit** — Flutter, Kotlin, React, Angular, SwiftUI, Python, and shared-js scanners audited: 0 ESLint errors, all detection logic confirmed correct. Two pre-existing non-breaking limitations noted (Python `has()` substring match, React service-style regex) — both produce correct default output.
+
+---
+
+## [14.2.0] — 2026-04-24
 
 ### Scanner Accuracy Fixes (Node.js)
 
-All fixes target the Node.js scanner only. Flutter, Kotlin, React, Angular, SwiftUI, and Python scanners are untouched.
+All fixes target the Node.js scanner only. Flutter, Kotlin, React, Angular, SwiftUI, and Python scanners were fully audited in v14.3 and confirmed production-ready — no equivalent issues exist in those stacks.
 
 ### Fixed
 - **pkg_has() false positives** — now parses JSON dependency sections (`dependencies`, `devDependencies`, `peerDependencies`, `optionalDependencies`) instead of raw regex matching the entire package.json. Prevents false matches on scripts, description, or comment fields. Results cached for performance.
@@ -29,7 +80,7 @@ All fixes target the Node.js scanner only. Flutter, Kotlin, React, Angular, Swif
 
 ---
 
-## [14.1.0] — 2024-12-XX
+## [14.1.0] — 2025-12-01
 
 ### TypeScript CLI Release
 

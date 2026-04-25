@@ -22,6 +22,20 @@ Instructions:
 4. Write tests for ${c.blocks.testLayerList}
 \`\`\`
 
+## Edit Feature (update/extend existing)
+\`\`\`
+## Task Type: Edit Feature
+## ${c.project.ticketSystem}: [${c.project.ticketPrefix}-ID]
+## Feature: [existing_feature_name]
+
+What to add/change: [1–3 sentences]
+New acceptance criteria:
+- [ ] ...
+
+Note: Claude will read the existing spec, update it, show you
+the changes, and wait for confirmation before coding.
+\`\`\`
+
 ## Bug Fix
 \`\`\`
 ## Task Type: Bug Fix

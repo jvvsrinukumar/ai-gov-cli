@@ -1,4 +1,3 @@
-import { existsSync } from 'fs';
 import { join } from 'path';
 import type { BaseProfile, ScanResult } from '../types.js';
 import { fileExists, dirExists, readFileSafe } from '../utils/file-helpers.js';
@@ -40,7 +39,8 @@ export function scanPython(
     }
 
     // ORM
-    if (has('sqlalchemy')) { scan.detectedORM = 'SQLAlchemy'; log.detected('ORM: SQLAlchemy'); }
+    if (has('sqlmodel')) { scan.detectedORM = 'SQLModel'; log.detected('ORM: SQLModel'); }
+    else if (has('sqlalchemy')) { scan.detectedORM = 'SQLAlchemy'; log.detected('ORM: SQLAlchemy'); }
     else if (has('tortoise-orm')) { scan.detectedORM = 'Tortoise ORM'; log.detected('ORM: Tortoise'); }
     else if (has('peewee')) { scan.detectedORM = 'Peewee'; log.detected('ORM: Peewee'); }
 
@@ -49,6 +49,7 @@ export function scanPython(
 
     // Auth
     if (has('python-jose') || has('pyjwt') || has('authlib')) { scan.detectedAuth = 'JWT'; log.detected('Auth: JWT'); }
+    else if (has('passlib')) { scan.detectedAuth = 'passlib'; log.detected('Auth: passlib'); }
 
     // Cache / queue
     if (has('redis')) { scan.detectedLocalDB = 'Redis'; log.detected('Cache: Redis'); }
@@ -70,6 +71,10 @@ export function scanPython(
 
     // Validation
     if (has('pydantic')) { scan.detectedValidator = true; log.detected('Validation: Pydantic'); }
+
+    // Logging
+    if (has('structlog')) { scan.detectedLogger = 'structlog'; log.detected('Logging: structlog'); }
+    else if (has('loguru')) { scan.detectedLogger = 'loguru'; log.detected('Logging: loguru'); }
 
     // HTTP client
     if (has('httpx')) { scan.detectedHTTPClient = 'httpx'; log.detected('HTTP client: httpx'); }

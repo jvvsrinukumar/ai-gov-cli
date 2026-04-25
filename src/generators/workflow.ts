@@ -26,6 +26,12 @@ Ticket → spec (_template) → requirements.md → design.md → tasks.md
 → approval → ${scaffoldStep}implement → tests → PR
 \`\`\`
 
+## Edit Feature (update/extend existing)
+\`\`\`
+Ticket → read existing spec → update requirements.md → update design.md
+→ update tasks.md → show changes → approval → implement new tasks only → tests → PR
+\`\`\`
+
 ## Bug Fix
 \`\`\`
 Ticket → reproduce → root cause → minimal fix → verify → PR

@@ -120,6 +120,11 @@ export interface ScanResult {
     mixedArchNote: string;
     scaffoldTool: string;
     scaffoldCmdFeature: string;
+    // Legacy zone detection (v14.3+)
+    hasLegacyZones: boolean;
+    legacyZones: string[];
+    cleanZones: string[];
+    legacyZoneNote: string;
 }
 
 export interface ProjectInfo {
@@ -151,6 +156,8 @@ export interface ContentBlocks {
     layerExecOrder: string;
 }
 
+export type ConflictMode = 'keep' | 'ask' | 'overwrite';
+
 export interface GovernanceConfig {
     stack: Stack;
     profile: BaseProfile;
@@ -160,6 +167,8 @@ export interface GovernanceConfig {
     isBackend: boolean;
     hookVersion: string;
     projectDir: string;
+    specFirstEnabled: boolean;
+    conflictMode: ConflictMode;
     overwrite: boolean;
     dryRun: boolean;
     updateHooks: boolean;
@@ -196,5 +205,6 @@ export function createDefaultScanResult(): ScanResult {
         detectedDotenv: false,
         highRiskFiles: [], mixedArch: false, mixedArchNote: '',
         scaffoldTool: '', scaffoldCmdFeature: '',
+        hasLegacyZones: false, legacyZones: [], cleanZones: [], legacyZoneNote: '',
     };
 }

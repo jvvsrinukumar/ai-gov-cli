@@ -21,19 +21,33 @@ export function generateSettingsJson(config: GovernanceConfig, opts: WriteOption
         log.kept('.claude/custom-hooks.json (user-owned)');
     }
 
-    // v14.1: All commands use bash prefix for Windows compatibility
+    // v14.3: All commands use bash prefix for Windows compatibility
     const bp = 'bash "$CLAUDE_PROJECT_DIR"/.claude';
+
+    const userPromptSubmitHooks = [
+        {
+            hooks: [
+                { type: 'command', command: `${bp}/hooks/require-task-type.sh`, timeout: 5, statusMessage: 'Checking task classification...' },
+            ],
+        },
+    ];
+
+    const preToolUseHooks: object[] = [
+        { type: 'command', command: `${bp}/hooks/protect-files.sh`, timeout: 10, statusMessage: 'Checking file protection...' },
+        { type: 'command', command: `${bp}/hooks/check-secrets.sh`, timeout: 10, statusMessage: 'Scanning for secrets...' },
+        { type: 'command', command: `${bp}/hooks/session-continuity.sh`, timeout: 10, statusMessage: 'Checking session continuity...' },
+        { type: 'command', command: `${bp}/hooks/block-dangerous-commands.sh`, timeout: 10, statusMessage: 'Validating command safety...' },
+    ];
+    if (config.specFirstEnabled) {
+        preToolUseHooks.push({ type: 'command', command: `${bp}/hooks/check-spec-exists.sh`, timeout: 10, statusMessage: 'Checking spec exists...' });
+    }
     const baseSettings = {
         hooks: {
+            UserPromptSubmit: userPromptSubmitHooks,
             PreToolUse: [
                 {
                     matcher: 'Edit|Write|Bash',
-                    hooks: [
-                        { type: 'command', command: `${bp}/hooks/protect-files.sh`, timeout: 10, statusMessage: 'Checking file protection...' },
-                        { type: 'command', command: `${bp}/hooks/session-continuity.sh`, timeout: 10, statusMessage: 'Checking session continuity...' },
-                        { type: 'command', command: `${bp}/hooks/block-dangerous-commands.sh`, timeout: 10, statusMessage: 'Validating command safety...' },
-                        { type: 'command', command: `${bp}/hooks/check-spec-exists.sh`, timeout: 10, statusMessage: 'Checking spec exists...' },
-                    ],
+                    hooks: preToolUseHooks,
                 },
             ],
             PostToolUse: [
@@ -67,6 +81,7 @@ export function generateSettingsJson(config: GovernanceConfig, opts: WriteOption
             for (const trigger of ['PreToolUse', 'PostToolUse', 'Stop'] as const) {
                 const arr = custom[trigger];
                 if (Array.isArray(arr) && arr.length > 0) {
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     (baseSettings.hooks as any)[trigger].push(...arr);
                     log.merged(`custom-hooks.json ${trigger} into settings.json`);
                 }

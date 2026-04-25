@@ -1,17 +1,18 @@
 import { Command } from 'commander';
 import { existsSync, readFileSync, appendFileSync } from 'fs';
 import { join, resolve, basename } from 'path';
-import type { Stack, GovernanceConfig } from './types.js';
+import type { Stack, GovernanceConfig, ConflictMode } from './types.js';
 import { createDefaultScanResult } from './types.js';
 import { detectStack } from './detect-stack.js';
 import { loadBaseProfile } from './profiles.js';
-import { scanProject } from './scanners/index.js';
+import { scanProject, checkSpecFirstEnabled } from './scanners/index.js';
+import { isInteractiveTTY, readTTYLine } from './utils/tty.js';
 import { computeContentBlocks } from './content-blocks.js';
 import { runGovernance } from './generators/index.js';
 import { log } from './utils/logger.js';
 
-const VERSION = '14.2.0';
-const HOOK_VERSION = '14.2.0';
+const VERSION = '15.1.0';
+const HOOK_VERSION = '15.1.0';
 
 const program = new Command();
 
@@ -47,19 +48,60 @@ program
         const scan = createDefaultScanResult();
 
         scanProject(stack, projectDir, profile, scan);
+        const specFirstEnabled = checkSpecFirstEnabled(projectDir);
 
         const project = collectProjectInfo(stack, projectDir);
         const isBackend = stack === 'nodejs' || stack === 'python';
         const blocks = computeContentBlocks(stack, profile, scan);
 
+        // Conflict resolution: prompt g/k/o when .claude/ already exists
+        let conflictMode: ConflictMode = 'keep';
+        const claudeDir = join(projectDir, '.claude');
+        if (!options.overwrite && !options.dryRun && !options.updateHooks && existsSync(claudeDir) && isInteractiveTTY()) {
+            console.log('');
+            console.log('  .claude/ already exists. How should ai-gov handle existing files?');
+            console.log('');
+            console.log('  g  Generate — create new files, ask permission for each changed file  [default]');
+            console.log('  k  Keep    — create new files only, leave all existing untouched');
+            console.log('  o  Overwrite — replace all files with the latest generated version');
+            console.log('');
+            let choice = '';
+            while (!['g', 'k', 'o'].includes(choice)) {
+                process.stdout.write('  Choice [G/k/o] (Enter = g): ');
+                choice = readTTYLine().toLowerCase();
+                if (choice === '') choice = 'g';  // bare Enter = default
+                if (!['g', 'k', 'o'].includes(choice)) {
+                    console.log('  Please enter g, k, or o.');
+                }
+            }
+            if (choice === 'o') {
+                conflictMode = 'overwrite';
+                options.overwrite = true;
+            } else if (choice === 'k') {
+                conflictMode = 'keep';
+            } else {
+                conflictMode = 'ask';  // 'g' or default
+            }
+            console.log('');
+        }
+
         const config: GovernanceConfig = {
             stack, profile, scan, project, blocks, isBackend,
-            hookVersion: HOOK_VERSION, projectDir,
+            hookVersion: HOOK_VERSION, projectDir, specFirstEnabled,
+            conflictMode,
             overwrite: options.overwrite, dryRun: options.dryRun,
             updateHooks: options.updateHooks,
         };
 
-        runGovernance(config);
+        try {
+            runGovernance(config);
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            console.error(`\n  Error: ${msg}`);
+            console.error('  Run with DEBUG=1 for stack trace.');
+            if (process.env.DEBUG) console.error(err);
+            process.exit(1);
+        }
 
         // Summary
         console.log('');
@@ -103,7 +145,7 @@ program
 
         const hooksDir = join(dir, '.claude', 'hooks');
         if (existsSync(hooksDir)) {
-            const hooks = ['protect-files.sh', 'block-dangerous-commands.sh', 'check-spec-exists.sh',
+            const hooks = ['protect-files.sh', 'check-secrets.sh', 'block-dangerous-commands.sh', 'check-spec-exists.sh',
                 'session-continuity.sh', 'format-code.sh', 'analyze-code.sh',
                 'check-feature-readme.sh', 'check-consistency.sh', 'check-file-size.sh', 'post-task-checklist.sh'];
             for (const h of hooks) {
@@ -114,7 +156,7 @@ program
         // Check jq
         const { execSync } = await import('child_process');
         let jqOk = false;
-        try { execSync('command -v jq', { stdio: 'pipe' }); jqOk = true; } catch { }
+        try { execSync('command -v jq', { stdio: 'pipe' }); jqOk = true; } catch { /* not installed */ }
         check('jq installed (required by hooks)', jqOk);
 
         console.log('');

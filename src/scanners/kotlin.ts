@@ -1,7 +1,7 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
 import type { BaseProfile, ScanResult } from '../types.js';
-import { gradleHas, fileExists, readFileSafe, countFiles, findFilesRecursive } from '../utils/file-helpers.js';
+import { gradleHas, fileExists, readFileSafe, findFilesRecursive } from '../utils/file-helpers.js';
 import { log } from '../utils/logger.js';
 
 export function scanKotlin(

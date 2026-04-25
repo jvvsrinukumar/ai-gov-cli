@@ -12,12 +12,15 @@ import { generateCheckConsistency } from './check-consistency.js';
 import { generateCheckFileSize } from './check-file-size.js';
 import { generatePostTaskChecklist } from './post-task-checklist.js';
 import { generateHooksReadme } from './hooks-readme.js';
+import { generateCheckSecrets } from './check-secrets.js';
+import { generateRequireTaskType } from './require-task-type.js';
 
 export function generateAllHooks(config: GovernanceConfig, opts: WriteOptions): void {
     const hooksDir = join(config.projectDir, '.claude', 'hooks');
     const w = (name: string, content: string) => safeWrite(join(hooksDir, name), content, opts);
 
     w('protect-files.sh', generateProtectFiles(config));
+    w('check-secrets.sh', generateCheckSecrets(config));
     w('block-dangerous-commands.sh', generateBlockDangerous(config));
     w('check-spec-exists.sh', generateCheckSpecExists(config));
     w('session-continuity.sh', generateSessionContinuity(config));
@@ -27,5 +30,6 @@ export function generateAllHooks(config: GovernanceConfig, opts: WriteOptions): 
     w('check-consistency.sh', generateCheckConsistency(config));
     w('check-file-size.sh', generateCheckFileSize(config));
     w('post-task-checklist.sh', generatePostTaskChecklist(config));
+    w('require-task-type.sh', generateRequireTaskType(config));
     w('README.md', generateHooksReadme(config));
 }

@@ -3,8 +3,19 @@ import type { GovernanceConfig } from '../../types.js';
 export function generateAnalyzeCode(c: GovernanceConfig): string {
     const p = c.profile;
 
-    // No analyzer → no-op
+    // No analyzer → no-op (or warn if tool detected but config missing)
     if (!p.analyzeCmd) {
+        if (c.scan.detectedLinter && !c.scan.detectedHasLinterConfig) {
+            return `#!/usr/bin/env bash
+# HOOK_VERSION=${c.hookVersion}
+command -v jq &>/dev/null || exit 0
+INPUT=$(cat)
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+[[ -z "$FILE_PATH" ]] && exit 0
+echo "{\\"additionalContext\\":\\"WARNING: ${c.scan.detectedLinter} is in dependencies but has no config file. Linting is disabled. Create a config (e.g. eslint.config.js) to enable it.\\"}"
+exit 0
+`;
+        }
         return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
 exit 0

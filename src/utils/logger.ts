@@ -8,6 +8,7 @@ export const log = {
         console.log(`  ${chalk.green('Updated')}: ${rel} (${from} → ${to})`),
     current: (rel: string, ver: string) =>
         console.log(`  ${chalk.green('Current')}: ${rel} (v${ver})`),
+    approved: (rel: string) => console.log(`  ${chalk.green('Updated')}: ${rel} (approved)`),
     skipped: (rel: string) => console.log(`  ${chalk.yellow('Skipped')}: ${rel}`),
     kept: (rel: string) => console.log(`  ${chalk.green('Kept')}: ${rel}`),
     merged: (msg: string) => console.log(`  ${chalk.green('Merged')}: ${msg}`),

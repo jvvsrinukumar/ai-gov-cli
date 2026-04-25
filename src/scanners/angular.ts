@@ -33,6 +33,10 @@ export function scanAngular(
         scan.detectedState = 'NGXS'; profile.stateFramework = 'NGXS';
         profile.statePattern = 'NGXS: @State + @Action + @Selector classes'; profile.archSimple = false;
         log.detected('State: NGXS');
+    } else if (pkgHas(projectDir, '@datorama/akita')) {
+        scan.detectedState = 'Akita'; profile.stateFramework = 'Akita';
+        profile.statePattern = 'Akita: EntityStore + Query + Service pattern'; profile.archSimple = false;
+        log.detected('State: Akita');
     } else if (scan.detectedAngularSignalState) {
         scan.detectedState = 'Angular Signals'; profile.stateFramework = 'Angular Signals';
         profile.statePattern = 'signal<T>() + computed() + effect() — no external state library';
@@ -48,6 +52,8 @@ export function scanAngular(
     const uiLibs: string[] = [];
     if (pkgHas(projectDir, '@angular/material')) uiLibs.push('Angular Material');
     if (pkgHas(projectDir, 'primeng')) uiLibs.push('PrimeNG');
+    if (pkgHas(projectDir, '@ng-bootstrap/ng-bootstrap')) uiLibs.push('ng-bootstrap');
+    if (pkgHas(projectDir, '@ng-select/ng-select')) uiLibs.push('ng-select');
     if (uiLibs.length) { scan.detectedUILibs = uiLibs.join(', '); log.detected(`UI libraries: ${scan.detectedUILibs}`); }
 
     // i18n
@@ -57,7 +63,6 @@ export function scanAngular(
 
     // Architecture depth
     const srcDir = join(projectDir, 'src');
-    const hasUC = existsSync(srcDir) && findFilesRecursive(srcDir, 3, () => false).length === -1; // dir check
     const ucExists = existsSync(join(srcDir, 'app', 'usecases')) || existsSync(join(srcDir, 'app', 'use-cases'));
     const repoExists = existsSync(join(srcDir, 'app', 'repositories')) || existsSync(join(srcDir, 'app', 'repository'));
     if (ucExists && repoExists) {
@@ -85,6 +90,37 @@ export function scanAngular(
     if (existsSync(srcDir)) {
         findFilesRecursive(srcDir, 4, f => f.endsWith('.interceptor.ts') || f.endsWith('.guard.ts'))
             .forEach(f => { const bn = f.split('/').pop()!; if (!scan.highRiskFiles.includes(bn)) scan.highRiskFiles.push(bn); });
+    }
+
+    // Test framework
+    if (pkgHas(projectDir, 'jest') || pkgHas(projectDir, 'jest-preset-angular')) {
+        scan.detectedTestFramework = 'Jest'; profile.testCmd = 'npx jest'; log.detected('Test: Jest');
+    } else if (pkgHas(projectDir, 'karma') || pkgHas(projectDir, 'karma-jasmine')) {
+        scan.detectedTestFramework = 'Karma + Jasmine'; profile.testCmd = 'ng test'; log.detected('Test: Karma + Jasmine');
+    } else if (pkgHas(projectDir, '@playwright/test')) {
+        scan.detectedTestFramework = 'Playwright'; profile.testCmd = 'npx playwright test'; log.detected('Test: Playwright');
+    }
+
+    // Monorepo (Nx)
+    if (pkgHas(projectDir, '@nrwl/angular') || pkgHas(projectDir, '@nx/angular')) {
+        scan.detectedMonorepo = 'Nx'; log.detected('Monorepo: Nx');
+    }
+
+    // Legacy zone detection — NgModule style alongside standalone components = dual-mode
+    const hasNgModule    = existsSync(join(srcDir, 'app', 'app.module.ts'));
+    const hasStandalone  = existsSync(join(srcDir, 'app', 'app.config.ts'));
+    if (hasNgModule && hasStandalone) {
+        scan.hasLegacyZones = true;
+        scan.legacyZones = ['NgModule-based components'];
+        scan.cleanZones  = ['Standalone components (app.config.ts)'];
+        scan.legacyZoneNote = `Dual-mode Angular: NgModule pattern (app.module.ts) coexists with standalone components (app.config.ts) — migration in progress`;
+        log.detected('Legacy zones: NgModule + standalone dual-mode');
+    } else if (hasNgModule && !hasStandalone) {
+        scan.hasLegacyZones = true;
+        scan.legacyZones = ['NgModule-based (all components)'];
+        scan.cleanZones  = [];
+        scan.legacyZoneNote = `Legacy NgModule-only project — no standalone components detected. Consider migrating with ng generate @angular/core:standalone`;
+        log.detected('Legacy zones: NgModule-only');
     }
 
     // Scaffold

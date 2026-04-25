@@ -5,10 +5,16 @@ export function generateSpecFirstWorkflow(c: GovernanceConfig): string {
         ? ` (generate scaffold with ${c.scan.scaffoldTool} first)`
         : '';
 
+    const enforcementNote = c.specFirstEnabled
+        ? `> **ABSOLUTE RULE: No feature code may be generated until a spec exists AND is complete.**
+> **This is enforced by the check-spec-exists.sh hook. Do not attempt to work around it.**`
+        : `> **Spec-first workflow is available but not yet enforced for this project.**
+> **No spec history was found — the check-spec-exists.sh hook is generated but not registered in settings.json.**
+> **To activate: create your first feature spec (\`cp -r specs/_template specs/<feature>\`) and re-run the governance script.**`;
+
     return `# Spec-First Workflow
 
-> **ABSOLUTE RULE: No feature code may be generated until a spec exists AND is complete.**
-> **This is enforced by the check-spec-exists.sh hook. Do not attempt to work around it.**
+${enforcementNote}
 
 ## Flow
 \`\`\`

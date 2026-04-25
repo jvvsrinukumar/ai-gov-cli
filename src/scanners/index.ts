@@ -1,4 +1,5 @@
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
+import { execSync } from 'child_process';
 import { join, basename } from 'path';
 import type { Stack, BaseProfile, ScanResult } from '../types.js';
 import { findFilesRecursive, fileExists } from '../utils/file-helpers.js';
@@ -56,6 +57,30 @@ export function scanProject(
 
     console.log('');
     log.success(`Scan complete — ${scan.highRiskFiles.length} high-risk file(s).`);
+}
+
+// v14.2: Universal spec-first enablement check — applies to ALL stacks
+export function checkSpecFirstEnabled(projectDir: string): boolean {
+    const specsDir = join(projectDir, 'specs');
+    if (existsSync(specsDir)) {
+        try {
+            const entries = readdirSync(specsDir, { withFileTypes: true });
+            const featureDirs = entries.filter(e => e.isDirectory() && e.name !== '_template');
+            if (featureDirs.length > 0) {
+                log.detected('Spec-first: enabled (existing spec history detected)');
+                return true;
+            }
+        } catch { /* ignore */ }
+    }
+    try {
+        const result = execSync(`git -C "${projectDir}" log --oneline -- specs/ 2>/dev/null | wc -l`, { stdio: 'pipe' }).toString().trim();
+        if (parseInt(result, 10) > 0) {
+            log.detected('Spec-first: enabled (git spec history detected)');
+            return true;
+        }
+    } catch { /* no git or no commits */ }
+    log.detected('INFO: No spec history found — spec-first enforcement disabled (opt-in for all stacks)');
+    return false;
 }
 
 function scanHighRiskByName(
