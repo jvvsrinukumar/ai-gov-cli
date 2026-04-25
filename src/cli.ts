@@ -10,9 +10,13 @@ import { isInteractiveTTY, readTTYLine } from './utils/tty.js';
 import { computeContentBlocks } from './content-blocks.js';
 import { runGovernance } from './generators/index.js';
 import { log } from './utils/logger.js';
+import { generateGitHooks } from './generators/git-hooks/index.js';
+import { installGitHookWrappers } from './commands/init-git-hooks.js';
+import { generateCIConfig } from './commands/init-ci.js';
+import { runPRCheck } from './pr-check/index.js';
 
-const VERSION = '15.1.0';
-const HOOK_VERSION = '15.1.0';
+const VERSION = '15.2.0';
+const HOOK_VERSION = '15.2.0';
 
 const program = new Command();
 
@@ -29,6 +33,9 @@ program
     .option('--dry-run', 'Preview changes without writing', false)
     .option('--update-hooks', 'Update only stale hooks', false)
     .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .option('--git-hooks', 'Install git pre-commit + commit-msg hooks', false)
+    .option('--ci <platform>', 'Generate CI governance check (github|gitlab|bitbucket)')
+    .option('--force', 'Force overwrite existing hook system', false)
     .action(async (options) => {
         const projectDir = resolve(options.dir);
         if (!existsSync(projectDir)) {
@@ -103,6 +110,14 @@ program
             process.exit(1);
         }
 
+        if (options.gitHooks) {
+            generateGitHooks(config, projectDir);
+            installGitHookWrappers(projectDir, options.force ?? false, options.dryRun ?? false);
+        }
+        if (options.ci) {
+            generateCIConfig(config, options.ci);
+        }
+
         // Summary
         console.log('');
         log.header(`Done! — ${project.appName} (${profile.stackDisplay})`);
@@ -162,6 +177,17 @@ program
         console.log('');
         if (issues === 0) log.success('All checks passed!');
         else log.warn(`${issues} issue(s) found. Run 'ai-gov init' to fix.`);
+    });
+
+program
+    .command('pr-check')
+    .description('Run governance check on current branch diff')
+    .option('--base <branch>', 'Base branch for diff', 'main')
+    .option('--format <format>', 'Output format (terminal|github|gitlab|json)', 'terminal')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .action(async (options) => {
+        const result = await runPRCheck(resolve(options.dir), options.base, options.format);
+        process.exit(result.hasBlockers ? 1 : 0);
     });
 
 program.parse();

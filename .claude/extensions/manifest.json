@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "extensions": [
+    {
+      "name": "jira-sync",
+      "trigger": "Stop",
+      "matcher": "",
+      "enabled": true
+    },
+    {
+      "name": "retrospective",
+      "trigger": "Stop",
+      "matcher": "",
+      "enabled": false
+    },
+    {
+      "name": "verify",
+      "trigger": "PostToolUse",
+      "matcher": "Edit|Write",
+      "enabled": true
+    }
+  ]
+}

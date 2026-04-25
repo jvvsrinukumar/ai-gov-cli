@@ -1,0 +1,107 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/require-task-type.sh",
+            "timeout": 5,
+            "statusMessage": "Checking task classification..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/protect-files.sh",
+            "timeout": 10,
+            "statusMessage": "Checking file protection..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-secrets.sh",
+            "timeout": 10,
+            "statusMessage": "Scanning for secrets..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/session-continuity.sh",
+            "timeout": 10,
+            "statusMessage": "Checking session continuity..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/block-dangerous-commands.sh",
+            "timeout": 10,
+            "statusMessage": "Validating command safety..."
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/format-code.sh",
+            "timeout": 30,
+            "statusMessage": "Formatting..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/analyze-code.sh",
+            "timeout": 60,
+            "statusMessage": "Analyzing..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-feature-readme.sh",
+            "timeout": 10,
+            "statusMessage": "Checking README..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-consistency.sh",
+            "timeout": 10,
+            "statusMessage": "Checking consistency..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/check-file-size.sh",
+            "timeout": 10,
+            "statusMessage": "Checking file size..."
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/extensions/load-extensions.sh PostToolUse",
+            "timeout": 15,
+            "statusMessage": "Running extensions..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-task-checklist.sh",
+            "timeout": 5
+          },
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR\"/.claude/extensions/load-extensions.sh Stop",
+            "timeout": 15,
+            "statusMessage": "Running extensions..."
+          }
+        ]
+      }
+    ]
+  }
+}

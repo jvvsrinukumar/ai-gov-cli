@@ -7,6 +7,26 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [15.2.0] — 2026-04-26
+
+### Added
+- **`ai-gov init --git-hooks`** — generates 8 bash scripts in `.claude/git-hooks/` (pre-commit orchestrator, commit-msg validator, 6 individual check scripts: file-size, secrets, no-todos, no-debug, format-check, lint-check) plus thin wrappers in `.git/hooks/`. Detects existing hook systems (husky / lefthook / pre-commit) and prints integration guidance instead of overwriting; use `--force` to override.
+- **`ai-gov init --ci github|gitlab|bitbucket`** — generates CI pipeline config that runs `ai-gov pr-check` on every PR/MR and posts results as a comment.
+- **`ai-gov pr-check`** — runs 8 governance checks against the current branch diff (architecture layer boundaries, file size, credentials, spec coverage, test coverage, TODOs, conventional commit messages, PR description). Output formats: `terminal` (colored, default), `github` (collapsible markdown), `gitlab` (MR note markdown), `json` (machine-readable).
+- **`src/utils/git.ts`** — `getChangedFiles`, `getDiff`, `getCommitMessages` helpers using `git diff`.
+- **`src/pr-check/`** — full PR check module with 8 checks, 4 formatters, and shared `CheckResult` / `CheckItem` types.
+- **`src/generators/git-hooks/`** — generators for all git hook files (stack-aware `no-debug.sh`, config-driven thresholds).
+- **`src/generators/ci/`** — GitHub, GitLab, Bitbucket CI config generators.
+
+### Changed
+- Version bumped to 15.2.0 in `package.json`, `src/cli.ts` (VERSION + HOOK_VERSION), and README.
+
+### Fixed
+- **`--dry-run` now respected by `installGitHookWrappers`** — previously, `ai-gov init --git-hooks --dry-run` would still write `.git/hooks/pre-commit` and `.git/hooks/commit-msg`. The `dryRun` flag is now passed through and the function logs `[dry-run]` lines instead of writing files.
+- **CI generators use `npm install -g ai-gov@15.2.0` instead of `git clone`** — the generated GitHub, GitLab, and Bitbucket CI configs previously cloned the source repo and built from source, creating a dependency on GitHub availability and adding ~60s build time. They now install the published package directly, which is faster, versioned, and works offline if the npm registry is cached.
+
+---
+
 ## [15.1.0] — 2026-04-25
 
 ### Added
