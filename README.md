@@ -1239,13 +1239,14 @@ ai-governance/
 │   ├── scanners.test.ts                   <- 40+ scanner tests across 6 stacks
 │   └── fixtures/                          <- minimal manifest files per stack
 ├── docs/
-│   └── complete_usage_guide.md            <- full usage guide (all scenarios)
+│   ├── complete_usage_guide.md            <- full usage guide (all scenarios)
+│   └── branching_and_ci_setup_guide.md    <- multi-branch, CI setup for all platforms
 ├── package.json
 ├── tsconfig.json
 └── jest.config.cjs
 ```
 
-**60+ source files · ~6,000 lines of TypeScript · 129 tests**
+**83 source files · ~8,500 lines of TypeScript · 129 tests**
 
 ---
 
