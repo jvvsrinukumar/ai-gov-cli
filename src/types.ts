@@ -1,4 +1,4 @@
-export type Stack = 'flutter' | 'kotlin' | 'nodejs' | 'react' | 'angular' | 'swiftui' | 'python';
+export type Stack = 'flutter' | 'kotlin' | 'nodejs' | 'react' | 'angular' | 'swiftui' | 'python' | 'java';
 
 export interface BaseProfile {
     stackDisplay: string;
@@ -94,6 +94,13 @@ export interface ScanResult {
     detectedMainActor: boolean;
     detectedMason: boolean;
     detectedFVM: boolean;
+    // Java specific
+    detectedJavaVersion: string;
+    detectedPreviewFeatures: boolean;
+    detectedBuildSystem: string;
+    detectedOSGi: boolean;
+    detectedLombok: boolean;
+    detectedMapStruct: boolean;
     // Node.js specific
     detectedLang: string;
     detectedModuleSystem: string;
@@ -195,6 +202,9 @@ export function createDefaultScanResult(): ScanResult {
         detectedNetworkSwift: '', detectedLocalDBSwift: '',
         detectedDepManagerSwift: '', detectedSwiftMinIOS: '',
         detectedMainActor: false, detectedMason: false, detectedFVM: false,
+        detectedJavaVersion: '', detectedPreviewFeatures: false,
+        detectedBuildSystem: '', detectedOSGi: false,
+        detectedLombok: false, detectedMapStruct: false,
         detectedLang: '', detectedModuleSystem: '', detectedNodeVersion: '',
         detectedDBDriver: '', detectedCloudProvider: '', detectedCloudServices: '',
         detectedRealtime: '', detectedScheduler: '', detectedUpload: '',

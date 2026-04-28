@@ -39,6 +39,12 @@ function getPhases(c: GovernanceConfig): string {
 - **Phase 3 — Service** (business logic, error handling)
 - **Phase 4 — Router** (FastAPI endpoints, dependency injection, OpenAPI tags)
 - **Phase 5 — Tests** (pytest unit tests, integration tests with TestClient)`;
+        case 'java':
+            return `- **Phase 1 — Domain** (JPA entities, DTOs, repository interfaces)
+- **Phase 2 — Repository** (Spring Data repository, ${c.scan.detectedORM || 'JPA'} queries)
+- **Phase 3 — Service** (business logic, transaction management, error handling)
+- **Phase 4 — Controller** (REST endpoints, request validation, ${c.scan.detectedSwagger ? 'OpenAPI annotations' : 'response mapping'})
+- **Phase 5 — Tests** (JUnit 5 unit tests for service, MockMvc integration tests for controller)`;
         default:
             return `- **Phase 1 — Domain** (models, interfaces, core types)
 - **Phase 2 — Data** (repository, data access)
@@ -56,6 +62,7 @@ function getExampleFeature(c: GovernanceConfig): string {
         case 'angular': return 'user-profile';
         case 'nodejs': return 'user-auth';
         case 'python': return 'user_auth';
+        case 'java': return 'user-profile';
         default: return 'my-feature';
     }
 }
@@ -94,6 +101,11 @@ ${fd}/${featureName}/${featureName}.controller${ext}`;
 ${fd}/${featureName}/repository${ext}
 ${fd}/${featureName}/service${ext}
 ${fd}/${featureName}/router${ext}`;
+        case 'java':
+            return `${fd}/<pkg>/model/${featureName.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('')}${ext}
+${fd}/<pkg>/repository/${featureName.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('')}Repository${ext}
+${fd}/<pkg>/service/${featureName.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('')}Service${ext}
+${fd}/<pkg>/controller/${featureName.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join('')}Controller${ext}`;
         default:
             return `${fd}/${featureName}/model${ext}\n${fd}/${featureName}/service${ext}`;
     }

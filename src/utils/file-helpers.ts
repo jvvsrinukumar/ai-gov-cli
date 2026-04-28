@@ -75,6 +75,35 @@ export function swiftPkgHas(projectDir: string, pattern: string): boolean {
     return new RegExp(pattern).test(content);
 }
 
+/** Check if any pom.xml (root + child modules) contains a pattern */
+export function pomHas(projectDir: string, pattern: string): boolean {
+    const rootPom = join(projectDir, 'pom.xml');
+    if (!existsSync(rootPom)) return false;
+    const rootContent = readFileSync(rootPom, 'utf-8');
+    if (new RegExp(pattern).test(rootContent)) return true;
+    // Check child module POMs
+    const moduleMatch = rootContent.match(/<modules>([\s\S]*?)<\/modules>/);
+    if (moduleMatch) {
+        const modules = moduleMatch[1].match(/<module>([^<]+)<\/module>/g);
+        if (modules) {
+            for (const m of modules) {
+                const modName = m.replace(/<\/?module>/g, '').trim();
+                const childPom = join(projectDir, modName, 'pom.xml');
+                if (existsSync(childPom)) {
+                    const childContent = readFileSync(childPom, 'utf-8');
+                    if (new RegExp(pattern).test(childContent)) return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+/** Read root pom.xml content or empty string */
+export function readPom(projectDir: string): string {
+    return readFileSafe(join(projectDir, 'pom.xml'));
+}
+
 /** Find package.json, checking src/package.json as fallback */
 export function findPackageJson(projectDir: string): string | null {
     const primary = join(projectDir, 'package.json');

@@ -3,7 +3,7 @@
 > This guide is written for freshers, students, and junior developers.
 > Every step is explained. Nothing is assumed. Copy-paste and follow.
 
-**Version:** 15.2.0
+**Version:** 16.0.0
 **Last updated:** April 2026
 
 ---
@@ -238,7 +238,7 @@ git add .gitlab-ci.yml                            # GitLab
 # OR
 git add bitbucket-pipelines.yml                   # Bitbucket
 
-git commit -m "chore: add ai-gov governance framework v15.2.0"
+git commit -m "chore: add ai-gov governance framework v16.0.0"
 git push origin develop    # or whatever your main integration branch is
 ```
 
@@ -690,7 +690,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install governance CLI
-        run: npm install -g ai-gov@15.2.0
+        run: npm install -g ai-gov@16.0.0
 
       - name: Run governance check
         run: ai-gov pr-check --base ${{ github.event.pull_request.base.ref }} --format github > /tmp/governance-report.md
@@ -879,7 +879,7 @@ governance-check:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq
-    - npm install -g ai-gov@15.2.0
+    - npm install -g ai-gov@16.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab
   rules:
@@ -937,7 +937,7 @@ governance-check:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq curl
-    - npm install -g ai-gov@15.2.0
+    - npm install -g ai-gov@16.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab > /tmp/report.md
     - |
@@ -1059,7 +1059,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq
-            - npm install -g ai-gov@15.2.0
+            - npm install -g ai-gov@16.0.0
             - ai-gov pr-check --base $BITBUCKET_PR_DESTINATION_BRANCH --format terminal
 ```
 
@@ -1104,7 +1104,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq curl
-            - npm install -g ai-gov@15.2.0
+            - npm install -g ai-gov@16.0.0
             - ai-gov pr-check --base $BITBUCKET_PR_DESTINATION_BRANCH --format terminal > /tmp/report.txt
             - cat /tmp/report.txt
             - |
@@ -1236,7 +1236,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install governance CLI
-        run: npm install -g ai-gov@15.2.0
+        run: npm install -g ai-gov@16.0.0
 
       - name: Run governance check
         run: ai-gov pr-check --base ${{ github.event.pull_request.base.ref }} --format github > /tmp/governance-report.md
@@ -1280,7 +1280,7 @@ governance-check:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq
-    - npm install -g ai-gov@15.2.0
+    - npm install -g ai-gov@16.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab
   rules:
@@ -1319,7 +1319,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq
-            - npm install -g ai-gov@15.2.0
+            - npm install -g ai-gov@16.0.0
             - |
               # Only run for specific target branches
               TARGET="$BITBUCKET_PR_DESTINATION_BRANCH"
@@ -1683,7 +1683,7 @@ npx ai-gov doctor
 
 # Commit
 git add .claude/ specs/ CLAUDE.md .github/    # adjust for your platform
-git commit -m "chore: add ai-gov governance framework v15.2.0"
+git commit -m "chore: add ai-gov governance framework v16.0.0"
 git push origin develop
 ```
 
@@ -1755,4 +1755,4 @@ add login screen                                        ❌ (missing type prefix
 
 ---
 
-*This guide covers ai-gov v15.2.0. For CLI reference and troubleshooting, see [complete_usage_guide.md](./complete_usage_guide.md).*
+*This guide covers ai-gov v16.0.0. For CLI reference and troubleshooting, see [complete_usage_guide.md](./complete_usage_guide.md).*

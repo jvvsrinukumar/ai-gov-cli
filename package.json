@@ -1,6 +1,6 @@
 {
   "name": "ai-gov",
-  "version": "15.2.0",
+  "version": "16.0.0",
   "description": "AI Governance Framework for Claude Code — scan-adaptive steering, hooks, and spec templates",
   "type": "module",
   "bin": {
@@ -33,7 +33,10 @@
     "angular",
     "kotlin",
     "python",
-    "swiftui"
+    "swiftui",
+    "java",
+    "spring-boot",
+    "maven"
   ],
   "author": "Srinu Jonnalagadda <jvvsrinukumar@gmail.com>",
   "license": "MIT",

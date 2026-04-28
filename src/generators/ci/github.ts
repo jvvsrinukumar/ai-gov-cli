@@ -1,5 +1,5 @@
 export function generateGithubCI(): string {
-    return `name: Governance Check
+  return `name: Governance Check
 on:
   pull_request:
     branches: [main, develop, master]
@@ -24,7 +24,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install governance CLI
-        run: npm install -g ai-gov@15.2.0
+        run: npm install -g ai-gov@16.0.0
 
       - name: Run governance check
         run: ai-gov pr-check --base \${{ github.event.pull_request.base.ref }} --format github > /tmp/governance-report.md

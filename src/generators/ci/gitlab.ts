@@ -1,24 +1,24 @@
 export function generateGitlabCI(existingContent?: string): string {
-    const governanceStage = `
+  const governanceStage = `
 governance-check:
   stage: test
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq
-    - npm install -g ai-gov@15.2.0
+    - npm install -g ai-gov@16.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 `;
 
-    if (existingContent) {
-        // Append governance stage to existing content
-        return existingContent.trimEnd() + '\n' + governanceStage;
-    }
+  if (existingContent) {
+    // Append governance stage to existing content
+    return existingContent.trimEnd() + '\n' + governanceStage;
+  }
 
-    // Create minimal .gitlab-ci.yml
-    return `stages:
+  // Create minimal .gitlab-ci.yml
+  return `stages:
   - test
 ${governanceStage}`;
 }

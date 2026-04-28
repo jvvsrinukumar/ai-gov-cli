@@ -11,6 +11,7 @@ import { scanReact } from './react.js';
 import { scanAngular } from './angular.js';
 import { scanSwiftUI } from './swiftui.js';
 import { scanPython } from './python.js';
+import { scanJava } from './java.js';
 import { scanJsPackageManager, scanJsScripts, scanJsTooling, scanJsTestFramework } from './shared-js.js';
 
 export function scanProject(
@@ -45,6 +46,7 @@ export function scanProject(
             break;
         case 'swiftui': scanSwiftUI(projectDir, profile, scan); break;
         case 'python': scanPython(projectDir, profile, scan); break;
+        case 'java': scanJava(projectDir, profile, scan); break;
     }
 
     scanHighRiskByName(stack, projectDir, profile, scan);
@@ -90,6 +92,9 @@ function scanHighRiskByName(
     let srcRoot = projectDir;
     switch (stack) {
         case 'kotlin': srcRoot = join(projectDir, 'app/src/main'); break;
+        case 'java':
+            if (existsSync(join(projectDir, 'src/main/java'))) srcRoot = join(projectDir, 'src/main/java');
+            break;
         case 'python': if (existsSync(join(projectDir, 'app'))) srcRoot = join(projectDir, 'app'); break;
         default:
             if (existsSync(join(projectDir, 'src'))) srcRoot = join(projectDir, 'src');
