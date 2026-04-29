@@ -4,7 +4,7 @@
 
 AI coding tools generate code at machine speed. This framework makes that speed more consistent — same architecture, same patterns, same file structure across sessions. It does not make Claude deterministic or correct. It gives Claude a better starting point each session and enforces hard stops on the most dangerous operations.
 
-**Version:** 15.1.0 · **Agent:** Claude Code · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · Python · Java
+**Version:** 16.0.0 · **Agent:** Claude Code · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java
 
 ---
 
@@ -33,6 +33,11 @@ ai-gov init --stack flutter    # specify stack explicitly
 ai-gov init --dry-run          # preview what would be generated (shows diffs)
 ai-gov init --update-hooks     # update only stale hooks after version upgrade
 ai-gov init --overwrite        # regenerate everything
+
+# Workspace: init governance for all projects at once
+ai-gov workspace --dir /path/to/workspace          # auto-discovers all projects
+ai-gov workspace --dir /path/to/workspace --dry-run
+ai-gov workspace --dir /path/to/workspace --only backend/api,frontend/app
 ```
 
 ### Governance Commands (inside Claude Code)
@@ -130,7 +135,90 @@ specs/
 | **[Prompt Guide](docs/cli_prompt_guide.md)** | Quick reference — commands, fallback syntax, anti-patterns |
 | **[Deep Dive](docs/cli_deep_dive.md)** | Complete technical reference — scanners, hooks, templates, /audit 12-step |
 | **[Developer Commands](docs/cli_developer_commands.md)** | Claude Code built-in commands + graphify + daily workflow cheatsheet |
-| **[CHANGELOG](docs/cli_CHANGELOG.md)** | Version history v10 → v14.3 |
+| **[Complete Usage Guide](docs/complete_usage_guide.md)** | All commands, workspace setup, CI setup, git hooks, pr-check |
+| **[CHANGELOG](docs/cli_CHANGELOG.md)** | Version history v10 → v16.0.0 |
+
+---
+
+## Workspace Setup (multiple projects)
+
+Use `ai-gov workspace` when your workspace contains multiple projects — whether grouped into `backend/` / `frontend/` folders or laid out flat at the root.
+
+### Two layouts supported
+
+**Grouped (Image 1 — backend + frontend folders):**
+```
+workspace/
+  backend/
+    accushield-kiosk-apis/    ← Node.js
+    corporate_node/           ← Node.js
+    monitor_nodejs/           ← Node.js
+  frontend/
+    corporate_angular/        ← Angular
+```
+
+**Flat (Image 2 — all projects at root):**
+```
+workspace/
+  accushield-kiosk-apis/      ← Node.js
+  corporate_node/             ← Node.js
+  monitor_nodejs/             ← Node.js
+  staff-server/               ← Node.js
+  volunteer-server/           ← Node.js
+```
+
+### Run once at workspace root
+
+```bash
+ai-gov workspace --dir /path/to/workspace
+```
+
+### What gets generated
+
+```
+workspace/
+  .claude/                              ← workspace-level governance
+    CLAUDE.md                           ← master rules (lists all projects)
+    steering/
+      workspace-policy.md              ← shared AI usage rules for all projects
+      cross-project-rules.md           ← API contracts, no cross-src imports
+      project-registry.md              ← all projects, stacks, governance status
+
+  backend/
+    accushield-kiosk-apis/
+      .claude/                          ← full Node.js governance
+        CLAUDE.md                           (+ workspace reference injected)
+        steering/ hooks/ commands/
+      specs/
+    corporate_node/
+      .claude/                          ← full Node.js governance
+      specs/
+
+  frontend/
+    corporate_angular/
+      .claude/                          ← full Angular governance
+        CLAUDE.md                           (+ workspace reference injected)
+        steering/ hooks/ commands/
+      specs/
+```
+
+Each project's `.claude/CLAUDE.md` gets a `## Workspace Rules` section appended automatically, pointing to the shared workspace steering files.
+
+### Options
+
+| Flag | Description |
+|------|-------------|
+| `--dry-run` | Preview everything — nothing written |
+| `--overwrite` | Replace all existing governance files |
+| `--only <paths>` | Comma-separated list of relative paths to init only |
+
+### Next steps after workspace init
+
+1. Review `workspace/.claude/CLAUDE.md`
+2. Fill in project descriptions in `.claude/steering/project-registry.md`
+3. Document API contracts in `.claude/steering/cross-project-rules.md`
+4. Commit `.claude/` and `specs/` in each project
+5. Run `ai-gov doctor --dir <project>` per project to verify
 
 ---
 

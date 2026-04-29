@@ -12,6 +12,8 @@
 
 `ai-gov init` scans your project, figures out your stack, and generates ~40 governance files that teach Claude Code your architecture rules — and optionally installs git hooks that enforce commit standards and a CI check that runs on every pull request.
 
+`ai-gov workspace` does the same for an entire workspace — scanning every sub-project at once, generating per-project governance, and adding shared workspace-level steering files that all projects inherit.
+
 ---
 
 ## Three layers — each optional, each builds on the previous
@@ -21,8 +23,9 @@
 | **Layer 1 — AI Steering** | `npx ai-gov init` | Generates Claude Code steering files, hooks, and spec templates in `.claude/`. Claude reads these automatically and follows your architecture rules. |
 | **Layer 2 — Git Hooks** | `npx ai-gov init --git-hooks` | Generates pre-commit and commit-msg bash scripts. Runs when any developer does `git commit`. Checks file size, secrets, TODOs, debug statements, and commit message format. |
 | **Layer 3 — CI + PR Check** | `npx ai-gov init --ci github` | Generates a CI pipeline that runs governance on every PR and posts results as a comment. Also available standalone: `npx ai-gov pr-check`. |
+| **Workspace** | `npx ai-gov workspace` | Scans a workspace root, auto-discovers all sub-projects, runs per-project governance for each detected stack, and generates shared workspace-level steering files (workspace-policy, cross-project-rules, project-registry). |
 
-You can do Layer 1 only. Or Layer 1 + 2. Or all three. They're independent.
+You can do Layer 1 only. Or Layer 1 + 2. Or all three. They're independent. Use `workspace` when multiple projects live under one root.
 
 ---
 
@@ -704,6 +707,85 @@ ai-gov pr-check --format json | jq '.summary'
 
 Only Credentials blocks by default. Promote any check to blocking by editing `.claude/governance.json`.
 
+### `ai-gov workspace`
+
+```bash
+ai-gov workspace [options]
+```
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-d, --dir <path>` | Workspace root directory | `process.cwd()` |
+| `--dry-run` | Preview what would be generated — nothing written | false |
+| `--overwrite` | Replace all existing governance files silently | false |
+| `--only <projects>` | Comma-separated list of relative project paths to init | all discovered |
+
+**Workspace layouts supported:**
+
+*Grouped (backend/frontend folders):*
+```
+workspace/
+  backend/
+    accushield-kiosk-apis/    ← Node.js — auto-detected
+    corporate_node/           ← Node.js — auto-detected
+  frontend/
+    corporate_angular/        ← Angular — auto-detected
+```
+
+*Flat (all projects at root level):*
+```
+workspace/
+  corporate_node/             ← Node.js — auto-detected
+  staff-server/               ← Node.js — auto-detected
+  volunteer-server/           ← Node.js — auto-detected
+```
+
+**Group directories scanned automatically:** `backend/`, `frontend/`, `mobile/`, `services/`, `apps/`, `packages/`, `libs/`
+
+**Stack detected per project from:** `package.json`, `pubspec.yaml`, `pom.xml`, `build.gradle`, `pyproject.toml`, `Package.swift`, `settings.gradle`
+
+```bash
+# Auto-discover and init all projects
+ai-gov workspace --dir /path/to/workspace
+
+# Preview without writing
+ai-gov workspace --dir /path/to/workspace --dry-run
+
+# Only specific projects
+ai-gov workspace --dir /path/to/workspace --only backend/corporate_node,frontend/corporate_angular
+
+# Overwrite existing governance
+ai-gov workspace --dir /path/to/workspace --overwrite
+```
+
+**What gets generated:**
+
+```
+workspace/
+  .claude/
+    CLAUDE.md                         ← workspace master rules (lists all projects)
+    steering/
+      workspace-policy.md             ← shared AI usage policy for all projects
+      cross-project-rules.md          ← API contracts, no cross-src imports rule
+      project-registry.md             ← table of all projects + stacks + status
+
+  backend/
+    corporate_node/
+      .claude/                        ← full per-project governance (Node.js rules)
+        CLAUDE.md                         references workspace rules
+        steering/ hooks/ commands/
+      specs/
+
+  frontend/
+    corporate_angular/
+      .claude/                        ← full per-project governance (Angular rules)
+        CLAUDE.md                         references workspace rules
+        steering/ hooks/ commands/
+      specs/
+```
+
+Each project's `.claude/CLAUDE.md` is automatically appended with a workspace reference section pointing to the shared steering files.
+
 ### `ai-gov doctor`
 
 ```bash
@@ -1194,6 +1276,7 @@ ai-governance/
 │   ├── scanners/                          <- 8 stack scanners (40+ detection points each)
 │   ├── generators/
 │   │   ├── index.ts                       <- governance file orchestrator
+│   │   ├── workspace.ts                   <- workspace-level file generators
 │   │   ├── git-hooks/                     <- git hook generators
 │   │   │   ├── index.ts
 │   │   │   ├── pre-commit.ts
@@ -1212,7 +1295,8 @@ ai-governance/
 │   │       └── bitbucket.ts
 │   ├── commands/
 │   │   ├── init-git-hooks.ts              <- hook detection + wrapper installation
-│   │   └── init-ci.ts                     <- CI file writing
+│   │   ├── init-ci.ts                     <- CI file writing
+│   │   └── workspace-init.ts              <- workspace project discovery + orchestration
 │   ├── pr-check/
 │   │   ├── index.ts                       <- orchestrator
 │   │   ├── types.ts                       <- CheckResult, CheckItem
@@ -1250,7 +1334,7 @@ ai-governance/
 └── jest.config.cjs
 ```
 
-**83 source files · ~8,500 lines of TypeScript · 129 tests**
+**85 source files · ~9,100 lines of TypeScript · 129 tests**
 
 ---
 
