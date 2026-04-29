@@ -7,7 +7,7 @@ import { detectStack } from './detect-stack.js';
 import { loadBaseProfile } from './profiles.js';
 import { scanProject, checkSpecFirstEnabled } from './scanners/index.js';
 import { isInteractiveTTY, readTTYLine } from './utils/tty.js';
-import { computeContentBlocks } from './content-blocks.js';
+import { computeContentBlocks, isJavaBackend as isJavaBackendCheck } from './content-blocks.js';
 import { runGovernance } from './generators/index.js';
 import { log } from './utils/logger.js';
 import { generateGitHooks } from './generators/git-hooks/index.js';
@@ -16,8 +16,8 @@ import { generateCIConfig } from './commands/init-ci.js';
 import { runPRCheck } from './pr-check/index.js';
 import { runWorkspaceInit } from './commands/workspace-init.js';
 
-const VERSION = '15.2.0';
-const HOOK_VERSION = '15.2.0';
+const VERSION = '16.0.0';
+const HOOK_VERSION = '16.0.0';
 
 const program = new Command();
 
@@ -29,7 +29,7 @@ program
 program
     .command('init')
     .description('Scan project and generate governance files')
-    .option('-s, --stack <stack>', 'Specify stack (flutter|kotlin|nodejs|react|angular|swiftui|python)')
+    .option('-s, --stack <stack>', 'Specify stack (flutter|kotlin|nodejs|react|angular|swiftui|python|java)')
     .option('--overwrite', 'Overwrite existing files', false)
     .option('--dry-run', 'Preview changes without writing', false)
     .option('--update-hooks', 'Update only stale hooks', false)
@@ -59,7 +59,8 @@ program
         const specFirstEnabled = checkSpecFirstEnabled(projectDir);
 
         const project = collectProjectInfo(stack, projectDir);
-        const isBackend = stack === 'nodejs' || stack === 'python';
+        const isBackend = stack === 'nodejs' || stack === 'python'
+            || (stack === 'java' && isJavaBackendCheck(scan));
         const blocks = computeContentBlocks(stack, profile, scan);
 
         // Conflict resolution: prompt g/k/o when .claude/ already exists
@@ -133,6 +134,10 @@ program
         if (scan.detectedAuth) console.log(`  Auth:       ${scan.detectedAuth}`);
         if (scan.detectedCSSApproach) console.log(`  CSS:        ${scan.detectedCSSApproach}`);
         if (scan.detectedMonorepo) console.log(`  Monorepo:   ${scan.detectedMonorepo}`);
+        if (scan.detectedJavaVersion) console.log(`  Java:       ${scan.detectedJavaVersion}${scan.detectedPreviewFeatures ? ' (preview features)' : ''}`);
+        if (scan.detectedBuildSystem) console.log(`  Build:      ${scan.detectedBuildSystem}`);
+        if (scan.detectedOSGi) console.log(`  OSGi:       detected`);
+        if (scan.detectedLombok) console.log(`  Lombok:     detected`);
         console.log('');
         console.log('  Next steps:');
         console.log('    1. Review .claude/CLAUDE.md  2. Commit .claude/ and specs/');
@@ -242,6 +247,27 @@ function collectProjectInfo(stack: Stack, projectDir: string) {
             if (existsSync(pyp)) {
                 const m = readFileSync(pyp, 'utf-8').match(/^name\s*=\s*"([^"]+)"/m);
                 if (m) packageName = m[1];
+            }
+            break;
+        }
+        case 'java': {
+            // Maven: read <artifactId> or <name> from pom.xml
+            const pom = join(projectDir, 'pom.xml');
+            if (existsSync(pom)) {
+                const content = readFileSync(pom, 'utf-8');
+                const nameMatch = content.match(/<name>([^<]+)<\/name>/);
+                const artifactMatch = content.match(/<artifactId>([^<]+)<\/artifactId>/);
+                packageName = nameMatch?.[1]?.trim() || artifactMatch?.[1]?.trim() || '';
+            }
+            // Gradle fallback: read settings.gradle
+            if (!packageName) {
+                const settingsFile = existsSync(join(projectDir, 'settings.gradle.kts'))
+                    ? join(projectDir, 'settings.gradle.kts')
+                    : join(projectDir, 'settings.gradle');
+                if (existsSync(settingsFile)) {
+                    const m = readFileSync(settingsFile, 'utf-8').match(/rootProject\.name\s*=\s*['"]([^'"]+)['"]/);
+                    if (m) packageName = m[1];
+                }
             }
             break;
         }

@@ -1,12 +1,22 @@
 import type { BaseProfile, ScanResult, ContentBlocks, Stack } from './types.js';
 
+/** Java is desktop only when Swing/JavaFX detected with no server or OSGi architecture */
+export function isJavaBackend(scan: ScanResult): boolean {
+    if ((scan.detectedUISystem === 'swing' || scan.detectedUISystem === 'javafx')
+        && !scan.detectedSubtype && !scan.detectedOSGi) {
+        return false;
+    }
+    return true;
+}
+
 export function computeContentBlocks(
     stack: Stack, profile: BaseProfile, scan: ScanResult
 ): ContentBlocks {
     const lc = profile.layerNames.length;
     const ui = profile.layerNames[0];
     const data = profile.layerNames[lc - 1];
-    const isBackend = stack === 'nodejs' || stack === 'python';
+    const isBackend = stack === 'nodejs' || stack === 'python'
+        || (stack === 'java' && isJavaBackend(scan));
 
     const blocks: ContentBlocks = {
         keyPackages: buildKeyPackages(profile, scan),
@@ -202,6 +212,12 @@ function buildTypeNaming(
             table += `\n| Service class | \`<Resource>Service\` | \`UserService\` |`;
             table += `\n| ORM Model | \`<Resource>\` (PascalCase) | \`User\`, \`Organization\` |`;
             table += `\n| Pydantic Schema | \`<Resource>Create / <Resource>Response\` | \`UserCreate\`, \`UserResponse\` |`;
+        } else if (stack === 'java') {
+            table += `\n| Controller | \`<Resource>Controller.java\` | \`UserController.java\` |`;
+            table += `\n| Service | \`<Resource>Service.java\` | \`UserService.java\` |`;
+            table += `\n| Repository | \`<Resource>Repository.java\` | \`UserRepository.java\` |`;
+            table += `\n| Entity | \`<Resource>.java\` | \`User.java\` |`;
+            table += `\n| DTO | \`<Resource>Request / <Resource>Response\` | \`UserRequest.java\`, \`UserResponse.java\` |`;
         } else if (scan.detectedSubtype === 'nestjs') {
             table += `\n| Controller | \`<resource>.controller.ts\` | \`users.controller.ts\` |`;
             table += `\n| Service | \`<resource>.service.ts\` | \`users.service.ts\` |`;
@@ -251,7 +267,8 @@ function buildTestLayers(
     if (isBackend) {
         let t = '\n- Every service must have unit tests';
         t += stack === 'python' ? '\n- API endpoints must have integration tests (httpx / TestClient)'
-            : '\n- API endpoints must have integration tests (supertest)';
+            : stack === 'java' ? '\n- API endpoints must have integration tests (MockMvc / WebTestClient)'
+                : '\n- API endpoints must have integration tests (supertest)';
         t += '\n- Auth + RBAC flows must have dedicated tests';
         return t;
     }
@@ -274,6 +291,15 @@ function buildDesignFiles(
             files += `\n| \`app/schemas/<resource>.py\` | Schema | Request/response validation |`;
             files += `\n| \`tests/integration/test_<resource>_api.py\` | Test | API integration tests |`;
             files += `\n| \`tests/unit/test_<resource>_service.py\` | Test | Service unit tests |`;
+        } else if (stack === 'java') {
+            files += `\n| \`${profile.sourceDir}<pkg>/controller/<Resource>Controller.java\` | Controller | API endpoints |`;
+            files += `\n| \`${profile.sourceDir}<pkg>/service/<Resource>Service.java\` | Service | Business logic |`;
+            files += `\n| \`${profile.sourceDir}<pkg>/repository/<Resource>Repository.java\` | Repository | Data access |`;
+            files += `\n| \`${profile.sourceDir}<pkg>/model/<Resource>.java\` | Entity | JPA entity |`;
+            files += `\n| \`${profile.sourceDir}<pkg>/dto/<Resource>Request.java\` | DTO | Request shape |`;
+            files += `\n| \`${profile.sourceDir}<pkg>/dto/<Resource>Response.java\` | DTO | Response shape |`;
+            files += `\n| \`src/test/java/<pkg>/service/<Resource>ServiceTest.java\` | Test | Service unit tests |`;
+            files += `\n| \`src/test/java/<pkg>/controller/<Resource>ControllerTest.java\` | Test | API integration tests |`;
         } else if (scan.detectedSubtype === 'nestjs') {
             files += `\n| \`src/<resource>/<resource>.controller.ts\` | Controller | API endpoints |`;
             files += `\n| \`src/<resource>/<resource>.service.ts\` | Service | Business logic |`;
@@ -378,6 +404,9 @@ function buildTaskDataPhase(
         if (stack === 'nodejs') {
             return `### Database:\n- [ ] **[S] [Model]** Define or update data model(s)\n- [ ] **[S] [Migration]** Create DB migration (if applicable)\n- [ ] **[S] [Schema]** Define request/response validation schemas\n\n### If External Service Integration:\n- [ ] **[M] [Integration]** Implement external service client\n- [ ] **[S] [Integration]** Add retry logic + error handling`;
         }
+        if (stack === 'java') {
+            return `### Database / JPA:\n- [ ] **[S] [Entity]** Define or update JPA entity(ies) + relationships\n- [ ] **[S] [Migration]** Create Flyway / Liquibase migration (if applicable)\n- [ ] **[S] [Repository]** Define Spring Data repository interface\n- [ ] **[S] [DTO]** Define request + response DTOs\n\n### If External Service Integration:\n- [ ] **[M] [Integration]** Implement external service client (RestTemplate / WebClient)\n- [ ] **[S] [Integration]** Add retry logic + error handling`;
+        }
         return `### Database / ORM:\n- [ ] **[S] [Model]** Define or update ORM model(s) + relationships\n- [ ] **[S] [Migration]** Generate Alembic / DB migration\n- [ ] **[S] [Schema]** Define Pydantic request + response schemas\n\n### If External Service Integration:\n- [ ] **[M] [Integration]** Implement external service client\n- [ ] **[S] [Integration]** Add retry logic + error handling`;
     }
     return `### If Remote API — live:\n- [ ] **[S] [${data}]** Define request model\n- [ ] **[S] [${data}]** Define response model\n- [ ] **[M] [${data}]** Implement API service\n\n### If Remote API — contract available but not live:\n- [ ] **[S] [${data}]** Define models from sample JSON\n- [ ] **[M] [${data}]** Implement stubbed service\n- [ ] **[S] [${data}]** Wire real HTTP call when live _(deferred)_\n\n### If Local DB / ${profile.localStorageName}:\n- [ ] **[M] [Data]** Implement local data source\n\n### If In-Memory Only:\n- [ ] _No data layer tasks — skip to next phase_`;
@@ -397,6 +426,7 @@ function buildTaskStatePhase(
     const mid = profile.layerNames[1];
     if (isBackend) {
         if (stack === 'nodejs') return `- [ ] **[S] [Middleware]** Wire middleware (auth, DB connection, RBAC)\n- [ ] **[S] [Middleware]** Add permission/role checks`;
+        if (stack === 'java') return `- [ ] **[S] [Security]** Wire Spring Security / filter chain (auth, RBAC)\n- [ ] **[S] [Security]** Add permission/role checks`;
         return `- [ ] **[S] [Depends]** Wire dependencies (auth, DB session, RBAC)\n- [ ] **[S] [Depends]** Add permission check via \`require_permission()\``;
     }
     return `- [ ] **[S] [${mid}]** Define states\n- [ ] **[M] [${mid}]** Implement state management`;
@@ -436,6 +466,7 @@ function getTestSetupHint(stack: Stack): string {
         react: 'To add: `npm install --save-dev jest @testing-library/react` and configure.',
         angular: 'Run `ng test` to verify. Karma+Jasmine should be pre-configured.',
         python: 'To add: `pip install pytest` and create `tests/` directory.',
+        java: 'Add `junit-jupiter` to test dependencies and run `mvn test` to verify.',
     };
     return hints[stack] ?? 'Configure a test runner for this stack.';
 }
@@ -450,6 +481,14 @@ function buildLayerExecOrder(
 4. Depends layer — auth, RBAC, DB session
 5. Router layer  — API endpoints
 6. Tests         — unit (service), integration (API), RBAC`;
+    }
+    if (isBackend && stack === 'java') {
+        return `1. Entity layer     — JPA entities + migration
+2. Repository layer — Spring Data repositories
+3. Service layer    — business logic
+4. Security layer   — auth, RBAC, filters
+5. Controller layer — API endpoints
+6. Tests            — unit (service), integration (MockMvc), RBAC`;
     }
     if (isBackend) {
         let order = '';

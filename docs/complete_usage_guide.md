@@ -1,9 +1,9 @@
-# ai-gov Complete Usage Guide — v15.2.0
+# ai-gov Complete Usage Guide — v16.0.0
 
 > Step-by-step guide for developers, team leads, and CI/CD engineers.
 > Covers all three governance layers: AI Steering · Git Hooks · CI + PR Check.
 
-**Version:** 15.2.0
+**Version:** 16.0.0
 **Audience:** New adopters and teams upgrading from v15.1.0
 
 ---
@@ -64,7 +64,7 @@ The CLI (`ai-gov init`) runs on bare Windows. The bash hook scripts (`.claude/gi
 
 ```bash
 npm install -g ai-gov
-ai-gov --version    # → 15.2.0
+ai-gov --version    # → 16.0.0
 ```
 
 ### Option B — npx (no install)
@@ -82,7 +82,7 @@ cd ai-gov-cli
 npm install
 npm run build
 npm link            # makes 'ai-gov' available globally
-ai-gov --version    # → 15.2.0
+ai-gov --version    # → 16.0.0
 ```
 
 ---
@@ -109,7 +109,7 @@ Shows every file that would be created with line counts — nothing is written. 
 
 ```
 ============================================
- AI Governance v15.2.0 (Scan-Adaptive · Claude Code)
+ AI Governance v16.0.0 (Scan-Adaptive · Claude Code)
 ============================================
 
   ~ Detecting stack...
@@ -194,7 +194,7 @@ If any hook shows `✗`, run `ai-gov init` again. If jq shows `✗`, install it 
 
 ```bash
 git add .claude/ specs/ CLAUDE.md
-git commit -m "chore: add AI governance framework v15.2.0"
+git commit -m "chore: add AI governance framework v16.0.0"
 git push
 ```
 
@@ -254,7 +254,7 @@ Git Hooks:
 
 ```bash
 git add .claude/git-hooks/
-git commit -m "chore: add git governance hooks v15.2.0"
+git commit -m "chore: add git governance hooks v16.0.0"
 git push
 ```
 
@@ -715,6 +715,7 @@ The `no-debug.sh` script is generated per stack:
 | Kotlin | `println(`, `Log.d(`, `Log.v(` |
 | Node.js | `console.log(` |
 | Python | `print(`, `breakpoint(`, `pdb.set_trace(` |
+| Java | `System.out.print`, `System.err.print`, `.printStackTrace(` |
 
 ### Bypass rules (for emergencies)
 
@@ -838,7 +839,7 @@ Audit date: 2026-04-26
 
 HEALTH SCORECARD
 ────────────────
-Governance       A  97/100  All 8 steering files present, hooks v15.2.0
+Governance       A  97/100  All 8 steering files present, hooks v16.0.0
 Architecture     B  85/100  1 component fetches API directly without custom hook
 Code Patterns    A  90/100  92% Zustand usage, 3 components still use local state
 Feature Structure B  78/100  5/6 features have spec + README
@@ -870,7 +871,7 @@ ai-gov init [options]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-s, --stack <stack>` | flutter \| kotlin \| nodejs \| react \| angular \| swiftui \| python | auto-detect |
+| `-s, --stack <stack>` | flutter \| kotlin \| nodejs \| react \| angular \| swiftui \| python \| java | auto-detect |
 | `--overwrite` | Replace all existing governance files | false |
 | `--dry-run` | Preview all changes — nothing is written | false |
 | `--update-hooks` | Update only hooks that are at a lower version than the CLI | false |
@@ -984,26 +985,26 @@ ai-gov doctor -d /path/to/project
 
 ## 10. Upgrading from v15.1.0
 
-v15.2.0 adds git hooks and CI/PR check on top of the existing governance files. No existing files are changed by the upgrade.
+v16.0.0 adds git hooks and CI/PR check on top of the existing governance files. No existing files are changed by the upgrade.
 
 ```bash
 # 1. Install the new version
-npm install -g ai-gov@15.2.0
-ai-gov --version   # → 15.2.0
+npm install -g ai-gov@16.0.0
+ai-gov --version   # → 16.0.0
 
 # 2. Update hooks in your project
 cd /path/to/your/project
 ai-gov init --update-hooks
 
-# 3. Add git hooks (new in 15.2.0)
+# 3. Add git hooks (new in 16.0.0)
 ai-gov init --git-hooks
 
-# 4. Add CI config (new in 15.2.0)
+# 4. Add CI config (new in 16.0.0)
 ai-gov init --ci github    # or gitlab or bitbucket
 
 # 5. Commit everything
 git add .claude/git-hooks/ .github/workflows/
-git commit -m "chore: upgrade governance to v15.2.0 — git hooks + CI"
+git commit -m "chore: upgrade governance to v16.0.0 — git hooks + CI"
 git push
 ```
 
@@ -1046,4 +1047,4 @@ ai-gov pr-check --format json | jq '.'
 
 ---
 
-*Document covers ai-gov v15.2.0. For changes since v15.1.0 see CHANGELOG.md.*
+*Document covers ai-gov v16.0.0. For changes since v15.1.0 see CHANGELOG.md.*

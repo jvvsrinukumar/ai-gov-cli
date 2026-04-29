@@ -15,6 +15,7 @@ export function generateFormatCode(c: GovernanceConfig): string {
             case 'kotlin': fmtCmd = p.formatCmd; break;
             case 'swiftui': fmtCmd = 'swiftformat'; break;
             case 'python': fmtCmd = 'ruff format'; break;
+            case 'java': fmtCmd = p.formatCmd; break;
             default: fmtCmd = ''; break;
         }
     }

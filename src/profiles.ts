@@ -24,6 +24,7 @@ export function loadBaseProfile(stack: Stack): BaseProfile {
         case 'angular': return { ...base, ...angularProfile() };
         case 'swiftui': return { ...base, ...swiftuiProfile() };
         case 'python': return { ...base, ...pythonProfile() };
+        case 'java': return { ...base, ...javaProfile() };
     }
 }
 
@@ -210,5 +211,45 @@ function pythonProfile(): Partial<BaseProfile> {
         pkgAddBlockPattern: 'pip\\s+install\\s+[^-]|poetry\\s+add|uv\\s+add',
         rmBlockDirs: 'app/ tests/ alembic/',
         generatedExts: '.py', generatedPatterns: '*_pb2.py *_pb2_grpc.py',
+    };
+}
+
+function javaProfile(): Partial<BaseProfile> {
+    return {
+        stackDisplay: 'Java',
+        fileExt: '.java',
+        layerFlow: 'Controller → Service → Repository → Entity',
+        layerNames: ['Controller', 'Service', 'Repository', 'Entity'],
+        layerUI: 'Controller',
+        layerState: 'Service',
+        layerLogic: 'Service',
+        layerAdapter: 'Repository',
+        layerData: 'Entity',
+        formatCmd: 'mvn spotless:apply',
+        formatCmdFull: 'mvn spotless:apply',
+        analyzeCmd: 'mvn checkstyle:check',
+        analyzeCmdFile: '',
+        testCmd: 'mvn test',
+        buildCmd: 'mvn clean install',
+        installCmd: 'mvn dependency:resolve',
+        cleanCmd: 'mvn clean',
+        runCmd: 'mvn spring-boot:run',
+        sourceDir: 'src/main/java/',
+        manifestFile: 'pom.xml',
+        diFramework: 'Spring DI',
+        stateFramework: 'N/A',
+        namingFiles: 'PascalCase',
+        namingConstants: 'UPPER_SNAKE_CASE',
+        namingUISuffix: 'Controller',
+        importStyle: 'java.* → javax.*/jakarta.* → third-party → project internal',
+        statePattern: 'N/A (server-side — stateless request/response)',
+        errorPattern: 'Exception hierarchy + @ControllerAdvice global handler',
+        localStorageName: 'PostgreSQL / MySQL',
+        formatExtensions: '.java',
+        analyzeFileLevel: false,
+        pkgAddBlockPattern: '',
+        rmBlockDirs: 'src/',
+        generatedExts: '.java',
+        generatedPatterns: '*.generated.java *_.java',
     };
 }

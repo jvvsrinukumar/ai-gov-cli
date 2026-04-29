@@ -1,12 +1,12 @@
 import type { GovernanceConfig } from '../../types.js';
 
 function getObservationQuestions(c: GovernanceConfig): string {
-    const { profile } = c;
-    const sourceDir = profile.sourceDir || 'src/';
-    const featuresDir = profile.featuresDir || sourceDir;
+  const { profile } = c;
+  const sourceDir = profile.sourceDir || 'src/';
+  const featuresDir = profile.featuresDir || sourceDir;
 
-    switch (c.stack) {
-        case 'flutter': return `
+  switch (c.stack) {
+    case 'flutter': return `
 For each directory that exists under \`lib/\`, read 15-25 \`.dart\` files and answer:
 
 **HTTP / Network**
@@ -47,7 +47,7 @@ lib/core/        [N] files — role: [describe]
 [any other dirs] [N] files — role: [describe]
 \`\`\``;
 
-        case 'react': return `
+    case 'react': return `
 For each directory that exists under \`src/\` (or project root for Next.js), read 15-25 source files and answer:
 
 **Next.js / Framework (answer this first — it changes everything)**
@@ -90,7 +90,7 @@ src/hooks/        [N] files — patterns: [describe]
 [any other dirs]  [N] files — patterns: [describe]
 \`\`\``;
 
-        case 'angular': return `
+    case 'angular': return `
 For each significant directory under \`src/app/\` (or \`libs/\` if Nx), read 15-25 files and answer:
 
 **Angular version and workspace (answer this first)**
@@ -132,7 +132,7 @@ libs/ (if Nx)       [N] libraries — names: [list each]
 [any other dirs]    [N] files — patterns: [describe]
 \`\`\``;
 
-        case 'nodejs': return `
+    case 'nodejs': return `
 For each significant directory under \`${sourceDir}\`, read 15-25 files and answer:
 
 **Monorepo check (do this first)**
@@ -182,7 +182,7 @@ ${sourceDir}services/    [N] files — patterns: [describe]
 [any other dirs]         [N] files — patterns: [describe]
 \`\`\``;
 
-        case 'python': return `
+    case 'python': return `
 For each significant directory under \`${sourceDir}\`, read 15-25 files and answer:
 
 **Framework (answer this first — changes what to look for)**
@@ -235,7 +235,7 @@ tasks/ or workers/ [N] files — patterns: [describe, or "absent"]
 [any other dirs]   [N] files — patterns: [describe]
 \`\`\``;
 
-        case 'kotlin': return `
+    case 'kotlin': return `
 For each significant directory under \`app/src/main/\`, read 15-25 files and answer:
 
 **UI approach (answer this first — it changes everything)**
@@ -278,7 +278,7 @@ For each significant directory under \`app/src/main/\`, read 15-25 files and ans
 .../ui/         [N] files — UI: [Compose/XML], contains: [describe]
 \`\`\``;
 
-        case 'swiftui': return `
+    case 'swiftui': return `
 For each significant directory under \`Sources/\`, read 15-20 files and answer:
 
 **Layer structure**
@@ -307,7 +307,48 @@ Sources/.../ViewModels/ [N] files — patterns: [describe]
 [any other dirs]       [N] files — patterns: [describe]
 \`\`\``;
 
-        default: return `
+    case 'java': return `
+For each significant directory under \`${sourceDir}\`, read 15-25 \`.java\` files and answer:
+
+**Build system**
+- Is this Maven or Gradle? Multi-module or single module?
+- What Java version is configured? Are preview features enabled?
+
+**Framework detection**
+- Is this Spring Boot, Quarkus, Micronaut, plain Java, or desktop (Swing/JavaFX)?
+- If Spring Boot: what starters are used? (web, data-jpa, security, webflux?)
+- If OSGi: what bundles exist? How do they communicate?
+
+**Layer structure**
+- What layers actually exist? (controller/, service/, repository/, model/, or flat packages?)
+- Is there a DTO layer separate from entities?
+- Are interfaces used for service/repository contracts?
+
+**Data access**
+- What ORM/data approach is used? (JPA/Hibernate, MyBatis, jOOQ, Spring Data, JDBC?)
+- Where are queries defined? (Repository interfaces, @Query annotations, XML mappers?)
+
+**Dependency injection**
+- What DI approach? (Spring @Autowired/@Inject, constructor injection, Guice, OSGi SCR?)
+- Is field injection used anywhere? (anti-pattern — should be constructor injection)
+
+**Data flow**
+- Trace one real request from Controller to database. List every class it passes through.
+
+**Naming and conventions**
+- What naming pattern for Controllers, Services, Repositories, Entities?
+- What package structure? (by feature, by layer, or mixed?)
+
+**Per directory — record as facts:**
+\`\`\`
+.../controller/  [N] files — patterns: [describe]
+.../service/     [N] files — patterns: [describe]
+.../repository/  [N] files — patterns: [describe]
+.../model/       [N] files — patterns: [describe]
+.../config/      [N] files — patterns: [describe]
+\`\`\``;
+
+    default: return `
 For each significant directory under \`${sourceDir}\`, read 15-20 source files and answer:
 
 **Layer structure**: What directories exist? Is there clear separation of concerns?
@@ -317,17 +358,17 @@ For each significant directory under \`${sourceDir}\`, read 15-20 source files a
 **Naming and conventions**: File naming, class naming, folder structure patterns.
 
 Record as facts — what you actually observe, not what should be there.`;
-    }
+  }
 }
 
 function getDeadCodeSignals(c: GovernanceConfig): string {
-    const { profile } = c;
-    const sourceDir = profile.sourceDir || 'src/';
-    const featuresDir = profile.featuresDir || sourceDir;
+  const { profile } = c;
+  const sourceDir = profile.sourceDir || 'src/';
+  const featuresDir = profile.featuresDir || sourceDir;
 
-    switch (c.stack) {
-        case 'flutter':
-            return `- Files with \`_old\`, \`_backup\`, \`_copy\`, \`_v1\`, \`_deprecated\`, \`_unused\` in filename
+  switch (c.stack) {
+    case 'flutter':
+      return `- Files with \`_old\`, \`_backup\`, \`_copy\`, \`_v1\`, \`_deprecated\`, \`_unused\` in filename
 - Empty \`lib/\` subdirectories (no .dart files inside)
 - \`.dart\` files with no class declarations and no imports (orphaned stubs)
 - Files named \`example_\`, \`todo_\`, \`placeholder_\` outside of \`test/\`
@@ -337,8 +378,8 @@ function getDeadCodeSignals(c: GovernanceConfig): string {
 - \`lib/data/\` BuiltValue converter files if Chopper/BuiltValue is being retired
 - Feature folders in \`${featuresDir}\` with only a README and no code files`;
 
-        case 'react':
-            return `- Files with \`_old\`, \`_backup\`, \`_deprecated\`, \`Old\`, \`Backup\`, \`_unused\` in filename
+    case 'react':
+      return `- Files with \`_old\`, \`_backup\`, \`_deprecated\`, \`Old\`, \`Backup\`, \`_unused\` in filename
 - Barrel \`index.ts\` files that re-export types or components whose source files no longer exist
 - Unused Redux slices: \`createSlice()\` definitions not imported by any component, hook, or store
 - Unused Zustand stores: \`create()\` calls not imported anywhere in the codebase
@@ -347,8 +388,8 @@ function getDeadCodeSignals(c: GovernanceConfig): string {
 - Feature folders with only a \`types.ts\` or \`index.ts\` but no components or hooks
 - If Next.js Pages Router: spot-check \`pages/\` files — look for any not referenced by \`<Link href=\` or \`router.push(\` anywhere in the codebase (exhaustive check not required — flag obvious orphans)`;
 
-        case 'angular':
-            return `- Files with \`-old\`, \`-backup\`, \`-deprecated\`, \`-unused\`, \`Old\`, \`Deprecated\` in filename
+    case 'angular':
+      return `- Files with \`-old\`, \`-backup\`, \`-deprecated\`, \`-unused\`, \`Old\`, \`Deprecated\` in filename
 - Standalone components: not present in any other component's \`imports:\` array and not referenced in any route definition
 - NgModule-declared components: check \`@NgModule\` declarations arrays across module files (spot-check the largest modules if >15 exist) — any component not listed in any NgModule is orphaned
 - Empty \`src/app/\` subdirectories (no .ts files inside)
@@ -356,16 +397,16 @@ function getDeadCodeSignals(c: GovernanceConfig): string {
 - Services with \`@Injectable()\` but no \`providedIn\` and not listed in any \`providers\` array
 - If Nx: libraries in \`libs/\` with no \`import\` from any app or other library (check tsconfig paths usage)`;
 
-        case 'nodejs':
-            return `- Files with \`_old\`, \`_backup\`, \`_deprecated\`, \`_unused\`, \`Old\`, \`Backup\` in filename
+    case 'nodejs':
+      return `- Files with \`_old\`, \`_backup\`, \`_deprecated\`, \`_unused\`, \`Old\`, \`Backup\` in filename
 - Service files whose exported class or function is not imported by any controller, handler, or other service (check import statements)
 - Middleware files not referenced in \`app.ts\`/\`server.ts\` or any module's middleware registration
 - Empty \`${sourceDir}\` subdirectories (no .ts files inside)
 - \`.test.ts/.spec.ts\` files whose corresponding source file no longer exists
 - If NestJS: \`@Module()\` decorated files with empty \`imports\`, \`controllers\`, and \`providers\` arrays (unused module)`;
 
-        case 'python':
-            return `- Files with \`_old\`, \`_backup\`, \`_deprecated\`, \`_unused\`, \`_v1\`, \`_copy\` in filename
+    case 'python':
+      return `- Files with \`_old\`, \`_backup\`, \`_deprecated\`, \`_unused\`, \`_v1\`, \`_copy\` in filename
 - Router files (\`APIRouter\`) not included via \`include_router()\` in \`main.py\`, \`app.py\`, or a parent router
 - If Django: \`urls.py\` files not included via \`include()\` from the root \`urls.py\`
 - Service or repository files with no \`import\` from any router, view, task, or other service
@@ -374,37 +415,48 @@ function getDeadCodeSignals(c: GovernanceConfig): string {
 - Pydantic schema files not referenced by any router, service, or other schema
 - Alembic: check if table names in \`op.create_table()\` calls in \`alembic/versions/\` have a corresponding SQLAlchemy model class — tables with no model class are candidates`;
 
-        case 'kotlin':
-            return `- Classes with \`Old\`, \`Backup\`, \`Deprecated\`, \`Unused\`, \`V1\`, \`Legacy\` in class name or filename
+    case 'kotlin':
+      return `- Classes with \`Old\`, \`Backup\`, \`Deprecated\`, \`Unused\`, \`V1\`, \`Legacy\` in class name or filename
 - UseCase classes not imported by any ViewModel (read all ViewModel files and check their constructor/inject parameters)
 - Empty feature packages (folder exists, no .kt files inside)
 - \`*Test.kt\` / \`*Tests.kt\` files whose source class file no longer exists at the expected path
 - If migrating from XML to Compose: XML layout files in \`res/layout/\` not referenced by any Fragment, Activity, or \`setContent {}\` block
 - If Hilt: \`@HiltViewModel\` annotated ViewModels not injected anywhere via \`hiltViewModel()\` or \`viewModels()\``;
 
-        case 'swiftui':
-            return `- Files with \`Old\`, \`Backup\`, \`Deprecated\`, \`Unused\`, \`V1\`, \`Legacy\` in filename
+    case 'swiftui':
+      return `- Files with \`Old\`, \`Backup\`, \`Deprecated\`, \`Unused\`, \`V1\`, \`Legacy\` in filename
 - View files not referenced by any NavigationLink, TabView, or coordinator
 - ViewModel classes with no View using them
 - \`*Tests.swift\` files whose source type no longer exists
 - Singleton managers with no callers`;
 
-        default:
-            return `- Files with \`_old\`, \`_backup\`, \`_deprecated\`, \`Old\`, \`Backup\` in filename
+    case 'java':
+      return `- Classes with \`Old\`, \`Backup\`, \`Deprecated\`, \`Unused\`, \`V1\`, \`Legacy\` in class name or filename
+- \`@Service\` or \`@Component\` annotated classes not injected anywhere (check constructor params and \`@Autowired\` fields)
+- \`@Repository\` interfaces not referenced by any service class
+- \`@Controller\`/\`@RestController\` classes with no mapped endpoints being called
+- Empty packages under \`${sourceDir}\` (no .java files inside)
+- \`*Test.java\` / \`*Tests.java\` files whose source class no longer exists
+- JPA entities not referenced by any repository or query
+- Configuration classes (\`@Configuration\`) with empty \`@Bean\` methods or no beans used elsewhere
+- If multi-module: modules with no dependents (not listed as dependency in any other module's pom.xml)`;
+
+    default:
+      return `- Files with \`_old\`, \`_backup\`, \`_deprecated\`, \`Old\`, \`Backup\` in filename
 - Empty directories under \`${sourceDir}\`
 - Source files not referenced or imported by anything
 - Test files whose source no longer exists`;
-    }
+  }
 }
 
 function getTestCoverageInstructions(c: GovernanceConfig): string {
-    const { profile, scan } = c;
-    const featuresDir = profile.featuresDir || profile.sourceDir || 'src/features/';
-    const testFramework = scan.detectedTestFramework || 'not detected';
-    const testCmd = profile.testCmd || 'run tests';
+  const { profile, scan } = c;
+  const featuresDir = profile.featuresDir || profile.sourceDir || 'src/features/';
+  const testFramework = scan.detectedTestFramework || 'not detected';
+  const testCmd = profile.testCmd || 'run tests';
 
-    switch (c.stack) {
-        case 'flutter': return `
+  switch (c.stack) {
+    case 'flutter': return `
 **First — determine which scenario applies:**
 
 **SCENARIO A — No test directory:**
@@ -429,7 +481,7 @@ Score: (tested features / total features) × 100. PARTIAL = 50%.
 Spot-check 5 test files. Do they have real assertions or just empty \`expect(true, true)\` stubs?
 Flag scaffold-only tests as UNTESTED (scaffold).`;
 
-        case 'react': return `
+    case 'react': return `
 **First — determine which scenario applies:**
 
 **SCENARIO A — No test files anywhere:**
@@ -445,7 +497,7 @@ Score: (features with tests / total features) × 100. PARTIAL (only hooks or onl
 Spot-check 5 test files. Real assertions or just \`expect(wrapper).toBeTruthy()\` scaffold?
 Flag render-only tests as UNTESTED (scaffold).`;
 
-        case 'angular': return `
+    case 'angular': return `
 **First — determine which scenario applies:**
 
 **SCENARIO A — No spec files:**
@@ -461,7 +513,7 @@ Score: (files with spec / total components+services) × 100.
 Open 3-5 spec files. Are they real tests or just Angular CLI scaffold (TestBed with no expect)?
 Flag scaffold-only specs as UNTESTED (scaffold).`;
 
-        case 'nodejs': return `
+    case 'nodejs': return `
 **First — determine which scenario applies:**
 
 **SCENARIO A — No test files:**
@@ -476,7 +528,7 @@ Score: (services with tests / total services) × 100.
 Spot-check 3-5 test files. Unit tests (mocked deps) or integration tests (real DB)?
 Note which approach is used — both are valid, but note if tests hit real DB in CI.`;
 
-        case 'python': return `
+    case 'python': return `
 **First — determine which scenario applies:**
 
 **SCENARIO A — No test files:**
@@ -494,7 +546,7 @@ Spot-check 3-5 test files:
 - Django: are they using \`TestCase\` or \`APIClient\` (DRF)?
 - Are services/repositories tested with mocked ORM sessions (not hitting real DB in unit tests)?`;
 
-        case 'kotlin': return `
+    case 'kotlin': return `
 **First — determine which scenario applies:**
 
 **SCENARIO A — No test files:**
@@ -511,7 +563,7 @@ Spot-check 3-5 ViewModel test files:
 - Are coroutines advanced with \`advanceUntilIdle()\` or \`runTest {}\` blocks?
 - Are repositories mocked/faked, or do tests hit real Room/network?`;
 
-        case 'swiftui': return `
+    case 'swiftui': return `
 **SCENARIO A — No test targets:**
 If \`*Tests/\` targets are empty or absent:
 - Score: 0/100
@@ -523,58 +575,77 @@ Score: (ViewModels + Services with tests / total) × 100.
 **SCENARIO C — Tests exist everywhere:**
 Check ViewModel tests inject dependencies (no singletons used directly).`;
 
-        default: return `
+    case 'java': return `
+**First — determine which scenario applies:**
+
+**SCENARIO A — No test files:**
+If \`src/test/java/\` is absent or empty:
+- Score: 0/100
+
+**SCENARIO B — Some tests exist:**
+For each service class, check if a corresponding \`*Test.java\` or \`*Tests.java\` exists in \`src/test/java/\`.
+For each controller, check if integration tests exist (using \`@WebMvcTest\` or \`@SpringBootTest\`).
+Score: (classes with tests / total service+controller classes) × 100. PARTIAL = 50%.
+
+**SCENARIO C — Tests exist everywhere:**
+Spot-check 3-5 test files:
+- Are services tested with mocked repositories (\`@Mock\` + \`@InjectMocks\` or \`@MockBean\`)?
+- Are controllers tested with \`MockMvc\` or \`WebTestClient\`?
+- Are integration tests using \`@SpringBootTest\` with \`@Testcontainers\` or in-memory DB?
+- Do tests have real assertions or just \`assertNotNull\` stubs?`;
+
+    default: return `
 **SCENARIO A — No tests:** If no test files or test directory found → Score 0/100.
 **SCENARIO B — Partial:** Count features/modules with tests vs without. Score = (tested / total) × 100.
 **SCENARIO C — Comprehensive:** Spot-check 5 test files for real assertions vs boilerplate scaffold.`;
-    }
+  }
 }
 
 export function generateAuditCommand(c: GovernanceConfig): string {
-    const { profile, scan, project } = c;
-    const hookVer = c.hookVersion;
-    const featuresDir = profile.featuresDir || profile.sourceDir || 'src/features/';
-    const layerFlow = profile.layerFlow;
-    const taskTypes = 'New Feature · Edit Feature · Bug Fix · Refactor · Hotfix';
+  const { profile, scan, project } = c;
+  const hookVer = c.hookVersion;
+  const featuresDir = profile.featuresDir || profile.sourceDir || 'src/features/';
+  const layerFlow = profile.layerFlow;
+  const taskTypes = 'New Feature · Edit Feature · Bug Fix · Refactor · Hotfix';
 
-    const expectedHooks = [
-        'protect-files.sh', 'block-dangerous-commands.sh', 'check-secrets.sh',
-        'session-continuity.sh', 'format-code.sh', 'analyze-code.sh',
-        'check-feature-readme.sh', 'check-consistency.sh', 'check-file-size.sh',
-        'post-task-checklist.sh',
-    ].join(', ');
+  const expectedHooks = [
+    'protect-files.sh', 'block-dangerous-commands.sh', 'check-secrets.sh',
+    'session-continuity.sh', 'format-code.sh', 'analyze-code.sh',
+    'check-feature-readme.sh', 'check-consistency.sh', 'check-file-size.sh',
+    'post-task-checklist.sh',
+  ].join(', ');
 
-    const specHookNote = `check-spec-exists.sh — conditional: registered in settings.json only when \`specs/\` has feature directories beyond \`_template/\`. Intentionally absent on a fresh project.`;
+  const specHookNote = `check-spec-exists.sh — conditional: registered in settings.json only when \`specs/\` has feature directories beyond \`_template/\`. Intentionally absent on a fresh project.`;
 
-    const highRisk = scan.highRiskFiles.length
-        ? scan.highRiskFiles.slice(0, 8).join(', ')
-        : 'none detected';
+  const highRisk = scan.highRiskFiles.length
+    ? scan.highRiskFiles.slice(0, 8).join(', ')
+    : 'none detected';
 
-    const detectedAtInit = [
-        profile.stateFramework && `state: ${profile.stateFramework}`,
-        profile.diFramework && profile.diFramework !== 'N/A' && `DI: ${profile.diFramework}`,
-        scan.detectedORM && `ORM: ${scan.detectedORM}`,
-        scan.detectedTestFramework && `tests: ${scan.detectedTestFramework}`,
-        scan.detectedLinter && `linter: ${scan.detectedLinter}`,
-        scan.detectedFormatter && `formatter: ${scan.detectedFormatter}`,
-        scan.detectedRouter && `router: ${scan.detectedRouter}`,
-    ].filter(Boolean).join(' · ') || 'standard';
+  const detectedAtInit = [
+    profile.stateFramework && `state: ${profile.stateFramework}`,
+    profile.diFramework && profile.diFramework !== 'N/A' && `DI: ${profile.diFramework}`,
+    scan.detectedORM && `ORM: ${scan.detectedORM}`,
+    scan.detectedTestFramework && `tests: ${scan.detectedTestFramework}`,
+    scan.detectedLinter && `linter: ${scan.detectedLinter}`,
+    scan.detectedFormatter && `formatter: ${scan.detectedFormatter}`,
+    scan.detectedRouter && `router: ${scan.detectedRouter}`,
+  ].filter(Boolean).join(' · ') || 'standard';
 
-    const layerNames = profile.layerNames?.length
-        ? profile.layerNames : layerFlow.split('→').map(s => s.trim());
-    const logicLayer = profile.layerLogic || layerNames[Math.floor(layerNames.length / 2)] || 'Service';
-    const dataLayer  = profile.layerData  || layerNames[layerNames.length - 1] || 'DataSource';
-    const uiLayer    = profile.layerUI    || layerNames[0] || 'Component';
+  const layerNames = profile.layerNames?.length
+    ? profile.layerNames : layerFlow.split('→').map(s => s.trim());
+  const logicLayer = profile.layerLogic || layerNames[Math.floor(layerNames.length / 2)] || 'Service';
+  const dataLayer = profile.layerData || layerNames[layerNames.length - 1] || 'DataSource';
+  const uiLayer = profile.layerUI || layerNames[0] || 'Component';
 
-    const specExample = featuresDir.includes('api') || featuresDir.includes('routes')
-        ? `specs/user-auth/` : `specs/user-profile/`;
-    const specActivationCmd = `cp -r specs/_template/ ${specExample}`;
+  const specExample = featuresDir.includes('api') || featuresDir.includes('routes')
+    ? `specs/user-auth/` : `specs/user-profile/`;
+  const specActivationCmd = `cp -r specs/_template/ ${specExample}`;
 
-    const observationQuestions = getObservationQuestions(c);
-    const deadCodeSignals      = getDeadCodeSignals(c);
-    const testCoverage         = getTestCoverageInstructions(c);
+  const observationQuestions = getObservationQuestions(c);
+  const deadCodeSignals = getDeadCodeSignals(c);
+  const testCoverage = getTestCoverageInstructions(c);
 
-    return `# /audit — Project Truth Check
+  return `# /audit — Project Truth Check
 
 > **Project:** ${project.appName}
 > **Stack:** ${profile.stackDisplay}
@@ -666,6 +737,7 @@ Map the project structure by listing all significant directories and their file 
 - Python: \`src/\` or the main module directory (whichever holds the source)
 - Kotlin: \`app/src/main/\` — if \`commonMain/\` exists, list KMP modules
 - SwiftUI: \`Sources/\`
+- Java: \`src/main/java/\` — if multi-module Maven/Gradle, list all modules first, then drill into each module's \`src/main/java/\`. If OSGi: list bundles and note which provide services vs UI vs API
 
 \`\`\`
 DIRECTORY MAP

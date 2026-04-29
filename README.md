@@ -2,8 +2,8 @@
 
 > Scan-adaptive governance framework for Claude Code. Detects your stack automatically and generates steering files, git hooks, CI configs, and spec templates — all tailored to what's actually in your project.
 
-**Version:** 15.2.0
-**Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python
+**Version:** 16.0.0
+**Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java
 **Agent:** Claude Code
 
 ---
@@ -457,7 +457,7 @@ npx ai-gov doctor
 
 # 6. Commit and push everything
 git add .claude/ specs/ CLAUDE.md .github/
-git commit -m "chore: add ai-gov governance framework v15.2.0"
+git commit -m "chore: add ai-gov governance framework v16.0.0"
 git push
 ```
 
@@ -634,7 +634,7 @@ ai-gov init [options]
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `-s, --stack <stack>` | Force a specific stack: `flutter\|kotlin\|nodejs\|react\|angular\|swiftui\|python` | auto-detect |
+| `-s, --stack <stack>` | Force a specific stack: `flutter\|kotlin\|nodejs\|react\|angular\|swiftui\|python\|java` | auto-detect |
 | `--overwrite` | Replace all existing files silently | false |
 | `--dry-run` | Preview what would be generated — nothing written | false |
 | `--update-hooks` | Update only hooks on an older version (safe re-run) | false |
@@ -846,6 +846,7 @@ If you type a command with no argument, Claude asks for the missing information 
 | Angular | Models (interfaces, enums) | Service (HTTP, transforms) | State (NgRx actions/effects) | Component (smart + presentational) | Tests |
 | Node.js | Domain (entity, DTOs, schemas) | Repository (ORM queries) | Service (business logic) | Controller/Routes (API, Swagger) | Tests |
 | Python | Schemas (Pydantic models) | Repository (SQLAlchemy) | Service (business logic) | Router (FastAPI endpoints, DI) | Tests |
+| Java | Domain (JPA entities, DTOs) | Repository (Spring Data) | Service (business logic) | Controller (REST endpoints) | Tests |
 
 **When NOT to use `/new-feature`:**
 - The feature already exists and you want to change it → use `/edit-feature`
@@ -1081,6 +1082,9 @@ Framework (FastAPI / Django / Flask), ORM (SQLModel / SQLAlchemy / Tortoise), mi
 ### SwiftUI
 TCA, DI (Resolver / Swinject / Factory), state (@Observable / ObservableObject), async/await, network (Alamofire / Moya / URLSession), local DB (SwiftData / GRDB / Realm), @MainActor, min iOS version
 
+### Java
+Build system (Maven / Gradle), Java version (8–21+), preview features (--enable-preview), framework (Spring Boot / Spring WebFlux / Quarkus / Micronaut / JAX-RS / Javalin / Spark), DI (Spring DI / Guice / OSGi SCR / CDI / Dagger), UI (Swing / JavaFX — desktop layer flow override), ORM (JPA/Hibernate / MyBatis / jOOQ / Spring JDBC), DB (MongoDB / Redis via Spring Data), test (JUnit 5 / JUnit 4 / TestNG + Mockito / AssertJ / Testcontainers / WireMock / ArchUnit), linter (Checkstyle / SpotBugs / PMD / Error Prone), formatter (Spotless / Google Java Format), OSGi (Felix / Equinox / bnd — bundle layer flow override), multi-module (Maven modules / Gradle includes), logging (SLF4J / Logback / Log4j2), API docs (springdoc-openapi / springfox), Lombok, MapStruct
+
 ---
 
 ## When to use this (and when not to)
@@ -1185,9 +1189,9 @@ ai-governance/
 │   ├── types.ts                           <- all interfaces and types
 │   ├── cli.ts                             <- Commander setup + all commands
 │   ├── detect-stack.ts                    <- auto-detection from manifest files
-│   ├── profiles.ts                        <- defaults per stack (7 profiles)
+│   ├── profiles.ts                        <- defaults per stack (8 profiles)
 │   ├── content-blocks.ts                  <- template variable computation
-│   ├── scanners/                          <- 7 stack scanners (40+ detection points each)
+│   ├── scanners/                          <- 8 stack scanners (40+ detection points each)
 │   ├── generators/
 │   │   ├── index.ts                       <- governance file orchestrator
 │   │   ├── git-hooks/                     <- git hook generators
@@ -1229,7 +1233,7 @@ ai-governance/
 │   └── utils/
 │       ├── safe-write.ts                  <- write with dry-run/diff/version-check
 │       ├── git.ts                         <- getChangedFiles, getDiff, getCommitMessages
-│       ├── file-helpers.ts                <- pkgHas, pubspecHas, gradleHas
+│       ├── file-helpers.ts                <- pkgHas, pubspecHas, gradleHas, pomHas
 │       ├── logger.ts                      <- colored console output
 │       └── tty.ts                         <- TTY detection + line reading
 ├── tests/

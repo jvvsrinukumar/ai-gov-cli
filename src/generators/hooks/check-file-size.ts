@@ -1,30 +1,30 @@
 import type { GovernanceConfig } from '../../types.js';
 
 export function generateCheckFileSize(c: GovernanceConfig): string {
-    const p = c.profile;
-    const activeStacks = ['flutter', 'kotlin', 'react', 'angular', 'nodejs', 'python'];
+  const p = c.profile;
+  const activeStacks = ['flutter', 'kotlin', 'react', 'angular', 'nodejs', 'python', 'java'];
 
-    // Stacks without meaningful per-file size limits → no-op
-    if (!activeStacks.includes(c.stack)) {
-        return `#!/usr/bin/env bash
+  // Stacks without meaningful per-file size limits → no-op
+  if (!activeStacks.includes(c.stack)) {
+    return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
 # Stack ${c.stack} — file size check not applicable
 exit 0
 `;
-    }
+  }
 
-    // Backend stacks skip fewer file types (routes ARE worth checking for size)
-    const isBackend = c.stack === 'nodejs' || c.stack === 'python';
-    const skipNamePattern = isBackend
-        ? '^(config|index|app|server|main)'
-        : '^(theme|config|routes|route|di|injection|module|index|barrel|main|app)';
+  // Backend stacks skip fewer file types (routes ARE worth checking for size)
+  const isBackend = c.stack === 'nodejs' || c.stack === 'python' || c.isBackend;
+  const skipNamePattern = isBackend
+    ? '^(config|index|app|server|main)'
+    : '^(theme|config|routes|route|di|injection|module|index|barrel|main|app)';
 
-    // Build generated file skip lines
-    const genSkips = (p.generatedPatterns || '').split(/\s+/).filter(Boolean)
-        .map(pat => `echo "$BN" | grep -qF '${pat.replace(/\*/g, '')}' && exit 0`)
-        .join('\n');
+  // Build generated file skip lines
+  const genSkips = (p.generatedPatterns || '').split(/\s+/).filter(Boolean)
+    .map(pat => `echo "$BN" | grep -qF '${pat.replace(/\*/g, '')}' && exit 0`)
+    .join('\n');
 
-    return `#!/usr/bin/env bash
+  return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
 command -v jq &>/dev/null || exit 0
 INPUT=$(cat)

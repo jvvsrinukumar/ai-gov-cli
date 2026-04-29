@@ -4,7 +4,7 @@
 
 AI coding tools generate code at machine speed. This framework makes that speed more consistent — same architecture, same patterns, same file structure across sessions. It does not make Claude deterministic or correct. It gives Claude a better starting point each session and enforces hard stops on the most dangerous operations.
 
-**Version:** 15.1.0 · **Agent:** Claude Code · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · Python
+**Version:** 15.1.0 · **Agent:** Claude Code · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · Python · Java
 
 ---
 
@@ -117,6 +117,7 @@ specs/
 | **React** | Next.js App/Pages Router, Zustand/Redux/Jotai/React Query, Tailwind/MUI/Mantine/Chakra/Ant Design, React Hook Form+Zod, vitest/Jest, legacy class components |
 | **Angular** | Angular 14-18+, Signals, NgRx/NGXS/Akita, Angular Material, standalone/NgModule, Nx workspace, SSR, ngx-translate, legacy module detection |
 | **Python** | FastAPI/Django/Flask, SQLAlchemy/SQLModel, JWT/passlib/OAuth2, Redis/Celery/RQ, poetry/uv/pipenv, ruff/black, pytest, httpx, structlog/loguru |
+| **Java** | Maven/Gradle, Java 8–21+ (preview features), Spring Boot/WebFlux/Quarkus/Micronaut/JAX-RS, Spring DI/Guice/OSGi SCR/CDI, Swing/JavaFX, JPA/Hibernate/MyBatis/jOOQ, JUnit 5/Mockito/AssertJ/Testcontainers, Checkstyle/SpotBugs/Spotless, OSGi bundles, multi-module, SLF4J/Logback, springdoc-openapi, Lombok/MapStruct |
 
 ---
 

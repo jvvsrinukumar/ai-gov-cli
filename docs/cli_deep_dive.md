@@ -105,7 +105,7 @@ Framework (FastAPI/Django/Flask), ORM (SQLModel/SQLAlchemy/Tortoise ORM/Peewee),
 - Hard block (exit 2) with "Use environment variables or secrets manager"
 
 ### check-file-size.sh (PostToolUse: Edit|Write)
-- Active stacks: Flutter, Kotlin, React, Angular, Node.js, Python — SwiftUI = no-op
+- Active stacks: Flutter, Kotlin, React, Angular, Node.js, Python, Java — SwiftUI = no-op
 - Backend skip pattern: excludes config/index/app/server/main files but keeps routes/ in scope (God-route files are caught)
 - Frontend skip pattern: excludes theme/config/routes/di/module/index/barrel/main/app files
 - 200-300 lines: imperative warning "You MUST refactor NOW"
@@ -199,7 +199,7 @@ Scanners detect when a project has both legacy and clean-architecture zones coex
 **New scan fields:** `hasLegacyZones: boolean`, `legacyZones: string[]`, `cleanZones: string[]`, `legacyZoneNote: string`
 
 ### 200-Line File Size (v14.3+, all stacks)
-All stacks active: Flutter, Kotlin, React, Angular, Node.js, Python. SwiftUI = no-op.
+All stacks active: Flutter, Kotlin, React, Angular, Node.js, Python, Java. SwiftUI = no-op.
 200-300 = imperative warning, 300+ = hard block. Backend uses a different skip pattern (catches God-route files, skips config/index/server/main). Frontend skips theme/config/routes/di/barrel/index/main. Excludes test files, generated files, type definitions.
 
 ---

@@ -21,6 +21,9 @@ export function generateNoDebug(config: GovernanceConfig): string {
         case 'python':
             patterns = '\\bprint\\(|breakpoint\\(|pdb\\.set_trace\\(';
             break;
+        case 'java':
+            patterns = 'System\\.out\\.print|System\\.err\\.print|\\.printStackTrace\\(';
+            break;
         default:
             patterns = 'console\\.log\\(|\\bdebugger\\b';
     }
