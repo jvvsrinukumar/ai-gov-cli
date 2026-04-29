@@ -14,6 +14,7 @@ import { generateGitHooks } from './generators/git-hooks/index.js';
 import { installGitHookWrappers } from './commands/init-git-hooks.js';
 import { generateCIConfig } from './commands/init-ci.js';
 import { runPRCheck } from './pr-check/index.js';
+import { runWorkspaceInit } from './commands/workspace-init.js';
 
 const VERSION = '15.2.0';
 const HOOK_VERSION = '15.2.0';
@@ -188,6 +189,30 @@ program
     .action(async (options) => {
         const result = await runPRCheck(resolve(options.dir), options.base, options.format);
         process.exit(result.hasBlockers ? 1 : 0);
+    });
+
+program
+    .command('workspace')
+    .description('Scan workspace and generate governance for all projects')
+    .option('-d, --dir <path>', 'Workspace root directory', process.cwd())
+    .option('--dry-run', 'Preview changes without writing', false)
+    .option('--overwrite', 'Overwrite existing governance files', false)
+    .option('--only <projects>', 'Comma-separated list of project paths to init (e.g. backend/corporate_node,frontend/corporate_angular)')
+    .action((options) => {
+        const workspaceDir = resolve(options.dir);
+        if (!existsSync(workspaceDir)) {
+            log.error(`Directory not found: ${workspaceDir}`);
+            process.exit(1);
+        }
+        const only = options.only
+            ? (options.only as string).split(',').map((s: string) => s.trim()).filter(Boolean)
+            : undefined;
+        runWorkspaceInit({
+            dir: workspaceDir,
+            dryRun: options.dryRun,
+            overwrite: options.overwrite,
+            only,
+        });
     });
 
 program.parse();
