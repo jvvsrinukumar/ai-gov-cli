@@ -737,6 +737,7 @@ Map the project structure by listing all significant directories and their file 
 - Python: \`src/\` or the main module directory (whichever holds the source)
 - Kotlin: \`app/src/main/\` — if \`commonMain/\` exists, list KMP modules
 - SwiftUI: \`Sources/\`
+- Java: \`src/main/java/\` — if multi-module Maven/Gradle, list all modules first, then drill into each module's \`src/main/java/\`. If OSGi: list bundles and note which provide services vs UI vs API
 
 \`\`\`
 DIRECTORY MAP
