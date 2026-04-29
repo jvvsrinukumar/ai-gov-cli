@@ -4,7 +4,7 @@ import type { Stack, GovernanceConfig, ConflictMode } from '../types.js';
 import { createDefaultScanResult } from '../types.js';
 import { loadBaseProfile } from '../profiles.js';
 import { scanProject, checkSpecFirstEnabled } from '../scanners/index.js';
-import { computeContentBlocks } from '../content-blocks.js';
+import { computeContentBlocks, isJavaBackend as isJavaBackendCheck } from '../content-blocks.js';
 import { runGovernance } from '../generators/index.js';
 import { generateWorkspaceFiles, type WorkspaceProject, type WorkspaceConfig } from '../generators/workspace.js';
 import { log } from '../utils/logger.js';
@@ -76,7 +76,8 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
             const scan = createDefaultScanResult();
             scanProject(stack, projectDir, profile, scan);
             const specFirstEnabled = checkSpecFirstEnabled(projectDir);
-            const isBackend = stack === 'nodejs' || stack === 'python';
+            const isBackend = stack === 'nodejs' || stack === 'python'
+                || (stack === 'java' && isJavaBackendCheck(scan));
             const blocks = computeContentBlocks(stack, profile, scan);
 
             const projectInfo = collectProjectInfo(stack, projectDir);
@@ -287,6 +288,25 @@ function collectProjectInfo(stack: Stack, projectDir: string) {
                 }
                 break;
             }
+            case 'java': {
+                const pom = join(projectDir, 'pom.xml');
+                if (existsSync(pom)) {
+                    const content = readFileSync(pom, 'utf-8');
+                    const nameMatch = content.match(/<name>([^<]+)<\/name>/);
+                    const artifactMatch = content.match(/<artifactId>([^<]+)<\/artifactId>/);
+                    packageName = nameMatch?.[1]?.trim() || artifactMatch?.[1]?.trim() || '';
+                }
+                if (!packageName) {
+                    const sf = existsSync(join(projectDir, 'settings.gradle.kts'))
+                        ? join(projectDir, 'settings.gradle.kts')
+                        : join(projectDir, 'settings.gradle');
+                    if (existsSync(sf)) {
+                        const m = readFileSync(sf, 'utf-8').match(/rootProject\.name\s*=\s*['"]([^'"]+)['"]/);
+                        if (m) packageName = m[1];
+                    }
+                }
+                break;
+            }
             default: {
                 const candidates = [join(projectDir, 'package.json'), join(projectDir, 'src', 'package.json')];
                 for (const f of candidates) {
@@ -310,7 +330,7 @@ function collectProjectInfo(stack: Stack, projectDir: string) {
     };
 }
 
-const KNOWN_STACKS: Stack[] = ['flutter', 'kotlin', 'nodejs', 'react', 'angular', 'swiftui', 'python'];
+const KNOWN_STACKS: Stack[] = ['flutter', 'kotlin', 'nodejs', 'react', 'angular', 'swiftui', 'python', 'java'];
 
 function isKnownStack(s: string): s is Stack {
     return (KNOWN_STACKS as string[]).includes(s);
