@@ -135,7 +135,8 @@ specs/
 | **[Prompt Guide](docs/cli_prompt_guide.md)** | Quick reference — commands, fallback syntax, anti-patterns |
 | **[Deep Dive](docs/cli_deep_dive.md)** | Complete technical reference — scanners, hooks, templates, /audit 12-step |
 | **[Developer Commands](docs/cli_developer_commands.md)** | Claude Code built-in commands + graphify + daily workflow cheatsheet |
-| **[Complete Usage Guide](docs/complete_usage_guide.md)** | All commands, workspace setup, CI setup, git hooks, pr-check |
+| **[Complete Usage Guide](docs/complete_usage_guide.md)** | All commands, CI setup, git hooks, pr-check |
+| **[Workspace Setup Guide](docs/workspace_setup_guide.md)** | Step-by-step git hooks + CI + PR check for grouped and flat workspace layouts |
 | **[CHANGELOG](docs/cli_CHANGELOG.md)** | Version history v10 → v16.0.0 |
 
 ---

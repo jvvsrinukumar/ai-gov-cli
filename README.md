@@ -1328,6 +1328,7 @@ ai-governance/
 │   └── fixtures/                          <- minimal manifest files per stack
 ├── docs/
 │   ├── complete_usage_guide.md            <- full usage guide (all scenarios)
+│   ├── workspace_setup_guide.md           <- git hooks + CI + PR check for workspace layouts
 │   └── branching_and_ci_setup_guide.md    <- multi-branch, CI setup for all platforms
 ├── package.json
 ├── tsconfig.json

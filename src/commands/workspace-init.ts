@@ -1,5 +1,5 @@
 import { existsSync, readdirSync, readFileSync, appendFileSync } from 'fs';
-import { join, basename, relative } from 'path';
+import { join, basename } from 'path';
 import type { Stack, GovernanceConfig, ConflictMode } from '../types.js';
 import { createDefaultScanResult } from '../types.js';
 import { loadBaseProfile } from '../profiles.js';
@@ -53,6 +53,12 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
         ? allProjects.filter(p => options.only!.includes(p.relativePath))
         : allProjects;
 
+    if (options.only?.length && !projects.length) {
+        log.error(`No projects matched: ${options.only.join(', ')}`);
+        log.info(`Available: ${allProjects.map(p => p.relativePath).join(', ')}`);
+        process.exit(1);
+    }
+
     log.section(`\nDiscovered ${projects.length} project(s):`);
     for (const p of projects) {
         log.detected(`${p.relativePath}  [${p.stack}]`);
@@ -102,7 +108,7 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
 
             // Inject workspace reference into project CLAUDE.md
             if (!dryRun) {
-                injectWorkspaceReference(projectDir, dir, project.relativePath);
+                injectWorkspaceReference(projectDir, project.relativePath);
             }
 
         } catch (err) {
@@ -112,6 +118,7 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
     }
 
     // 3. Generate workspace-level files
+    if (!dryRun) addToGitignore(dir);
     log.header(`Workspace: ${workspaceName}`);
 
     const wsOpts = {
@@ -239,7 +246,7 @@ function tryDetectStack(dir: string): string | null {
 // Inject workspace reference into project CLAUDE.md
 // ---------------------------------------------------------------------------
 
-function injectWorkspaceReference(projectDir: string, workspaceDir: string, relPath: string): void {
+function injectWorkspaceReference(projectDir: string, relPath: string): void {
     const claudeMd = join(projectDir, '.claude', 'CLAUDE.md');
     if (!existsSync(claudeMd)) return;
 
@@ -342,4 +349,16 @@ function safeReadDir(dir: string) {
     } catch {
         return [];
     }
+}
+
+function addToGitignore(workspaceDir: string): void {
+    const gi = join(workspaceDir, '.gitignore');
+    const gitDir = join(workspaceDir, '.git');
+    if (!existsSync(gi) && !existsSync(gitDir)) return;
+    try {
+        const content = existsSync(gi) ? readFileSync(gi, 'utf-8') : '';
+        if (!content.includes('ai-gov')) {
+            appendFileSync(gi, '\n# AI governance CLI\nai_governance_v14*.sh\n');
+        }
+    } catch { /* ignore */ }
 }
