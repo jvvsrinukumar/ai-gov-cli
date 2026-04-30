@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync, appendFileSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, appendFileSync, mkdirSync, writeFileSync, chmodSync } from 'fs';
 import { join, basename } from 'path';
 import type { Stack, GovernanceConfig, ConflictMode } from '../types.js';
 import { createDefaultScanResult } from '../types.js';
@@ -6,7 +6,9 @@ import { loadBaseProfile } from '../profiles.js';
 import { scanProject, checkSpecFirstEnabled } from '../scanners/index.js';
 import { computeContentBlocks, isJavaBackend as isJavaBackendCheck } from '../content-blocks.js';
 import { runGovernance } from '../generators/index.js';
-import { generateWorkspaceFiles, type WorkspaceProject, type WorkspaceConfig } from '../generators/workspace.js';
+import { generateGitHooks } from '../generators/git-hooks/index.js';
+import { generateWorkspaceFiles, type WorkspaceProject, type WorkspaceConfig } from '../generators/workspace/index.js';
+import { generateWorkspacePreCommit } from '../generators/git-hooks/workspace-pre-commit.js';
 import { log } from '../utils/logger.js';
 
 const HOOK_VERSION = '16.0.0';
@@ -68,6 +70,7 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
     const conflictMode: ConflictMode = overwrite ? 'overwrite' : 'keep';
 
     // 2. Run governance per project
+    let projectsWithOwnGit = 0;
     for (const project of projects) {
         const projectDir = join(dir, project.relativePath);
         log.header(`Project: ${project.relativePath}`);
@@ -105,10 +108,16 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
             };
 
             runGovernance(config);
+            generateGitHooks(config, projectDir);
 
             // Inject workspace reference into project CLAUDE.md
             if (!dryRun) {
                 injectWorkspaceReference(projectDir, project.relativePath);
+            }
+
+            // Multi-repo: install per-project git hook if this project has its own .git/
+            if (installProjectGitHook(projectDir, project.relativePath, dryRun)) {
+                projectsWithOwnGit++;
             }
 
         } catch (err) {
@@ -140,19 +149,60 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
 
     generateWorkspaceFiles(wsConfig, wsOpts);
 
-    // 4. Summary
+    // 4. Workspace git hooks — mode-aware
+    const wsHookDir = join(dir, '.claude', 'git-hooks');
+    log.header(`Workspace git hooks: ${workspaceName}`);
+
+    // Always write the workspace-pre-commit.sh (useful even in multi-repo for CI / manual use)
+    if (!dryRun) {
+        mkdirSync(wsHookDir, { recursive: true });
+        const hookFile = join(wsHookDir, 'workspace-pre-commit.sh');
+        writeFileSync(hookFile, generateWorkspacePreCommit());
+        try { chmodSync(hookFile, 0o755); } catch { /* ignore on Windows */ }
+        log.detected('workspace-pre-commit.sh written → .claude/git-hooks/');
+    } else {
+        log.info('[dry-run] .claude/git-hooks/workspace-pre-commit.sh');
+    }
+
+    if (projectsWithOwnGit > 0) {
+        // Multi-repo: each project has its own .git/ — per-project hooks already installed above
+        log.info(`Multi-repo detected — per-project git hooks installed in ${projectsWithOwnGit} project(s)`);
+        log.info('Workspace .git/ hook not installed (not a monorepo)');
+    } else {
+        // Monorepo: single .git/ at workspace root — install workspace hook
+        if (!dryRun) {
+            installWorkspaceGitHook(dir);
+        } else {
+            log.info('[dry-run] .git/hooks/pre-commit (workspace monorepo hook)');
+        }
+    }
+
+    // 5. Summary
+    const repoMode = projectsWithOwnGit > 0 ? 'Multi-repo' : 'Monorepo';
     console.log('');
     log.header(`Done! — ${workspaceName} workspace`);
-    console.log(`  Projects initialised: ${projects.length}`);
+    console.log(`  Repo mode:  ${repoMode}`);
+    console.log(`  Projects:   ${projects.length} initialised`);
     for (const p of projects) {
-        console.log(`    ${p.relativePath}  [${p.stack}]`);
+        const hasGit = existsSync(join(dir, p.relativePath, '.git'));
+        const hookIcon = hasGit ? '(git hooks ✓)' : '(monorepo — workspace hook)';
+        console.log(`    ${p.relativePath}  [${p.stack}]  ${hookIcon}`);
     }
     console.log('');
     console.log('  Next steps:');
-    console.log('    1. Review workspace .claude/CLAUDE.md');
-    console.log('    2. Fill in project descriptions in .claude/steering/project-registry.md');
-    console.log('    3. Document API contracts in .claude/steering/cross-project-rules.md');
-    console.log('    4. Commit .claude/ and specs/ directories in each project');
+    if (projectsWithOwnGit > 0) {
+        console.log('    1. Each project has its own git repo — git hooks installed per project');
+        console.log('    2. Review .claude/CLAUDE.md in each project');
+        console.log('    3. Fill in .claude/steering/project-registry.md at workspace root');
+        console.log('    4. Document API contracts in .claude/steering/cross-project-rules.md');
+        console.log('    5. Commit .claude/ and specs/ in each project separately');
+    } else {
+        console.log('    1. Monorepo — workspace git hook installed at .git/hooks/pre-commit');
+        console.log('    2. Review workspace .claude/CLAUDE.md');
+        console.log('    3. Fill in .claude/steering/project-registry.md');
+        console.log('    4. Document API contracts in .claude/steering/cross-project-rules.md');
+        console.log('    5. Commit .claude/ and specs/ directories');
+    }
     console.log('');
 }
 
@@ -211,7 +261,7 @@ export function discoverProjects(workspaceDir: string): WorkspaceProject[] {
 // Stack detection (non-fatal version — returns null instead of process.exit)
 // ---------------------------------------------------------------------------
 
-function tryDetectStack(dir: string): string | null {
+export function tryDetectStack(dir: string): string | null {
     const hasMarker = PROJECT_MARKERS.some(m => existsSync(join(dir, m)));
     if (!hasMarker) return null;
 
@@ -219,7 +269,16 @@ function tryDetectStack(dir: string): string | null {
         // Suppress detectStack logs for workspace scan by detecting manually
         if (existsSync(join(dir, 'pubspec.yaml'))) return 'flutter';
         if (existsSync(join(dir, 'Package.swift'))) return 'swiftui';
-        if (existsSync(join(dir, 'build.gradle.kts')) || existsSync(join(dir, 'build.gradle'))) return 'kotlin';
+        if (existsSync(join(dir, 'build.gradle.kts')) || existsSync(join(dir, 'build.gradle'))) {
+            const gradleFile = existsSync(join(dir, 'build.gradle.kts'))
+                ? join(dir, 'build.gradle.kts')
+                : join(dir, 'build.gradle');
+            try {
+                const content = readFileSync(gradleFile, 'utf-8');
+                if (/kotlin\(|org\.jetbrains\.kotlin|kotlin-android|kotlin-stdlib/.test(content)) return 'kotlin';
+            } catch { /* unreadable — fall through to java */ }
+            return 'java';
+        }
         if (existsSync(join(dir, 'pom.xml')) || existsSync(join(dir, 'settings.gradle')) || existsSync(join(dir, 'settings.gradle.kts'))) return 'java';
         if (existsSync(join(dir, 'pyproject.toml')) || existsSync(join(dir, 'requirements.txt'))) return 'python';
 
@@ -349,6 +408,96 @@ function safeReadDir(dir: string) {
     } catch {
         return [];
     }
+}
+
+// ---------------------------------------------------------------------------
+// Per-project git hook installation (multi-repo)
+// ---------------------------------------------------------------------------
+
+/**
+ * Installs .git/hooks/pre-commit and commit-msg wrappers in a project that
+ * has its own git repository. Returns true if the project has its own .git/.
+ */
+function installProjectGitHook(projectDir: string, relPath: string, dryRun: boolean): boolean {
+    const gitDir = join(projectDir, '.git');
+    if (!existsSync(gitDir)) return false;
+
+    // Detect existing hook system — show guide instead of overwriting
+    const existing = detectExistingHookSystem(projectDir);
+    if (existing) {
+        log.warn(`  ${relPath}: existing ${existing} hook system detected — skipping auto-install`);
+        log.info(`    Manually add to your ${existing} config: bash .claude/git-hooks/pre-commit.sh`);
+        return true; // still counts as a multi-repo project
+    }
+
+    if (dryRun) {
+        log.info(`[dry-run] ${relPath}/.git/hooks/pre-commit`);
+        log.info(`[dry-run] ${relPath}/.git/hooks/commit-msg`);
+        return true;
+    }
+
+    try {
+        const gitHooksDir = join(gitDir, 'hooks');
+        mkdirSync(gitHooksDir, { recursive: true });
+
+        const preCommitWrapper = `#!/usr/bin/env bash
+# Installed by ai-gov workspace-init — delegates to project governance pre-commit.
+exec bash "$(git rev-parse --show-toplevel)/.claude/git-hooks/pre-commit.sh" "$@"
+`;
+        const commitMsgWrapper = `#!/usr/bin/env bash
+# Installed by ai-gov workspace-init — delegates to project governance commit-msg.
+exec bash "$(git rev-parse --show-toplevel)/.claude/git-hooks/commit-msg.sh" "$1"
+`;
+
+        writeFileSync(join(gitHooksDir, 'pre-commit'), preCommitWrapper);
+        writeFileSync(join(gitHooksDir, 'commit-msg'), commitMsgWrapper);
+        try {
+            chmodSync(join(gitHooksDir, 'pre-commit'), 0o755);
+            chmodSync(join(gitHooksDir, 'commit-msg'), 0o755);
+        } catch { /* ignore on Windows */ }
+
+        log.detected(`Git hooks installed → ${relPath}/.git/hooks/`);
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log.warn(`  Could not install git hooks for ${relPath}: ${msg}`);
+    }
+
+    return true;
+}
+
+function detectExistingHookSystem(projectDir: string): string | null {
+    if (existsSync(join(projectDir, '.husky'))) return 'husky';
+    if (existsSync(join(projectDir, '.pre-commit-config.yaml'))) return 'pre-commit';
+    if (existsSync(join(projectDir, 'lefthook.yml')) || existsSync(join(projectDir, '.lefthook.yml'))) return 'lefthook';
+    const hook = join(projectDir, '.git', 'hooks', 'pre-commit');
+    if (existsSync(hook)) {
+        try {
+            const content = readFileSync(hook, 'utf-8');
+            if (!content.includes('ai-gov')) return 'custom';
+        } catch { /* unreadable — treat as no conflict */ }
+    }
+    return null;
+}
+
+// ---------------------------------------------------------------------------
+// Workspace-level git hook installation (monorepo)
+// ---------------------------------------------------------------------------
+
+function installWorkspaceGitHook(workspaceDir: string): void {
+    const gitDir = join(workspaceDir, '.git');
+    if (!existsSync(gitDir)) return;
+    try {
+        const gitHooksDir = join(gitDir, 'hooks');
+        mkdirSync(gitHooksDir, { recursive: true });
+        const wrapper = `#!/usr/bin/env bash
+# Installed by ai-gov workspace — delegates to workspace pre-commit hook.
+exec "$(cd "$(dirname "$0")/../.." && pwd)/.claude/git-hooks/workspace-pre-commit.sh"
+`;
+        const dest = join(gitHooksDir, 'pre-commit');
+        writeFileSync(dest, wrapper);
+        try { chmodSync(dest, 0o755); } catch { /* ignore on Windows */ }
+        log.detected('Workspace hook installed → .git/hooks/pre-commit');
+    } catch { /* ignore if .git is read-only or hook install fails */ }
 }
 
 function addToGitignore(workspaceDir: string): void {
