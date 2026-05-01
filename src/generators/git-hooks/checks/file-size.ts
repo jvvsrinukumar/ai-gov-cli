@@ -2,16 +2,37 @@ export function generateFileSizeCheck(): string {
     return `#!/usr/bin/env bash
 CONFIG_DIR="$1"
 CONFIG="$CONFIG_DIR/config.json"
-command -v jq &>/dev/null || exit 0
 
-MAX=$(jq -r '.["pre-commit"]["file-size"]["max-lines"] // 300' "$CONFIG" 2>/dev/null)
-FRONTEND_ONLY=$(jq -r '.["pre-commit"]["file-size"]["frontend-only"] // true' "$CONFIG" 2>/dev/null)
+# Defaults (used when config cannot be read)
+MAX=300
+FRONTEND_ONLY=true
+EXTS=".dart .tsx .jsx .ts .js .kt .py .java"
+EXCLUDES=""
 
-# Read frontend extensions from config
-EXTS=$(jq -r '.["pre-commit"]["file-size"]["frontend-extensions"] // [".dart",".tsx",".jsx",".ts",".kt"] | join(" ")' "$CONFIG" 2>/dev/null)
-
-# Read exclude patterns
-EXCLUDES=$(jq -r '.["pre-commit"]["file-size"]["exclude-patterns"] // [] | join("|")' "$CONFIG" 2>/dev/null)
+# Override from config.json if python3 or jq is available
+if command -v python3 &>/dev/null && [[ -f "$CONFIG" ]]; then
+    _read_cfg=$(python3 -c "
+import json,sys
+try:
+    c=json.load(open(sys.argv[1]))
+    ps=c.get('pre-commit',{}).get('file-size',{})
+    print(ps.get('max-lines',300))
+    print(str(ps.get('frontend-only',True)).lower())
+    print(' '.join(ps.get('frontend-extensions',['.dart','.tsx','.jsx','.ts','.js','.kt','.py','.java'])))
+    print('|'.join(ps.get('exclude-patterns',[])))
+except:
+    print('300\\ntrue\\n.dart .tsx .jsx .ts .js .kt .py .java\\n')
+" "$CONFIG" 2>/dev/null)
+    MAX=$(echo "$_read_cfg" | sed -n '1p')
+    FRONTEND_ONLY=$(echo "$_read_cfg" | sed -n '2p')
+    EXTS=$(echo "$_read_cfg" | sed -n '3p')
+    EXCLUDES=$(echo "$_read_cfg" | sed -n '4p')
+elif command -v jq &>/dev/null && [[ -f "$CONFIG" ]]; then
+    MAX=$(jq -r '.["pre-commit"]["file-size"]["max-lines"] // 300' "$CONFIG" 2>/dev/null)
+    FRONTEND_ONLY=$(jq -r '.["pre-commit"]["file-size"]["frontend-only"] // true' "$CONFIG" 2>/dev/null)
+    EXTS=$(jq -r '.["pre-commit"]["file-size"]["frontend-extensions"] // [".dart",".tsx",".jsx",".ts",".js",".kt"] | join(" ")' "$CONFIG" 2>/dev/null)
+    EXCLUDES=$(jq -r '.["pre-commit"]["file-size"]["exclude-patterns"] // [] | join("|")' "$CONFIG" 2>/dev/null)
+fi
 
 FOUND=0
 while IFS= read -r file; do

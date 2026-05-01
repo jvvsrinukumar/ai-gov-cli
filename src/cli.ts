@@ -1,3 +1,4 @@
+import './check-node-version.js';
 import { Command } from 'commander';
 import { existsSync, readFileSync, appendFileSync } from 'fs';
 import { join, resolve, basename } from 'path';
@@ -14,7 +15,9 @@ import { generateGitHooks } from './generators/git-hooks/index.js';
 import { installGitHookWrappers } from './commands/init-git-hooks.js';
 import { generateCIConfig } from './commands/init-ci.js';
 import { runPRCheck } from './pr-check/index.js';
-import { runWorkspaceInit } from './commands/workspace-init.js';
+import { runWorkspaceInit, discoverProjects } from './commands/workspace-init.js';
+import { runUpgrade } from './commands/upgrade.js';
+import { runOnboard } from './commands/onboard.js';
 
 const VERSION = '16.0.0';
 const HOOK_VERSION = '16.0.0';
@@ -174,15 +177,52 @@ program
             }
         }
 
-        // Check jq
+        // Check JSON runtime — hooks need jq OR python3 (python3 preferred)
         const { execSync } = await import('child_process');
+        let python3Ok = false;
         let jqOk = false;
+        try { execSync('command -v python3', { stdio: 'pipe' }); python3Ok = true; } catch { /* not installed */ }
         try { execSync('command -v jq', { stdio: 'pipe' }); jqOk = true; } catch { /* not installed */ }
-        check('jq installed (required by hooks)', jqOk);
+        check('python3 installed (required for hooks — preferred)', python3Ok);
+        if (!python3Ok) check('jq installed (fallback if python3 missing)', jqOk);
+
+        if (!python3Ok && !jqOk) {
+            console.log('');
+            console.log('  CRITICAL: Neither python3 nor jq is installed.');
+            console.log('  All governance hooks will silently skip — nothing is enforced.');
+            console.log('');
+            console.log('  Fix:  brew install python3   (macOS)');
+            console.log('        apt install python3    (Ubuntu/Debian)');
+            console.log('        winget install Python  (Windows)');
+            issues++;
+        }
+
+        // Validate config.json schema if it exists
+        const configPath = join(dir, '.claude', 'git-hooks', 'config.json');
+        if (existsSync(configPath)) {
+            const configIssues = validateGitHooksConfig(configPath);
+            if (configIssues.length === 0) {
+                check('.claude/git-hooks/config.json valid', true);
+            } else {
+                check('.claude/git-hooks/config.json valid', false);
+                for (const issue of configIssues) {
+                    console.log(`     ⚠  ${issue}`);
+                }
+                issues++;
+            }
+        }
+
+        // Check git hook wrappers
+        const gitHooksDir = join(dir, '.git', 'hooks');
+        if (existsSync(join(dir, '.git'))) {
+            check('.git/hooks/pre-commit wrapper installed', existsSync(join(gitHooksDir, 'pre-commit')));
+            check('.git/hooks/commit-msg wrapper installed', existsSync(join(gitHooksDir, 'commit-msg')));
+        }
 
         console.log('');
         if (issues === 0) log.success('All checks passed!');
         else log.warn(`${issues} issue(s) found. Run 'ai-gov init' to fix.`);
+        if (!python3Ok && !jqOk) process.exit(1);
     });
 
 program
@@ -203,12 +243,49 @@ program
     .option('--dry-run', 'Preview changes without writing', false)
     .option('--overwrite', 'Overwrite existing governance files', false)
     .option('--only <projects>', 'Comma-separated list of project paths to init (e.g. backend/corporate_node,frontend/corporate_angular)')
+    .option('--upgrade', 'Upgrade hooks/commands in all existing projects (preserves steering files)', false)
+    .option('--force', 'With --upgrade: also overwrite steering files', false)
     .action((options) => {
         const workspaceDir = resolve(options.dir);
         if (!existsSync(workspaceDir)) {
             log.error(`Directory not found: ${workspaceDir}`);
             process.exit(1);
         }
+
+        if (options.upgrade) {
+            // Upgrade mode: run ai-gov upgrade on every project that has .claude/
+            const projects = discoverProjects(workspaceDir);
+            if (!projects.length) {
+                log.error('No projects found in workspace.');
+                process.exit(1);
+            }
+            log.header(`Workspace Upgrade — ${projects.length} project(s)`);
+            let upgraded = 0;
+            let skipped = 0;
+            for (const project of projects) {
+                const projectDir = join(workspaceDir, project.relativePath);
+                if (!existsSync(join(projectDir, '.claude'))) {
+                    log.warn(`  Skipping ${project.relativePath} — no .claude/ (run workspace init first)`);
+                    skipped++;
+                    continue;
+                }
+                console.log(`\n  Upgrading ${project.relativePath} [${project.stack}]...`);
+                try {
+                    runUpgrade({ dir: projectDir, force: options.force, dryRun: options.dryRun });
+                    upgraded++;
+                } catch (err) {
+                    const msg = err instanceof Error ? err.message : String(err);
+                    log.warn(`  Failed: ${project.relativePath}: ${msg}`);
+                }
+            }
+            console.log('');
+            log.header('Workspace upgrade complete');
+            console.log(`  Upgraded: ${upgraded}  Skipped: ${skipped}`);
+            console.log('  Next: git add .claude/ && git commit -m "chore: upgrade ai-gov hooks"');
+            console.log('');
+            return;
+        }
+
         const only = options.only
             ? (options.only as string).split(',').map((s: string) => s.trim()).filter(Boolean)
             : undefined;
@@ -217,6 +294,30 @@ program
             dryRun: options.dryRun,
             overwrite: options.overwrite,
             only,
+        });
+    });
+
+program
+    .command('onboard')
+    .description('New developer setup: installs local git hook wrappers and verifies governance is wired')
+    .option('-d, --dir <path>', 'Project directory', process.cwd())
+    .action((options) => {
+        runOnboard({ dir: resolve(options.dir) });
+    });
+
+program
+    .command('upgrade')
+    .description('Upgrade hooks, commands, and CLAUDE.md to the current version (preserves steering files)')
+    .option('-d, --dir <path>', 'Project directory to upgrade', process.cwd())
+    .option('-s, --stack <stack>', 'Override stack detection')
+    .option('--force', 'Also overwrite steering files (architecture.md, coding-standards.md, etc.)', false)
+    .option('--dry-run', 'Preview what would be upgraded without writing', false)
+    .action((options) => {
+        runUpgrade({
+            dir: resolve(options.dir),
+            force: options.force,
+            dryRun: options.dryRun,
+            stack: options.stack,
         });
     });
 
@@ -296,6 +397,64 @@ function pkgNameSync(projectDir: string): string {
         }
     }
     return '';
+}
+
+// ---------------------------------------------------------------------------
+// config.json schema validator (used by doctor)
+// ---------------------------------------------------------------------------
+
+function validateGitHooksConfig(configPath: string): string[] {
+    const issues: string[] = [];
+    let cfg: Record<string, unknown>;
+    try {
+        cfg = JSON.parse(readFileSync(configPath, 'utf-8'));
+    } catch {
+        return ['config.json is not valid JSON — fix syntax errors'];
+    }
+
+    const preCommit = cfg['pre-commit'];
+    if (preCommit !== undefined && typeof preCommit !== 'object') {
+        issues.push('"pre-commit" must be an object');
+        return issues;
+    }
+    const pc = (preCommit ?? {}) as Record<string, unknown>;
+
+    const checks = ['file-size', 'secrets', 'no-todos', 'no-debug', 'format-check', 'lint-check'];
+    for (const name of checks) {
+        const section = pc[name];
+        if (section === undefined) continue;
+        if (typeof section !== 'object' || section === null) {
+            issues.push(`pre-commit.${name} must be an object`);
+            continue;
+        }
+        const s = section as Record<string, unknown>;
+        if ('enabled' in s && typeof s.enabled !== 'boolean') {
+            issues.push(`pre-commit.${name}.enabled must be true or false (got ${JSON.stringify(s.enabled)})`);
+        }
+        if (name === 'file-size' && 'max-lines' in s && typeof s['max-lines'] !== 'number') {
+            issues.push(`pre-commit.file-size.max-lines must be a number (got ${JSON.stringify(s['max-lines'])})`);
+        }
+    }
+
+    const commitMsg = cfg['commit-msg'];
+    if (commitMsg !== undefined) {
+        if (typeof commitMsg !== 'object' || commitMsg === null) {
+            issues.push('"commit-msg" must be an object');
+        } else {
+            const cm = commitMsg as Record<string, unknown>;
+            if ('conventional-commits' in cm && typeof cm['conventional-commits'] !== 'boolean') {
+                issues.push('commit-msg.conventional-commits must be true or false');
+            }
+            if ('require-ticket-ref' in cm && typeof cm['require-ticket-ref'] !== 'boolean') {
+                issues.push('commit-msg.require-ticket-ref must be true or false');
+            }
+            if ('min-description-length' in cm && typeof cm['min-description-length'] !== 'number') {
+                issues.push('commit-msg.min-description-length must be a number');
+            }
+        }
+    }
+
+    return issues;
 }
 
 function addToGitignore(projectDir: string): void {

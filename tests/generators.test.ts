@@ -54,8 +54,8 @@ function makeConfig(
         scan,
         project: DEFAULT_PROJECT,
         blocks,
-        isBackend: stack === 'nodejs' || stack === 'python',
-        hookVersion: '15.1.0',
+        isBackend: stack === 'nodejs' || stack === 'python' || stack === 'java',
+        hookVersion: '16.0.0',
         projectDir: extras.projectDir ?? '/tmp/test-project',
         specFirstEnabled: extras.specFirstEnabled ?? false,
         conflictMode: 'keep',
@@ -129,7 +129,7 @@ describe('generateArchitecture', () => {
     });
 
     test('all stacks: contains General Rules section', () => {
-        for (const stack of ['nodejs', 'react', 'flutter', 'kotlin', 'python', 'angular', 'swiftui'] as Stack[]) {
+        for (const stack of ['nodejs', 'react', 'flutter', 'kotlin', 'python', 'angular', 'swiftui', 'java'] as Stack[]) {
             const out = generateArchitecture(makeConfig(stack));
             expect(out).toContain('## General Rules');
         }
@@ -185,7 +185,7 @@ describe('generateMasterClaudeMd', () => {
     });
 
     test('all stacks: output is non-empty and contains Hard Rules', () => {
-        for (const stack of ['nodejs', 'react', 'flutter', 'kotlin', 'python', 'angular', 'swiftui'] as Stack[]) {
+        for (const stack of ['nodejs', 'react', 'flutter', 'kotlin', 'python', 'angular', 'swiftui', 'java'] as Stack[]) {
             const out = generateMasterClaudeMd(makeConfig(stack));
             expect(out.length).toBeGreaterThan(500);
             expect(out).toContain('Hard Rules');
@@ -213,7 +213,7 @@ describe('generateCodingStandards', () => {
     });
 
     test('all stacks: output is non-empty', () => {
-        for (const stack of ['nodejs', 'react', 'flutter', 'kotlin', 'python', 'angular', 'swiftui'] as Stack[]) {
+        for (const stack of ['nodejs', 'react', 'flutter', 'kotlin', 'python', 'angular', 'swiftui', 'java'] as Stack[]) {
             const out = generateCodingStandards(makeConfig(stack));
             expect(out.length).toBeGreaterThan(200);
         }
@@ -405,7 +405,7 @@ describe('generateCheckFileSize', () => {
 describe('generateCheckSecrets', () => {
     test('contains HOOK_VERSION header', () => {
         const out = generateCheckSecrets(makeConfig('nodejs'));
-        expect(out).toContain('HOOK_VERSION=15.1.0');
+        expect(out).toContain('HOOK_VERSION=16.0.0');
     });
 
     test('contains AWS AKIA key pattern', () => {
@@ -447,7 +447,7 @@ describe('generateProtectFiles', () => {
 
     test('contains HOOK_VERSION', () => {
         const out = generateProtectFiles(makeConfig('nodejs'));
-        expect(out).toContain('HOOK_VERSION=15.1.0');
+        expect(out).toContain('HOOK_VERSION=16.0.0');
     });
 });
 
@@ -550,7 +550,7 @@ describe('generateBlockDangerous', () => {
     test('contains rm -rf guard', () => {
         const out = generateBlockDangerous(makeConfig('nodejs'));
         expect(out).toContain('rm');
-        expect(out).toContain('HOOK_VERSION=15.1.0');
+        expect(out).toContain('HOOK_VERSION=16.0.0');
     });
 
     test('all stacks: non-empty valid bash', () => {
@@ -609,7 +609,7 @@ describe('computeContentBlocks', () => {
     });
 
     test('all stacks: hardRules is non-empty', () => {
-        for (const stack of ['nodejs', 'react', 'flutter', 'kotlin', 'python', 'angular', 'swiftui'] as Stack[]) {
+        for (const stack of ['nodejs', 'react', 'flutter', 'kotlin', 'python', 'angular', 'swiftui', 'java'] as Stack[]) {
             const profile = loadBaseProfile(stack);
             const scan = createDefaultScanResult();
             const blocks = computeContentBlocks(stack, profile, scan);

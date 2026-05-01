@@ -1,4 +1,5 @@
 import type { GovernanceConfig } from '../../types.js';
+import { JSON_HELPER, JSON_GUARD } from './shared.js';
 
 export function generateCheckFileSize(c: GovernanceConfig): string {
   const p = c.profile;
@@ -26,9 +27,9 @@ exit 0
 
   return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
-command -v jq &>/dev/null || exit 0
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+${JSON_GUARD}
+${JSON_HELPER}
+FILE_PATH=$(_json '.tool_input.file_path')
 [[ -z "$FILE_PATH" ]] && exit 0
 
 # Only check files with the project's source extension

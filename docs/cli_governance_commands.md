@@ -1,6 +1,9 @@
 # Governance Commands Guide
 ## Plan Mode · Task Commands · Enforcement Hook
 
+> **DEPRECATED (v15.0.0)** — This document is out of date. Current version is **v16.0.0**.
+> See [`docs/cli_workspace_commands.md`](./cli_workspace_commands.md) for current command reference.
+
 **Version:** 15.0.0
 **Audience:** Developers — daily use
 **Date:** 2026-04-25

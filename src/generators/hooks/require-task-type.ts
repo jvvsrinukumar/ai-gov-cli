@@ -1,18 +1,29 @@
 import type { GovernanceConfig } from '../../types.js';
+import { JSON_GUARD } from './shared.js';
 
 export function generateRequireTaskType(c: GovernanceConfig): string {
     return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
-# Fires on UserPromptSubmit — warns when a development task is submitted
-# without using a governance slash command or ## Task Type header.
-# Mode: WARN (default). To block: change exit 0 to exit 1 at the bottom.
+# Fires on UserPromptSubmit — blocks development tasks submitted
+# without a governance slash command or ## Task Type header.
+# Mode: BLOCK. To allow unclassified tasks: change exit 1 to exit 0 at the bottom.
 
-command -v jq &>/dev/null || exit 0
+${JSON_GUARD}
 
 INPUT=$(cat)
 
-# Extract the user message
-MSG=$(echo "$INPUT" | jq -r '.message // .prompt // ""' 2>/dev/null)
+# Extract the user message — tries jq first, falls back to python3
+if command -v jq &>/dev/null; then
+    MSG=$(printf '%s' "$INPUT" | jq -r '.message // .prompt // ""' 2>/dev/null)
+else
+    MSG=$(printf '%s' "$INPUT" | python3 -c "
+import sys,json
+try:
+    d=json.load(sys.stdin)
+    print(d.get('message') or d.get('prompt') or '')
+except: print('')
+" 2>/dev/null)
+fi
 [[ -z "$MSG" ]] && exit 0
 
 # Already classified — has a slash command
@@ -52,14 +63,18 @@ else
 fi
 
 if [ "$WARN" -eq 1 ]; then
-    cat <<'EOF'
-{
-  "additionalContext": "GOVERNANCE: This looks like a development task but has no task type classification.\\n\\nUse a governance command instead:\\n  /new-feature [name]    — build something new (plan mode + 3-gate spec)\\n  /fix [description]     — bug fix (fast path)\\n  /refactor [scope]      — structural improvement\\n  /hotfix [issue]        — production issue (immediate fix)\\n  /edit-feature [name]   — update existing feature\\n\\nOr prefix with: ## Task Type: New Feature / Bug Fix / Refactor / Hotfix / Edit Feature\\n\\nWhy: unclassified tasks skip governance workflow, spec enforcement, and plan mode."
-}
-EOF
-    # WARN mode: exit 0 to let the message through with the advisory
-    # To BLOCK instead (team enforcement), change to: exit 1
-    exit 0
+    echo "GOVERNANCE: Use a slash command to classify this task before proceeding.
+
+  /new-feature [name]    — build something new (plan mode + 3-gate spec)
+  /fix [description]     — bug fix (root cause first, minimal change)
+  /refactor [scope]      — structural change (impact analysis + test gate)
+  /hotfix [issue]        — production issue (immediate fix path)
+  /edit-feature [name]   — extend an existing feature
+
+Or prefix your message with:  ## Task Type: New Feature / Bug Fix / Refactor / Hotfix / Edit Feature
+
+Unclassified tasks skip governance workflow, spec enforcement, and plan mode." >&2
+    exit 1
 fi
 
 exit 0

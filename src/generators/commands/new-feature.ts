@@ -141,9 +141,11 @@ In plan mode you CANNOT write or edit any files. You will only show spec content
 
 ## STEP 1 — Read Context
 
-Before generating specs, read:
-1. \`.claude/steering/architecture.md\` — layer rules, zone rules if dual-mode project
-2. \`.claude/steering/coding-standards.md\` — naming and file conventions
+Architecture rules, naming conventions, layer flow, and file size limits are already in \`.claude/CLAUDE.md\` — you have them.
+
+Only read these if the task needs them:
+- \`.claude/steering/architecture.md\` — read if this project has dual-mode/legacy zones or a non-standard layer structure
+- \`.claude/steering/coding-standards.md\` — read if the task involves a pattern not covered in CLAUDE.md (e.g. state framework specifics, zone-specific rules)
 
 ---
 

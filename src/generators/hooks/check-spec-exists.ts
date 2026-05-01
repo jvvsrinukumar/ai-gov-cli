@@ -1,4 +1,5 @@
 import type { GovernanceConfig } from '../../types.js';
+import { JSON_HELPER, JSON_GUARD } from './shared.js';
 
 export function generateCheckSpecExists(c: GovernanceConfig): string {
     const p = c.profile, s = c.scan;
@@ -27,9 +28,9 @@ export function generateCheckSpecExists(c: GovernanceConfig): string {
 
     return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
-command -v jq &>/dev/null || exit 0
-INPUT=$(cat)
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+${JSON_GUARD}
+${JSON_HELPER}
+TOOL=$(_json '.tool_name')
 validate_spec() {
   local DIR="$1" W=""
   [[ ! -f "$DIR/requirements.md" ]] && W="$W\\n- requirements.md missing"
@@ -65,7 +66,7 @@ check_spec_freshness() {
   [[ -n "$W" ]] && echo "{\\"additionalContext\\":\\"SPEC FRESHNESS: $W\\"}"
 }
 if [[ "$TOOL" == "Bash" ]]; then
-  CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+  CMD=$(_json '.tool_input.command')
   [[ -z "$CMD" ]] && exit 0
   FN=""
 ${scaffoldCheck}
@@ -87,7 +88,7 @@ ${scaffoldCheck}
   fi
 fi
 if [[ "$TOOL" == "Write" || "$TOOL" == "Edit" ]]; then
-  FP=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+  FP=$(_json '.tool_input.file_path')
   [[ -z "$FP" ]] && exit 0
   [[ "$FP" != *"${fileExt}" ]] && exit 0
   BN=$(basename "$FP")

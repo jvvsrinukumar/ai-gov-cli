@@ -145,6 +145,7 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
         projects,
         dryRun,
         overwrite,
+        hookVersion: HOOK_VERSION,
     };
 
     generateWorkspaceFiles(wsConfig, wsOpts);
@@ -440,13 +441,17 @@ function installProjectGitHook(projectDir: string, relPath: string, dryRun: bool
         const gitHooksDir = join(gitDir, 'hooks');
         mkdirSync(gitHooksDir, { recursive: true });
 
+        // Use dirname-relative path — avoids $(git rev-parse --show-toplevel) which
+        // returns Windows-style paths (C:\...) in native Git Bash, breaking exec.
         const preCommitWrapper = `#!/usr/bin/env bash
 # Installed by ai-gov workspace-init — delegates to project governance pre-commit.
-exec bash "$(git rev-parse --show-toplevel)/.claude/git-hooks/pre-commit.sh" "$@"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+exec bash "$REPO_ROOT/.claude/git-hooks/pre-commit.sh" "$@"
 `;
         const commitMsgWrapper = `#!/usr/bin/env bash
 # Installed by ai-gov workspace-init — delegates to project governance commit-msg.
-exec bash "$(git rev-parse --show-toplevel)/.claude/git-hooks/commit-msg.sh" "$1"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+exec bash "$REPO_ROOT/.claude/git-hooks/commit-msg.sh" "$1"
 `;
 
         writeFileSync(join(gitHooksDir, 'pre-commit'), preCommitWrapper);
@@ -491,7 +496,8 @@ function installWorkspaceGitHook(workspaceDir: string): void {
         mkdirSync(gitHooksDir, { recursive: true });
         const wrapper = `#!/usr/bin/env bash
 # Installed by ai-gov workspace — delegates to workspace pre-commit hook.
-exec "$(cd "$(dirname "$0")/../.." && pwd)/.claude/git-hooks/workspace-pre-commit.sh"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+exec bash "$REPO_ROOT/.claude/git-hooks/workspace-pre-commit.sh"
 `;
         const dest = join(gitHooksDir, 'pre-commit');
         writeFileSync(dest, wrapper);

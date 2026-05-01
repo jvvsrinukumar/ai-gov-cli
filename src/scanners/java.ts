@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync } from 'fs';
 import { join } from 'path';
 import type { BaseProfile, ScanResult } from '../types.js';
 import { pomHas, readPom, gradleHas, fileExists, readFileSafe, findFilesRecursive } from '../utils/file-helpers.js';

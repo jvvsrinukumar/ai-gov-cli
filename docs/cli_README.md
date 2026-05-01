@@ -1,5 +1,7 @@
 # Governed AI Development — Architectural Guardrails for Claude Code
 
+> **NOTE** — This file duplicates the main `README.md`. See the root `README.md` for the authoritative, up-to-date version.
+
 > **A structured context injection system with shell-based hard stops and plan mode enforcement for AI-assisted development.**
 
 AI coding tools generate code at machine speed. This framework makes that speed more consistent — same architecture, same patterns, same file structure across sessions. It does not make Claude deterministic or correct. It gives Claude a better starting point each session and enforces hard stops on the most dangerous operations.

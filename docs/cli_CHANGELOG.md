@@ -2,6 +2,65 @@
 
 All notable changes to the AI Governance Framework.
 
+## [16.0.0] — 2026-05-01
+
+### Added — Java stack, upgrade command, onboard workflow, Windows path fix, multi-repo workspace
+
+#### New stack: Java (Maven · Gradle · Spring Boot · OSGi · desktop)
+- Full Java stack support via `ai-gov init --stack java`
+- Spring Boot layers: Controller → Service → Repository with governance steering
+- Maven and Gradle build system detection
+- OSGi and desktop app patterns included
+
+#### `ai-gov upgrade` command
+- Regenerates all hooks, Claude Code commands, and `CLAUDE.md` to latest version
+- Preserves custom steering files by default (`architecture.md`, `coding-standards.md`, etc.)
+- `--force` flag overwrites steering files (back up first)
+- `--dry-run` shows what would change without writing
+- `--dir` targets a specific project directory
+- App name detected from `config.json` and round-tripped to new generated files
+
+#### `npx ai-gov onboard` command + `onboard.sh` bash script
+- New developer setup: installs `.git/hooks/` wrappers, verifies runtime, checks governance files
+- `onboard.sh` at repo root: works via `curl -s https://raw.githubusercontent.com/jvvsrinukumar/ai-gov-cli/main/onboard.sh | bash`
+- No Node.js required for `onboard.sh` — pure bash, works on macOS/Linux/Windows Git Bash
+- Platform-specific install hints for python3/jq
+
+#### python3 fallback runtime
+- Hooks now try `python3` first, then `jq` as fallback
+- If neither is installed: visible stderr warning instead of silent skip
+- `JSON_GUARD` and `_json()` both emit warnings when runtime is missing
+- `ai-gov doctor` reports which runtime is active
+
+#### Windows path separator fix
+- `.git/hooks/pre-commit` and `commit-msg` wrappers now use `cd "$(dirname "$0")/../.."` instead of `$(git rev-parse --show-toplevel)`
+- Fixes `C:\...` path returned by Git Bash on native Windows, which broke `exec bash`
+- Fix applied to: `init-git-hooks.ts`, `workspace-init.ts`, `onboard.sh`
+
+#### `workspace --upgrade` loop
+- `ai-gov workspace --upgrade` discovers all sub-projects and upgrades each in turn
+- `--force` flag passed through to each project's upgrade
+- Progress reported per project
+
+#### `ai-gov doctor` config.json validation
+- Validates schema: `enabled` fields must be boolean, `max-lines` must be number, etc.
+- Reports invalid types with fix instructions
+
+### Fixed
+
+- `set -euo pipefail` + `cfg()`: `jq`/`python3` returning non-zero caused silent exit 2. Fixed by adding `|| echo "true"` to all runtime calls
+- Python inline code in `pre-commit.sh`: `re.findall(r'"([^"]+)"', ...)` contained bare `"` inside `python3 -c "..."` — bash terminated the string, causing exit 2. Fixed with `re.findall(r'[a-zA-Z0-9_-]+', ...)`
+- `upgrade.ts`: `require()` calls replaced with static `import` (ESLint `@typescript-eslint/no-require-imports`)
+- Integration test cleanup: `git reset HEAD --` instead of `git commit` (commit was blocked by hooks, leaving bad staged files)
+- `publishConfig.access: "public"` added — npm publish was failing for scoped packages
+
+### Changed
+
+- `prepublishOnly`: now runs `npm run build && npm test` — publish gates on passing tests
+- Package keywords: added `java`, `spring-boot`, `maven`
+
+---
+
 ## [15.1.0] — 2026-04-25
 
 ### Changed — /audit: Complete steering file coverage + persistent audit records

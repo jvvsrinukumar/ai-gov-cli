@@ -1,5 +1,8 @@
 # Setup Guide — Step by Step
 
+> **DEPRECATED** — This guide is superseded by [`docs/complete_usage_guide.md`](./complete_usage_guide.md).
+> For new developer onboarding, use `npx ai-gov onboard` or run `curl -s https://raw.githubusercontent.com/jvvsrinukumar/ai-gov-cli/main/onboard.sh | bash`.
+
 This guide assumes you've never used the governance framework before. Follow every step in order.
 
 ---

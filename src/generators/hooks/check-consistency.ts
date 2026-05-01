@@ -1,4 +1,5 @@
 import type { GovernanceConfig } from '../../types.js';
+import { JSON_HELPER, JSON_GUARD } from './shared.js';
 
 export function generateCheckConsistency(c: GovernanceConfig): string {
     const p = c.profile;
@@ -7,9 +8,9 @@ export function generateCheckConsistency(c: GovernanceConfig): string {
 
     return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
-command -v jq &>/dev/null || exit 0
-INPUT=$(cat)
-FP=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+${JSON_GUARD}
+${JSON_HELPER}
+FP=$(_json '.tool_input.file_path')
 [[ -z "$FP" ]] && exit 0
 FN=""; PR=""
 # Try FEATURES_DIR first

@@ -1,13 +1,14 @@
 import type { GovernanceConfig } from '../../types.js';
+import { JSON_HELPER, JSON_GUARD } from './shared.js';
 
 export function generateSessionContinuity(c: GovernanceConfig): string {
     const featuresDir = c.profile.featuresDir;
 
     return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
-command -v jq &>/dev/null || exit 0
-INPUT=$(cat)
-FP=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+${JSON_GUARD}
+${JSON_HELPER}
+FP=$(_json '.tool_input.file_path')
 [[ -z "$FP" || "$(basename "$FP")" == "README.md" ]] && exit 0
 PD="\${CLAUDE_PROJECT_DIR:-.}"
 if [[ "$FP" == *"/${featuresDir}"* ]]; then

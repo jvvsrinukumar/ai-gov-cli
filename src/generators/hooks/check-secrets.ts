@@ -1,19 +1,20 @@
 import type { GovernanceConfig } from '../../types.js';
+import { JSON_HELPER, JSON_GUARD } from './shared.js';
 
 export function generateCheckSecrets(c: GovernanceConfig): string {
     return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
 # Blocks writes that embed credentials, tokens, or cloud keys in source code.
 # Fires on Edit (new_string), Write (content), and Bash (command containing sensitive strings).
-command -v jq &>/dev/null || exit 0
-INPUT=$(cat)
-TOOL=$(echo "$INPUT" | jq -r '.tool_name // empty')
+${JSON_GUARD}
+${JSON_HELPER}
+TOOL=$(_json '.tool_name')
 
 # Extract the text being written depending on tool
 case "$TOOL" in
-  Edit)  CONTENT=$(echo "$INPUT" | jq -r '.tool_input.new_string // empty') ;;
-  Write) CONTENT=$(echo "$INPUT" | jq -r '.tool_input.content // empty') ;;
-  Bash)  CONTENT=$(echo "$INPUT" | jq -r '.tool_input.command // empty') ;;
+  Edit)  CONTENT=$(_json '.tool_input.new_string') ;;
+  Write) CONTENT=$(_json '.tool_input.content') ;;
+  Bash)  CONTENT=$(_json '.tool_input.command') ;;
   *)     exit 0 ;;
 esac
 [[ -z "$CONTENT" ]] && exit 0

@@ -92,14 +92,19 @@ export function installGitHookWrappers(projectDir: string, force: boolean, dryRu
         mkdirSync(gitHooksDir, { recursive: true });
     }
 
+    // Use dirname-relative path: .git/hooks/ is always two levels below repo root.
+    // Avoids $(git rev-parse --show-toplevel) which returns Windows paths (C:\...)
+    // on native Git Bash and breaks the exec call.
     const preCommitWrapper = `#!/usr/bin/env bash
 # Installed by ai-gov — calls .claude/git-hooks/pre-commit.sh
-exec bash "$(git rev-parse --show-toplevel)/.claude/git-hooks/pre-commit.sh" "$@"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+exec bash "$REPO_ROOT/.claude/git-hooks/pre-commit.sh" "$@"
 `;
 
     const commitMsgWrapper = `#!/usr/bin/env bash
 # Installed by ai-gov — calls .claude/git-hooks/commit-msg.sh
-exec bash "$(git rev-parse --show-toplevel)/.claude/git-hooks/commit-msg.sh" "$1"
+REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+exec bash "$REPO_ROOT/.claude/git-hooks/commit-msg.sh" "$1"
 `;
 
     writeFileSync(join(gitHooksDir, 'pre-commit'), preCommitWrapper);

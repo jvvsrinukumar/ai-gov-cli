@@ -109,26 +109,30 @@ Run these checks before starting:
 
 ```bash
 node --version     # must be >= 18.0.0
-jq --version       # must be >= 1.6 (most common missing tool)
 git --version
 claude --version   # Claude Code CLI
 ```
 
-### Install jq if missing
+### Runtime for hooks (python3 preferred, jq fallback)
+
+Hooks need **python3** or **jq** to read `config.json`. Install at least one:
 
 ```bash
-# macOS
-brew install jq
+# macOS (python3 preferred)
+brew install python3
+# or fallback: brew install jq
 
 # Ubuntu / Debian / WSL2
-sudo apt-get install -y jq
+sudo apt-get install -y python3
+# or fallback: sudo apt-get install -y jq
 
-# Windows (PowerShell as admin, then install Git Bash too)
-winget install jqlang.jq
+# Windows
+winget install Python.Python.3
+# or fallback: winget install jqlang.jq
 ```
 
-> **jq is critical.** If jq is not installed, every governance hook silently skips with no error.
-> Run `jq --version` to confirm before proceeding.
+> If neither is installed, hooks emit a warning and skip — no silent failures.
+> Run `ai-gov doctor` to verify your runtime is detected.
 
 ### Install ai-gov
 
@@ -697,7 +701,7 @@ Expected output:
   ✓   check-secrets.sh
   ✓   block-dangerous-commands.sh
   ...
-  ✓ jq installed
+  ✓ python3 available (hooks runtime)
 ```
 
 ---
@@ -927,15 +931,21 @@ ai-gov workspace --dir /path/to/workspace --only backend/corporate_node
 
 ---
 
-### Mistake 6 — jq not installed
+### Mistake 6 — python3 and jq both missing
 
-Symptom: git commits go through with no checks at all — no blocked messages, no output from hooks.
+Symptom: git commits show `⚠️  ai-gov hook skipped: install jq or python3` and no governance checks run.
 
 Fix:
 ```bash
-jq --version    # if this fails, jq is missing
-brew install jq # macOS
-sudo apt install jq # Linux
+python3 --version   # preferred runtime
+# macOS
+brew install python3
+# Linux
+sudo apt install python3
+
+# Alternative: install jq as fallback
+# macOS: brew install jq
+# Linux: sudo apt install jq
 ```
 
 ---

@@ -33,7 +33,9 @@ Read ALL of these before generating anything:
 1. \`specs/$ARGUMENTS/requirements.md\` — existing requirements
 2. \`specs/$ARGUMENTS/design.md\` — existing design
 3. \`specs/$ARGUMENTS/tasks.md\` — existing tasks (note which are already checked ✓)
-4. \`.claude/steering/architecture.md\` — zone rules if dual-mode project
+
+Architecture rules and naming are in \`.claude/CLAUDE.md\` — already loaded.
+Only read \`.claude/steering/architecture.md\` if this project has legacy/dual-mode zones.
 
 If any spec file is missing, note it and generate a draft from what exists in the code.
 

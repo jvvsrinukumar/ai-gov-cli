@@ -1,5 +1,8 @@
 # Deep Dive — Complete Technical Reference
 
+> **DEPRECATED (v14.3.0)** — This document is out of date. Current version is **v16.0.0**.
+> See [`docs/complete_usage_guide.md`](./complete_usage_guide.md) for the current reference.
+
 **Version:** 14.3.0 · **CLI:** TypeScript · **Runtime:** Node.js 18+
 
 ---

@@ -32,25 +32,20 @@ Before starting, verify these are installed:
 node --version     # must be >= 18.0.0
 npm --version      # any recent version
 git --version      # any recent version
-jq --version       # must be >= 1.6  ← most common missing tool
 claude --version   # Claude Code CLI
 ```
 
-### Install jq (required by ALL hooks)
+### Runtime for hooks (python3 preferred, jq fallback)
 
-```bash
-# macOS
-brew install jq
+Hooks need **python3** or **jq** to read `config.json`. python3 is preferred.
 
-# Ubuntu / Debian / WSL2
-sudo apt-get update && sudo apt-get install -y jq
+| Platform | Install python3 | Install jq (fallback) |
+|----------|----------------|----------------------|
+| macOS | `brew install python3` | `brew install jq` |
+| Ubuntu / Debian / WSL2 | `sudo apt-get install -y python3` | `sudo apt-get install -y jq` |
+| Windows | `winget install Python.Python.3` | `winget install jqlang.jq` |
 
-# Windows (PowerShell as admin)
-winget install jqlang.jq
-# Also install Git Bash: https://git-scm.com/download/win
-```
-
-> **jq is the #1 setup issue.** If jq is missing, every governance hook silently skips. You get zero enforcement with no error message.
+> If **neither** is installed, hooks emit a warning and skip — no silent failures. Run `ai-gov doctor` to check.
 
 ### Windows note
 
@@ -183,12 +178,12 @@ Expected output:
   ✓   check-consistency.sh
   ✓   check-file-size.sh
   ✓   post-task-checklist.sh
-  ✓ jq installed (required by hooks)
+  ✓ python3 available (hooks runtime)
 
 All checks passed!
 ```
 
-If any hook shows `✗`, run `ai-gov init` again. If jq shows `✗`, install it first.
+If any hook shows `✗`, run `ai-gov init` again. If runtime check fails, install python3 or jq.
 
 ### Step 5: Commit the governance files
 
@@ -1017,8 +1012,8 @@ Each teammate runs `ai-gov init --git-hooks` once after pulling to install their
 | Problem | Cause | Fix |
 |---------|-------|-----|
 | `ai-gov: command not found` | Not installed or npm link not done | `npm install -g ai-gov` |
-| Hooks don't fire at all | `jq` not installed | `brew install jq` (macOS) or `sudo apt install jq` |
-| Claude skips spec and codes directly | `.claude/CLAUDE.md` missing or jq missing | Run `ai-gov doctor` — it will identify the missing piece |
+| Hooks don't fire at all | `python3` and `jq` both missing | `brew install python3` (macOS) or `sudo apt install python3` |
+| Claude skips spec and codes directly | `.claude/CLAUDE.md` missing or runtime missing | Run `ai-gov doctor` — it will identify the missing piece |
 | `permission denied` on hook scripts | chmod not applied | `chmod +x .claude/git-hooks/*.sh .claude/git-hooks/checks/*.sh` |
 | Existing husky hooks stopped firing | ai-gov `--force` overwrote them | Add `bash .claude/git-hooks/pre-commit.sh` back to `.husky/pre-commit` |
 | `pr-check` shows 0 changed files | Running on main branch with no diverged commits | Switch to a feature branch first |

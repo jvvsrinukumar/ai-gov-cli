@@ -1,4 +1,5 @@
 import type { GovernanceConfig } from '../../types.js';
+import { JSON_HELPER, JSON_GUARD } from './shared.js';
 
 export function generateAnalyzeCode(c: GovernanceConfig): string {
     const p = c.profile;
@@ -8,9 +9,9 @@ export function generateAnalyzeCode(c: GovernanceConfig): string {
         if (c.scan.detectedLinter && !c.scan.detectedHasLinterConfig) {
             return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
-command -v jq &>/dev/null || exit 0
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+${JSON_GUARD}
+${JSON_HELPER}
+FILE_PATH=$(_json '.tool_input.file_path')
 [[ -z "$FILE_PATH" ]] && exit 0
 echo "{\\"additionalContext\\":\\"WARNING: ${c.scan.detectedLinter} is in dependencies but has no config file. Linting is disabled. Create a config (e.g. eslint.config.js) to enable it.\\"}"
 exit 0
@@ -39,9 +40,9 @@ TOOL=$(_find_tool "${analyzeBase}")
 
     return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
-command -v jq &>/dev/null || exit 0
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+${JSON_GUARD}
+${JSON_HELPER}
+FILE_PATH=$(_json '.tool_input.file_path')
 [[ -z "$FILE_PATH" ]] && exit 0
 (${extCheck}) || exit 0
 ${findToolHelper}

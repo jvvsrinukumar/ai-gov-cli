@@ -1,4 +1,5 @@
 import type { GovernanceConfig } from '../../types.js';
+import { JSON_HELPER, JSON_GUARD } from './shared.js';
 
 export function generateBlockDangerous(c: GovernanceConfig): string {
     const pkgBlock = c.profile.pkgAddBlockPattern
@@ -13,9 +14,9 @@ export function generateBlockDangerous(c: GovernanceConfig): string {
 
     return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
-command -v jq &>/dev/null || exit 0
-INPUT=$(cat)
-CMD=$(echo "$INPUT" | jq -r '.tool_input.command // empty')
+${JSON_GUARD}
+${JSON_HELPER}
+CMD=$(_json '.tool_input.command')
 [[ -z "$CMD" ]] && exit 0
 echo "$CMD" | grep -qE "git\\s+push\\s+.*--force|git\\s+push\\s+-f" && echo "BLOCKED: force push not allowed." >&2 && exit 2
 echo "$CMD" | grep -qE "git\\s+reset\\s+--hard|git\\s+clean\\s+-fd" && echo "BLOCKED: destructive git op." >&2 && exit 2

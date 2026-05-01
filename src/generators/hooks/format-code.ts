@@ -1,4 +1,5 @@
 import type { GovernanceConfig } from '../../types.js';
+import { JSON_HELPER, JSON_GUARD } from './shared.js';
 
 export function generateFormatCode(c: GovernanceConfig): string {
     const p = c.profile;
@@ -25,9 +26,9 @@ export function generateFormatCode(c: GovernanceConfig): string {
         if (c.scan.detectedFormatter && !c.scan.detectedHasFormatterConfig) {
             return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
-command -v jq &>/dev/null || exit 0
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+${JSON_GUARD}
+${JSON_HELPER}
+FILE_PATH=$(_json '.tool_input.file_path')
 [[ -z "$FILE_PATH" ]] && exit 0
 echo "{\\"additionalContext\\":\\"WARNING: ${c.scan.detectedFormatter} is in dependencies but has no config file. Auto-formatting is disabled. Create a config (e.g. .prettierrc) to enable it.\\"}"
 exit 0
@@ -56,9 +57,9 @@ TOOL=$(_find_tool "${fmtBase}")
 
     return `#!/usr/bin/env bash
 # HOOK_VERSION=${c.hookVersion}
-command -v jq &>/dev/null || exit 0
-INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+${JSON_GUARD}
+${JSON_HELPER}
+FILE_PATH=$(_json '.tool_input.file_path')
 [[ -z "$FILE_PATH" ]] && exit 0
 (${extCheck}) || exit 0
 ${findToolHelper}

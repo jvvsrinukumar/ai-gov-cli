@@ -17,10 +17,6 @@ export function generateMasterClaudeMd(c: GovernanceConfig): string {
     const legacySection = proj.legacyDescription !== 'No legacy code'
         ? `### Legacy Codebase\n${proj.legacyDescription}\n\n` : '';
 
-    const specFirstRow = c.specFirstEnabled
-        ? `| \`spec-first-workflow.md\` | ✓ | — | — | — | — |`
-        : `| \`spec-first-workflow.md\` | opt-in | — | — | — | — | (spec-first not yet active — no spec history found)`;
-
     const newFeatureStep1 = c.specFirstEnabled
         ? `1. Check \`specs/<feature>/\` exists. If not: \`cp -r specs/_template specs/<feature>\``
         : `1. (Spec-first not enforced — no existing specs. To opt in: create \`specs/<feature>/\` using \`cp -r specs/_template specs/<feature>\`)`;
@@ -66,16 +62,29 @@ ${b.keyPackages}
 
 Say: "This is a [type] task." Then proceed to step 2.
 
-### 2. Read these steering files BEFORE doing anything
-| File | Feature | Edit Feature | Bug Fix | Refactor | Hotfix |
-|------|:-------:|:------------:|:-------:|:--------:|:------:|
-| \`architecture.md\`       | ✓ | ✓ | ✓ | ✓ | ✓ |
-| \`coding-standards.md\`   | ✓ | ✓ | ✓ | ✓ | — |
-${specFirstRow}
-| \`feature-readme.md\`     | ✓ | ✓ | if editing feature | if editing feature | — |
-| \`ai-usage-policy.md\`    | ✓ | ✓ | — | if >5 files | — |
+### 2. Architecture you must follow
 
-Do NOT write any code until you have read the required files.
+**Layer flow — never skip a layer:**
+\`\`\`
+${p.layerFlow}
+\`\`\`
+${b.layerResps}
+${b.diText}
+
+**Naming:**
+- Classes: ${p.namingClasses}
+- Methods/Variables: ${p.namingMethods}
+- Constants: ${p.namingConstants}
+- Files: ${p.namingFiles}
+
+**Error handling:** ${p.errorPattern}
+
+**File size:** Every source file under 200 lines. Test files, generated files, and config files are exempt.
+
+**Type naming:**
+${b.typeNaming}
+
+> Full details in \`steering/architecture.md\` and \`steering/coding-standards.md\` — read them when working on complex structural changes.
 
 ### 3. Follow the workflow for that task type
 
@@ -127,10 +136,9 @@ ${newFeatureStep1}
 
 - Never skip a layer — \`${p.layerFlow}\`
 - Never put business logic in ${p.layerNames[0]}s
-- Follow naming from \`coding-standards.md\`
-- **Keep every file under 200 lines.**
-- If a hook gives you a warning, you MUST act on it immediately
-- If a hook blocks you, follow its instructions exactly
+- Never exceed 200 lines per file — decompose instead
+- If a hook blocks you, follow its instructions exactly — do not work around it
+- If a hook gives you a warning, act on it before continuing
 
 ---
 
