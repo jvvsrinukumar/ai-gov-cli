@@ -51,6 +51,9 @@ import {
 import {
     generateExploreCommand,
 } from '../generators/commands/explore.js';
+import {
+    generateAssessCommand,
+} from '../generators/commands/assess.js';
 import { generateArchitecture } from '../generators/architecture.js';
 import { generateCodingStandards } from '../generators/coding-standards.js';
 import { generateWorkflow } from '../generators/workflow.js';
@@ -131,13 +134,14 @@ export function runUpgrade(options: UpgradeOptions): void {
     // ── Always upgrade: commands ───────────────────────────────────────────
     log.section('Upgrading commands (.claude/commands/):');
     const cmdDir = join(projectDir, '.claude', 'commands');
-    safeWrite(join(cmdDir, 'audit.md'),       generateAuditCommand(config),      opts);
+    safeWrite(join(cmdDir, 'audit.md'), generateAuditCommand(config), opts);
     safeWrite(join(cmdDir, 'new-feature.md'), generateNewFeatureCommand(config), opts);
-    safeWrite(join(cmdDir, 'edit-feature.md'),generateEditFeatureCommand(config),opts);
-    safeWrite(join(cmdDir, 'fix.md'),         generateFixCommand(config),         opts);
-    safeWrite(join(cmdDir, 'refactor.md'),    generateRefactorCommand(config),    opts);
-    safeWrite(join(cmdDir, 'hotfix.md'),      generateHotfixCommand(config),      opts);
-    safeWrite(join(cmdDir, 'explore.md'),     generateExploreCommand(config),     opts);
+    safeWrite(join(cmdDir, 'edit-feature.md'), generateEditFeatureCommand(config), opts);
+    safeWrite(join(cmdDir, 'fix.md'), generateFixCommand(config), opts);
+    safeWrite(join(cmdDir, 'refactor.md'), generateRefactorCommand(config), opts);
+    safeWrite(join(cmdDir, 'hotfix.md'), generateHotfixCommand(config), opts);
+    safeWrite(join(cmdDir, 'explore.md'), generateExploreCommand(config), opts);
+    safeWrite(join(cmdDir, 'assess.md'), generateAssessCommand(config), opts);
 
     // ── Always upgrade: CLAUDE.md (rules are embedded here, must stay current) ─
     log.section('Upgrading .claude/CLAUDE.md:');
@@ -147,10 +151,10 @@ export function runUpgrade(options: UpgradeOptions): void {
     if (force) {
         log.section('Upgrading steering files (--force):');
         const steeringDir = join(claudeDir, 'steering');
-        safeWrite(join(steeringDir, 'architecture.md'),    generateArchitecture(config),   opts);
-        safeWrite(join(steeringDir, 'coding-standards.md'),generateCodingStandards(config),opts);
-        safeWrite(join(steeringDir, 'workflow.md'),        generateWorkflow(config),        opts);
-        safeWrite(join(steeringDir, 'constitution.md'),    generateConstitution(config),    opts);
+        safeWrite(join(steeringDir, 'architecture.md'), generateArchitecture(config), opts);
+        safeWrite(join(steeringDir, 'coding-standards.md'), generateCodingStandards(config), opts);
+        safeWrite(join(steeringDir, 'workflow.md'), generateWorkflow(config), opts);
+        safeWrite(join(steeringDir, 'constitution.md'), generateConstitution(config), opts);
     } else {
         log.info('Steering files kept (use --force to also upgrade them)');
     }
@@ -164,7 +168,7 @@ export function runUpgrade(options: UpgradeOptions): void {
     console.log('  Always upgraded:');
     console.log('    .claude/hooks/          (11 Claude Code hooks)');
     console.log('    .claude/git-hooks/      (pre-commit.sh + 6 checks)');
-    console.log('    .claude/commands/       (7 slash commands)');
+    console.log('    .claude/commands/       (8 slash commands)');
     console.log('    .claude/CLAUDE.md       (embedded rules — always current)');
     if (force) {
         console.log('    .claude/steering/       (4 steering files — force mode)');

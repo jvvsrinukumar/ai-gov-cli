@@ -26,6 +26,7 @@ import { generateFixCommand } from './commands/fix.js';
 import { generateRefactorCommand } from './commands/refactor.js';
 import { generateHotfixCommand } from './commands/hotfix.js';
 import { generateExploreCommand } from './commands/explore.js';
+import { generateAssessCommand } from './commands/assess.js';
 
 export function runGovernance(config: GovernanceConfig): void {
     console.log('');
@@ -125,6 +126,7 @@ export function runGovernance(config: GovernanceConfig): void {
     safeWrite(join(dir, '.claude', 'commands', 'refactor.md'), generateRefactorCommand(config), opts);
     safeWrite(join(dir, '.claude', 'commands', 'hotfix.md'), generateHotfixCommand(config), opts);
     safeWrite(join(dir, '.claude', 'commands', 'explore.md'), generateExploreCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'assess.md'), generateAssessCommand(config), opts);
 
     log.section('Spec templates:');
     generateSpecTemplates(config, opts);
