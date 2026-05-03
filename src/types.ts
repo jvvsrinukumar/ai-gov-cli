@@ -1,5 +1,7 @@
 export type Stack = 'flutter' | 'kotlin' | 'nodejs' | 'react' | 'angular' | 'swiftui' | 'python' | 'java';
 
+export type Agent = 'claude-code' | 'kiro';
+
 export interface BaseProfile {
     stackDisplay: string;
     fileExt: string;
@@ -166,6 +168,7 @@ export interface ContentBlocks {
 export type ConflictMode = 'keep' | 'ask' | 'overwrite';
 
 export interface GovernanceConfig {
+    agent: Agent;
     stack: Stack;
     profile: BaseProfile;
     scan: ScanResult;

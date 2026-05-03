@@ -12,4 +12,5 @@ export interface WorkspaceConfig {
     dryRun: boolean;
     overwrite: boolean;
     hookVersion: string;
+    agent?: 'claude-code' | 'kiro';
 }

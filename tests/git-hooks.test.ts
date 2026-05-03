@@ -13,6 +13,7 @@ import type { GovernanceConfig } from '../src/types.js';
 
 function makeMinimalConfig(overrides: Partial<GovernanceConfig> = {}): GovernanceConfig {
     return {
+        agent: 'claude-code',
         stack: 'react',
         profile: {
             stackDisplay: 'React',

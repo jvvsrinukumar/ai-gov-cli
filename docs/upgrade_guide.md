@@ -1,9 +1,9 @@
 # AI Governance Upgrade Guide
 
-**Version:** 16.0.0
+**Version:** 17.0.0
 **Command:** `ai-gov upgrade`
 
-This guide covers how to upgrade an existing project from an older ai-gov version to the latest hooks, commands, and CLAUDE.md — without losing your team's customised steering files.
+This guide covers how to upgrade an existing project from an older ai-gov version to the latest hooks, commands, and steering files — without losing your team's customised content.
 
 ---
 
@@ -71,8 +71,8 @@ The regenerated `.claude/CLAUDE.md` contains your app name (extracted from the o
 ### Step 5 — Commit and push
 
 ```bash
-git add .claude/
-git commit -m "chore: upgrade ai-gov hooks to v16.0.0"
+git add .claude/   # or .kiro/ if using Kiro
+git commit -m "chore: upgrade ai-gov hooks to v17.0.0"
 git push
 ```
 
@@ -167,6 +167,32 @@ git checkout HEAD -- .claude/steering/
 ```
 
 This is why steering files are preserved by default.
+
+---
+
+## What changed in v17.0.0
+
+### Kiro agent support
+
+`ai-gov init --agent kiro` generates governance files in `.kiro/` with Kiro-native formats: steering files with YAML front-matter, JSON hooks auto-discovered by the IDE, and spec templates in `.kiro/specs/_template/`.
+
+**Impact:** Teams using Kiro can now use the same governance framework. The `--agent` flag is available on `init`, `workspace`, `upgrade`, and `doctor`.
+
+### Agent auto-detection
+
+The CLI detects which agent to target from existing `.kiro/` or `.claude/` directories. No `--agent` flag needed if you already have governance set up.
+
+### Workflow shortcuts (userTriggered hooks)
+
+6 new `userTriggered` hooks provide the Kiro equivalent of Claude Code's slash commands: audit, new-feature, fix, refactor, hotfix, explore. Triggered from the Agent Hooks panel.
+
+### Pre-write secrets gate
+
+New `preToolUse` hook catches hardcoded credentials BEFORE they are written to disk — closes the enforcement gap where secrets were only detected post-write.
+
+### Agent registry
+
+Internal architecture change: agents are now registered in a central registry (`src/agents/types.ts`). Adding a third agent is a 3-line change.
 
 ---
 

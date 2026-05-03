@@ -21,10 +21,10 @@ import type { GovernanceConfig } from '../src/types.js';
 // ---------------------------------------------------------------------------
 
 const hasBash = (() => { try { execSync('command -v bash', { stdio: 'pipe' }); return true; } catch { return false; } })();
-const hasGit  = (() => { try { execSync('command -v git',  { stdio: 'pipe' }); return true; } catch { return false; } })();
+const hasGit = (() => { try { execSync('command -v git', { stdio: 'pipe' }); return true; } catch { return false; } })();
 const hasRuntime = (() => {
     try { execSync('command -v python3', { stdio: 'pipe' }); return true; } catch { /* */ }
-    try { execSync('command -v jq',      { stdio: 'pipe' }); return true; } catch { /* */ }
+    try { execSync('command -v jq', { stdio: 'pipe' }); return true; } catch { /* */ }
     return false;
 })();
 
@@ -74,6 +74,7 @@ function makeGovernanceConfig(projectDir: string): GovernanceConfig {
     scanProject(stack, projectDir, profile, scan);
     const blocks = computeContentBlocks(stack, profile, scan);
     return {
+        agent: 'claude-code',
         stack, profile, scan, blocks,
         project: {
             packageName: 'test-app', appName: 'test-app', appDescription: '',

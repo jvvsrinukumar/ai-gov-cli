@@ -18,21 +18,23 @@ import { runPRCheck } from './pr-check/index.js';
 import { runWorkspaceInit, discoverProjects } from './commands/workspace-init.js';
 import { runUpgrade } from './commands/upgrade.js';
 import { runOnboard } from './commands/onboard.js';
+import { detectAgent } from './agents/detect-agent.js';
 
-const VERSION = '16.0.0';
-const HOOK_VERSION = '16.0.0';
+const VERSION = '17.0.0';
+const HOOK_VERSION = '17.0.0';
 
 const program = new Command();
 
 program
     .name('ai-gov')
     .version(VERSION)
-    .description('AI Governance Framework for Claude Code');
+    .description('AI Governance Framework for Claude Code & Kiro');
 
 program
     .command('init')
     .description('Scan project and generate governance files')
     .option('-s, --stack <stack>', 'Specify stack (flutter|kotlin|nodejs|react|angular|swiftui|python|java)')
+    .option('-a, --agent <agent>', 'Target agent (claude-code|kiro)')
     .option('--overwrite', 'Overwrite existing files', false)
     .option('--dry-run', 'Preview changes without writing', false)
     .option('--update-hooks', 'Update only stale hooks', false)
@@ -47,7 +49,10 @@ program
             process.exit(1);
         }
 
-        log.header(`AI Governance v${VERSION} (Scan-Adaptive · Claude Code)`);
+        log.header(`AI Governance v${VERSION} (Scan-Adaptive)`);
+
+        const agent = detectAgent(projectDir, options.agent);
+        const agentDir = agent === 'kiro' ? '.kiro' : '.claude';
 
         // Add script to .gitignore
         if (!options.dryRun) {
@@ -66,12 +71,12 @@ program
             || (stack === 'java' && isJavaBackendCheck(scan));
         const blocks = computeContentBlocks(stack, profile, scan);
 
-        // Conflict resolution: prompt g/k/o when .claude/ already exists
+        // Conflict resolution: prompt g/k/o when agent dir already exists
         let conflictMode: ConflictMode = 'keep';
-        const claudeDir = join(projectDir, '.claude');
-        if (!options.overwrite && !options.dryRun && !options.updateHooks && existsSync(claudeDir) && isInteractiveTTY()) {
+        const existingDir = join(projectDir, agentDir);
+        if (!options.overwrite && !options.dryRun && !options.updateHooks && existsSync(existingDir) && isInteractiveTTY()) {
             console.log('');
-            console.log('  .claude/ already exists. How should ai-gov handle existing files?');
+            console.log(`  ${agentDir}/ already exists. How should ai-gov handle existing files?`);
             console.log('');
             console.log('  g  Generate — create new files, ask permission for each changed file  [default]');
             console.log('  k  Keep    — create new files only, leave all existing untouched');
@@ -98,6 +103,7 @@ program
         }
 
         const config: GovernanceConfig = {
+            agent,
             stack, profile, scan, project, blocks, isBackend,
             hookVersion: HOOK_VERSION, projectDir, specFirstEnabled,
             conflictMode,
@@ -143,7 +149,11 @@ program
         if (scan.detectedLombok) console.log(`  Lombok:     detected`);
         console.log('');
         console.log('  Next steps:');
-        console.log('    1. Review .claude/CLAUDE.md  2. Commit .claude/ and specs/');
+        if (agent === 'kiro') {
+            console.log('    1. Review .kiro/steering/  2. Commit .kiro/ and .kiro/specs/');
+        } else {
+            console.log('    1. Review .claude/CLAUDE.md  2. Commit .claude/ and specs/');
+        }
         if (options.updateHooks) console.log('    (hooks-only update — steering files untouched)');
         console.log('');
     });
@@ -152,28 +162,80 @@ program
     .command('doctor')
     .description('Diagnose governance setup issues')
     .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .option('-a, --agent <agent>', 'Target agent (claude-code|kiro)')
     .action(async (options) => {
         const dir = resolve(options.dir);
+        const agent = detectAgent(dir, options.agent);
         let issues = 0;
         const check = (label: string, ok: boolean) => {
             console.log(`  ${ok ? '✓' : '✗'} ${label}`);
             if (!ok) issues++;
         };
 
-        log.header('AI Governance Doctor');
-        check('CLAUDE.md exists', existsSync(join(dir, 'CLAUDE.md')));
-        check('.claude/CLAUDE.md exists', existsSync(join(dir, '.claude', 'CLAUDE.md')));
-        check('.claude/settings.json exists', existsSync(join(dir, '.claude', 'settings.json')));
-        check('specs/_template/ exists', existsSync(join(dir, 'specs', '_template')));
-        check('.claude/hooks/ exists', existsSync(join(dir, '.claude', 'hooks')));
+        log.header(`AI Governance Doctor (${agent})`);
 
-        const hooksDir = join(dir, '.claude', 'hooks');
-        if (existsSync(hooksDir)) {
-            const hooks = ['protect-files.sh', 'check-secrets.sh', 'block-dangerous-commands.sh', 'check-spec-exists.sh',
-                'session-continuity.sh', 'format-code.sh', 'analyze-code.sh',
-                'check-feature-readme.sh', 'check-consistency.sh', 'check-file-size.sh', 'post-task-checklist.sh'];
-            for (const h of hooks) {
-                check(`  ${h}`, existsSync(join(hooksDir, h)));
+        if (agent === 'kiro') {
+            // Kiro-specific checks
+            check('.kiro/steering/ exists', existsSync(join(dir, '.kiro', 'steering')));
+            check('.kiro/hooks/ exists', existsSync(join(dir, '.kiro', 'hooks')));
+
+            const steeringFiles = ['constitution.md', 'architecture.md', 'coding-standards.md',
+                'ai-usage-policy.md', 'workflow.md', 'spec-first-workflow.md',
+                'feature-readme.md', 'prompt-templates.md'];
+            for (const f of steeringFiles) {
+                check(`  steering/${f}`, existsSync(join(dir, '.kiro', 'steering', f)));
+            }
+
+            // Validate steering files have front-matter
+            for (const f of steeringFiles) {
+                const fp = join(dir, '.kiro', 'steering', f);
+                if (existsSync(fp)) {
+                    const content = readFileSync(fp, 'utf-8');
+                    check(`  ${f} has front-matter`, content.startsWith('---\n'));
+                }
+            }
+
+            const hooksDir = join(dir, '.kiro', 'hooks');
+            if (existsSync(hooksDir)) {
+                const hookFiles = ['block-dangerous-commands.json', 'protect-files.json',
+                    'check-secrets.json', 'check-file-size.json', 'check-feature-readme.json',
+                    'check-consistency.json', 'session-continuity.json', 'require-task-type.json',
+                    'post-task-checklist.json'];
+                for (const h of hookFiles) {
+                    const hp = join(hooksDir, h);
+                    const exists = existsSync(hp);
+                    check(`  hooks/${h}`, exists);
+                    if (exists) {
+                        try {
+                            const json = JSON.parse(readFileSync(hp, 'utf-8'));
+                            check(`  ${h} valid JSON schema`, !!(json.name && json.version && json.when && json.then));
+                        } catch {
+                            check(`  ${h} valid JSON`, false);
+                        }
+                    }
+                }
+            }
+
+            // Kiro spec templates
+            check('.kiro/specs/_template/requirements.md', existsSync(join(dir, '.kiro', 'specs', '_template', 'requirements.md')));
+            check('.kiro/specs/_template/design.md', existsSync(join(dir, '.kiro', 'specs', '_template', 'design.md')));
+            check('.kiro/specs/_template/tasks.md', existsSync(join(dir, '.kiro', 'specs', '_template', 'tasks.md')));
+        } else {
+            // Claude Code checks (existing behavior)
+            check('CLAUDE.md exists', existsSync(join(dir, 'CLAUDE.md')));
+            check('.claude/CLAUDE.md exists', existsSync(join(dir, '.claude', 'CLAUDE.md')));
+            check('.claude/settings.json exists', existsSync(join(dir, '.claude', 'settings.json')));
+            check('specs/_template/ exists', existsSync(join(dir, 'specs', '_template')));
+            check('.claude/hooks/ exists', existsSync(join(dir, '.claude', 'hooks')));
+
+            const hooksDir = join(dir, '.claude', 'hooks');
+            if (existsSync(hooksDir)) {
+                const hooks = ['protect-files.sh', 'check-secrets.sh', 'block-dangerous-commands.sh', 'check-spec-exists.sh',
+                    'session-continuity.sh', 'format-code.sh', 'analyze-code.sh',
+                    'check-feature-readme.sh', 'check-consistency.sh', 'check-file-size.sh', 'post-task-checklist.sh'];
+                for (const h of hooks) {
+                    check(`  ${h}`, existsSync(join(hooksDir, h)));
+                }
             }
         }
 
@@ -197,14 +259,15 @@ program
             issues++;
         }
 
-        // Validate config.json schema if it exists
-        const configPath = join(dir, '.claude', 'git-hooks', 'config.json');
+        // Validate git-hooks config.json schema (agent-aware path)
+        const agentDir = agent === 'kiro' ? '.kiro' : '.claude';
+        const configPath = join(dir, agentDir, 'git-hooks', 'config.json');
         if (existsSync(configPath)) {
             const configIssues = validateGitHooksConfig(configPath);
             if (configIssues.length === 0) {
-                check('.claude/git-hooks/config.json valid', true);
+                check(`${agentDir}/git-hooks/config.json valid`, true);
             } else {
-                check('.claude/git-hooks/config.json valid', false);
+                check(`${agentDir}/git-hooks/config.json valid`, false);
                 for (const issue of configIssues) {
                     console.log(`     ⚠  ${issue}`);
                 }
@@ -240,6 +303,7 @@ program
     .command('workspace')
     .description('Scan workspace and generate governance for all projects')
     .option('-d, --dir <path>', 'Workspace root directory', process.cwd())
+    .option('-a, --agent <agent>', 'Target agent (claude-code|kiro)')
     .option('--dry-run', 'Preview changes without writing', false)
     .option('--overwrite', 'Overwrite existing governance files', false)
     .option('--only <projects>', 'Comma-separated list of project paths to init (e.g. backend/corporate_node,frontend/corporate_angular)')
@@ -253,19 +317,21 @@ program
         }
 
         if (options.upgrade) {
-            // Upgrade mode: run ai-gov upgrade on every project that has .claude/
+            // Upgrade mode: run ai-gov upgrade on every project that has governance
             const projects = discoverProjects(workspaceDir);
             if (!projects.length) {
                 log.error('No projects found in workspace.');
                 process.exit(1);
             }
-            log.header(`Workspace Upgrade — ${projects.length} project(s)`);
+            const agent = detectAgent(workspaceDir, options.agent);
+            const agentDir = agent === 'kiro' ? '.kiro' : '.claude';
+            log.header(`Workspace Upgrade (${agent}) — ${projects.length} project(s)`);
             let upgraded = 0;
             let skipped = 0;
             for (const project of projects) {
                 const projectDir = join(workspaceDir, project.relativePath);
-                if (!existsSync(join(projectDir, '.claude'))) {
-                    log.warn(`  Skipping ${project.relativePath} — no .claude/ (run workspace init first)`);
+                if (!existsSync(join(projectDir, agentDir))) {
+                    log.warn(`  Skipping ${project.relativePath} — no ${agentDir}/ (run workspace init first)`);
                     skipped++;
                     continue;
                 }
@@ -281,7 +347,7 @@ program
             console.log('');
             log.header('Workspace upgrade complete');
             console.log(`  Upgraded: ${upgraded}  Skipped: ${skipped}`);
-            console.log('  Next: git add .claude/ && git commit -m "chore: upgrade ai-gov hooks"');
+            console.log('  Next: git add ' + agentDir + '/ && git commit -m "chore: upgrade ai-gov hooks"');
             console.log('');
             return;
         }
@@ -294,6 +360,7 @@ program
             dryRun: options.dryRun,
             overwrite: options.overwrite,
             only,
+            agent: detectAgent(workspaceDir, options.agent),
         });
     });
 
@@ -307,9 +374,10 @@ program
 
 program
     .command('upgrade')
-    .description('Upgrade hooks, commands, and CLAUDE.md to the current version (preserves steering files)')
+    .description('Upgrade hooks, commands, and steering to the current version (preserves steering files)')
     .option('-d, --dir <path>', 'Project directory to upgrade', process.cwd())
     .option('-s, --stack <stack>', 'Override stack detection')
+    .option('-a, --agent <agent>', 'Target agent (claude-code|kiro)')
     .option('--force', 'Also overwrite steering files (architecture.md, coding-standards.md, etc.)', false)
     .option('--dry-run', 'Preview what would be upgraded without writing', false)
     .action((options) => {
@@ -318,6 +386,7 @@ program
             force: options.force,
             dryRun: options.dryRun,
             stack: options.stack,
+            agent: options.agent,
         });
     });
 

@@ -21,7 +21,43 @@ export type { WorkspaceProject, WorkspaceConfig } from './workspace/types.js';
 
 export function generateWorkspaceFiles(config: WorkspaceConfig, opts: WriteOptions): void {
     const { workspaceDir, workspaceName } = config;
+    const agent = config.agent ?? 'claude-code';
+    const agentDir = agent === 'kiro' ? '.kiro' : '.claude';
 
+    if (agent === 'kiro') {
+        // Kiro workspace: steering files only (no CLAUDE.md, no commands, no bash hooks)
+        log.section('Workspace steering:');
+        safeWrite(
+            join(workspaceDir, agentDir, 'steering', 'workspace-policy.md'),
+            generateWorkspacePolicy(workspaceName),
+            opts,
+        );
+        safeWrite(
+            join(workspaceDir, agentDir, 'steering', 'cross-project-rules.md'),
+            generateCrossProjectRules(config),
+            opts,
+        );
+        safeWrite(
+            join(workspaceDir, agentDir, 'steering', 'project-registry.md'),
+            generateProjectRegistry(config),
+            opts,
+        );
+
+        log.section('Workspace overview:');
+        safeWrite(
+            join(workspaceDir, agentDir, 'steering', 'workspace-overview.md'),
+            generateWorkspaceOverview(config),
+            opts,
+        );
+
+        log.section('Workspace spec templates:');
+        generateWorkspaceSpecTemplates(config, opts);
+
+        log.detected(`Workspace governance written for: ${workspaceName}`);
+        return;
+    }
+
+    // Claude Code workspace: full output
     log.section('Workspace root:');
     safeWrite(join(workspaceDir, 'CLAUDE.md'), generateWorkspaceRootRedirect(), opts);
     safeWrite(join(workspaceDir, '.claude', 'CLAUDE.md'), generateWorkspaceMasterClaudeMd(config), opts);

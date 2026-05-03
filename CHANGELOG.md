@@ -7,6 +7,35 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.0.0] — 2026-05-02
+
+### Added
+- **Kiro agent support** — `ai-gov init --agent kiro` generates governance files in `.kiro/` with Kiro-native formats: steering files with YAML front-matter (`inclusion: always`), JSON hooks auto-discovered by Kiro IDE, and spec templates in `.kiro/specs/_template/`.
+- **`--agent` flag** on `init`, `workspace`, `upgrade`, and `doctor` commands. Accepts `claude-code` or `kiro`. Auto-detects from existing `.kiro/` or `.claude/` directories when not specified.
+- **Agent auto-detection** — CLI detects which agent to target based on existing governance directories. Defaults to `claude-code` for backward compatibility.
+- **12 Kiro JSON hooks** — `block-dangerous-commands`, `protect-files`, `spec-first-gate` (conditional), `format-code`, `analyze-code`, `check-file-size`, `check-secrets`, `session-continuity`, `post-task-checklist`, `check-feature-readme`, `check-consistency`, `require-task-type`.
+- **6 Kiro workflow hooks** — `userTriggered` hooks equivalent to Claude Code slash commands: `workflow-audit`, `workflow-new-feature`, `workflow-fix`, `workflow-refactor`, `workflow-hotfix`, `workflow-explore`. Triggered from the Agent Hooks panel in Kiro.
+- **Pre-write secrets gate** — `preToolUse` hook (`pre-write-secrets-gate.json`) that catches hardcoded credentials BEFORE they are written to disk. Complements the post-hoc `check-secrets` fileEdited hook.
+- **`src/agents/` directory** — new agent-specific modules: `src/agents/claude-code/` (extracted from generators), `src/agents/kiro/` (new Kiro orchestrator, steering wrapper, JSON hook generators).
+- **`src/agents/detect-agent.ts`** — agent detection logic with interactive prompt for ambiguous cases.
+- **`src/agents/kiro/steering.ts`** — `wrapWithFrontMatter()` utility for Kiro YAML front-matter.
+
+### Changed
+- **`src/generators/index.ts`** — now a thin dispatcher routing to agent-specific orchestrators.
+- **`src/generators/monorepo.ts`** — accepts optional `steeringDir` parameter for agent-aware output paths.
+- **`src/generators/git-hooks/index.ts`** — uses `config.agent` to write to `.kiro/git-hooks/` or `.claude/git-hooks/`.
+- **`src/commands/workspace-init.ts`** — agent-aware workspace generation, injection, and git hook installation.
+- **`src/commands/upgrade.ts`** — agent-aware upgrade with Kiro-specific hook regeneration and steering upgrade.
+- **`src/commands/onboard.ts`** — auto-detects agent from existing directories, agent-aware messages.
+- **`GovernanceConfig`** — added `agent: Agent` field (`'claude-code' | 'kiro'`).
+- **Version bumped** to 17.0.0 across CLI, hooks, CI templates, and workspace scripts.
+
+### Refactored
+- Claude Code-specific generators moved from `src/generators/` to `src/agents/claude-code/` (hooks, commands, claude-md, settings-json, extensions).
+- Shared content generators (architecture, coding-standards, constitution, etc.) remain in `src/generators/` — used by both agents.
+
+---
+
 ## [16.0.0] — 2026-04-27
 
 ### Added

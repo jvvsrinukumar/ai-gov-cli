@@ -2,11 +2,14 @@
  * ai-gov upgrade — re-generates hooks, commands, and CLAUDE.md for an existing project.
  *
  * Designed for teams upgrading from an older ai-gov version. It:
- *   - Always overwrites: hooks (.claude/hooks/), git-hooks (.claude/git-hooks/), commands (.claude/commands/)
+ *   - Always overwrites: hooks, git-hooks, commands (agent-specific)
  *   - By default keeps: steering files (they have team-specific content)
  *   - Reads the project's existing CLAUDE.md to preserve app name / stack info
  *   - Runs a full re-scan so new detections (e.g. new ORM) are picked up
  *   - Reports exactly what was updated vs kept
+ *
+ * Architecture: delegates agent-specific upgrade logic to the agent registry
+ * (src/agents/types.ts). Adding a third agent requires no changes here.
  *
  * Usage:
  *   ai-gov upgrade                          # upgrade current dir
@@ -16,56 +19,24 @@
 
 import { existsSync, readFileSync } from 'fs';
 import { join, basename, resolve } from 'path';
-import { chmodSync, readdirSync } from 'fs';
-import type { Stack, GovernanceConfig } from '../types.js';
+import type { Stack, GovernanceConfig, Agent } from '../types.js';
 import { createDefaultScanResult } from '../types.js';
 import { detectStack } from '../detect-stack.js';
 import { loadBaseProfile } from '../profiles.js';
 import { scanProject, checkSpecFirstEnabled } from '../scanners/index.js';
 import { computeContentBlocks, isJavaBackend as isJavaBackendCheck } from '../content-blocks.js';
-import { generateAllHooks } from '../generators/hooks/index.js';
 import { generateGitHooks } from '../generators/git-hooks/index.js';
-import { safeWrite } from '../utils/safe-write.js';
 import { log } from '../utils/logger.js';
-import {
-    generateMasterClaudeMd,
-} from '../generators/claude-md.js';
-import {
-    generateAuditCommand,
-} from '../generators/commands/audit.js';
-import {
-    generateNewFeatureCommand,
-} from '../generators/commands/new-feature.js';
-import {
-    generateEditFeatureCommand,
-} from '../generators/commands/edit-feature.js';
-import {
-    generateFixCommand,
-} from '../generators/commands/fix.js';
-import {
-    generateRefactorCommand,
-} from '../generators/commands/refactor.js';
-import {
-    generateHotfixCommand,
-} from '../generators/commands/hotfix.js';
-import {
-    generateExploreCommand,
-} from '../generators/commands/explore.js';
-import {
-    generateAssessCommand,
-} from '../generators/commands/assess.js';
-import { generateArchitecture } from '../generators/architecture.js';
-import { generateCodingStandards } from '../generators/coding-standards.js';
-import { generateWorkflow } from '../generators/workflow.js';
-import { generateConstitution } from '../generators/constitution.js';
+import { agentRegistry } from '../agents/types.js';
 
-const HOOK_VERSION = '16.0.0';
+const HOOK_VERSION = '17.0.0';
 
 export interface UpgradeOptions {
     dir: string;
     force: boolean;   // true = also overwrite steering files
     dryRun: boolean;
     stack?: string;   // optional override
+    agent?: string;   // optional agent override
 }
 
 export function runUpgrade(options: UpgradeOptions): void {
@@ -78,13 +49,25 @@ export function runUpgrade(options: UpgradeOptions): void {
     }
 
     const claudeDir = join(projectDir, '.claude');
-    if (!existsSync(claudeDir)) {
-        log.error(`.claude/ not found in ${projectDir}`);
+    const kiroDir = join(projectDir, '.kiro');
+    const agent: Agent = (options.agent as Agent) ?? (existsSync(kiroDir) ? 'kiro' : 'claude-code');
+    const agentDirName = agent === 'kiro' ? '.kiro' : '.claude';
+    const agentDir = join(projectDir, agentDirName);
+
+    if (!existsSync(agentDir)) {
+        log.error(`${agentDirName}/ not found in ${projectDir}`);
         log.info("Run 'ai-gov init' first to set up governance.");
         process.exit(1);
     }
 
-    log.header(`AI Governance Upgrade — ${basename(projectDir)}`);
+    // Validate agent is registered
+    const adapter = agentRegistry[agent];
+    if (!adapter) {
+        log.error(`Unknown agent: ${agent}. Registered agents: ${Object.keys(agentRegistry).join(', ')}`);
+        process.exit(1);
+    }
+
+    log.header(`AI Governance Upgrade (${agent}) — ${basename(projectDir)}`);
     console.log(`  Project: ${projectDir}`);
     console.log(`  Mode:    ${force ? 'full (hooks + commands + steering)' : 'standard (hooks + commands only)'}`);
     if (dryRun) console.log('  Dry run: no files will be written');
@@ -100,9 +83,10 @@ export function runUpgrade(options: UpgradeOptions): void {
     const isBackend = stack === 'nodejs' || stack === 'python'
         || (stack === 'java' && isJavaBackendCheck(scan));
     const blocks = computeContentBlocks(stack, profile, scan);
-    const project = readExistingProjectInfo(projectDir, stack);
+    const project = readExistingProjectInfo(projectDir, stack, agent);
 
     const config: GovernanceConfig = {
+        agent,
         stack, profile, scan, project, blocks, isBackend,
         hookVersion: HOOK_VERSION,
         projectDir,
@@ -122,64 +106,41 @@ export function runUpgrade(options: UpgradeOptions): void {
         conflictMode: 'overwrite' as const,
     };
 
-    // ── Always upgrade: hooks ──────────────────────────────────────────────
-    log.section('Upgrading hooks (.claude/hooks/):');
-    generateAllHooks(config, opts);
-    makeHooksExecutable(projectDir, dryRun);
+    // ── Delegate to agent adapter ───────────────────────────────────────
+    adapter.upgrade(config, opts, force);
 
-    // ── Always upgrade: git hooks ──────────────────────────────────────────
-    log.section('Upgrading git hooks (.claude/git-hooks/):');
+    // ── Git hooks (shared across agents) ────────────────────────────────
+    log.section(`Upgrading git hooks (${agentDirName}/git-hooks/):`);
     generateGitHooks(config, projectDir);
 
-    // ── Always upgrade: commands ───────────────────────────────────────────
-    log.section('Upgrading commands (.claude/commands/):');
-    const cmdDir = join(projectDir, '.claude', 'commands');
-    safeWrite(join(cmdDir, 'audit.md'), generateAuditCommand(config), opts);
-    safeWrite(join(cmdDir, 'new-feature.md'), generateNewFeatureCommand(config), opts);
-    safeWrite(join(cmdDir, 'edit-feature.md'), generateEditFeatureCommand(config), opts);
-    safeWrite(join(cmdDir, 'fix.md'), generateFixCommand(config), opts);
-    safeWrite(join(cmdDir, 'refactor.md'), generateRefactorCommand(config), opts);
-    safeWrite(join(cmdDir, 'hotfix.md'), generateHotfixCommand(config), opts);
-    safeWrite(join(cmdDir, 'explore.md'), generateExploreCommand(config), opts);
-    safeWrite(join(cmdDir, 'assess.md'), generateAssessCommand(config), opts);
-
-    // ── Always upgrade: CLAUDE.md (rules are embedded here, must stay current) ─
-    log.section('Upgrading .claude/CLAUDE.md:');
-    safeWrite(join(claudeDir, 'CLAUDE.md'), generateMasterClaudeMd(config), opts);
-
-    // ── Optional: steering files ───────────────────────────────────────────
-    if (force) {
-        log.section('Upgrading steering files (--force):');
-        const steeringDir = join(claudeDir, 'steering');
-        safeWrite(join(steeringDir, 'architecture.md'), generateArchitecture(config), opts);
-        safeWrite(join(steeringDir, 'coding-standards.md'), generateCodingStandards(config), opts);
-        safeWrite(join(steeringDir, 'workflow.md'), generateWorkflow(config), opts);
-        safeWrite(join(steeringDir, 'constitution.md'), generateConstitution(config), opts);
-    } else {
-        log.info('Steering files kept (use --force to also upgrade them)');
-    }
-
-    // ── Summary ───────────────────────────────────────────────────────────
+    // ── Summary ─────────────────────────────────────────────────────────
     console.log('');
     log.header(`Upgrade complete — ${basename(projectDir)}`);
+    console.log(`  Agent:       ${agent}`);
     console.log(`  Stack:       ${profile.stackDisplay}`);
     console.log(`  Hook ver:    ${HOOK_VERSION}`);
     console.log('');
     console.log('  Always upgraded:');
-    console.log('    .claude/hooks/          (11 Claude Code hooks)');
-    console.log('    .claude/git-hooks/      (pre-commit.sh + 6 checks)');
-    console.log('    .claude/commands/       (8 slash commands)');
-    console.log('    .claude/CLAUDE.md       (embedded rules — always current)');
+    console.log(`    ${agentDirName}/hooks/`);
+    console.log(`    ${agentDirName}/git-hooks/`);
+    if (agent === 'claude-code') {
+        console.log(`    ${agentDirName}/commands/`);
+        console.log(`    ${agentDirName}/CLAUDE.md`);
+    }
     if (force) {
-        console.log('    .claude/steering/       (4 steering files — force mode)');
+        console.log(`    ${agentDirName}/steering/       (force mode)`);
     } else {
         console.log('');
         console.log('  Kept (team-specific content preserved):');
-        console.log('    .claude/steering/       (run with --force to upgrade)');
-        console.log('    specs/                  (your feature specs — never touched)');
+        console.log(`    ${agentDirName}/steering/       (run with --force to upgrade)`);
+        if (agent === 'kiro') {
+            console.log(`    ${agentDirName}/specs/          (your feature specs — never touched)`);
+        } else {
+            console.log('    specs/                  (your feature specs — never touched)');
+        }
     }
     console.log('');
-    console.log('  Next: commit .claude/ to git so all teammates get the upgrade.');
+    console.log(`  Next: commit ${agentDirName}/ to git so all teammates get the upgrade.`);
     console.log('');
 }
 
@@ -188,19 +149,21 @@ export function runUpgrade(options: UpgradeOptions): void {
 // Preserves app name, description set during init rather than re-prompting.
 // ---------------------------------------------------------------------------
 
-function readExistingProjectInfo(projectDir: string, stack: Stack) {
+function readExistingProjectInfo(projectDir: string, stack: Stack, agent: Agent) {
     const dn = basename(projectDir);
     let appName = dn;
     let appDescription = '';
 
-    // Try to read from existing CLAUDE.md
-    const claudeMd = join(projectDir, '.claude', 'CLAUDE.md');
-    if (existsSync(claudeMd)) {
-        const content = readFileSync(claudeMd, 'utf-8');
-        const nameMatch = content.match(/\*\*App:\*\*\s+([^\n—]+)/);
-        if (nameMatch) appName = nameMatch[1].trim();
-        const descMatch = content.match(/\*\*App:\*\*[^\n]+—\s*([^\n]+)/);
-        if (descMatch) appDescription = descMatch[1].trim();
+    // Try to read from existing CLAUDE.md (Claude Code stores project info here)
+    if (agent === 'claude-code') {
+        const claudeMd = join(projectDir, '.claude', 'CLAUDE.md');
+        if (existsSync(claudeMd)) {
+            const content = readFileSync(claudeMd, 'utf-8');
+            const nameMatch = content.match(/\*\*App:\*\*\s+([^\n—]+)/);
+            if (nameMatch) appName = nameMatch[1].trim();
+            const descMatch = content.match(/\*\*App:\*\*[^\n]+—\s*([^\n]+)/);
+            if (descMatch) appDescription = descMatch[1].trim();
+        }
     }
 
     // Fall back to package manifests
@@ -242,16 +205,4 @@ function readExistingProjectInfo(projectDir: string, stack: Stack) {
         ticketPrefix: 'TICKET',
         legacyDescription: 'No legacy code',
     };
-}
-
-function makeHooksExecutable(projectDir: string, dryRun: boolean): void {
-    if (dryRun) return;
-    const hooksDir = join(projectDir, '.claude', 'hooks');
-    try {
-        if (existsSync(hooksDir)) {
-            for (const f of readdirSync(hooksDir)) {
-                if (f.endsWith('.sh')) chmodSync(join(hooksDir, f), 0o755);
-            }
-        }
-    } catch { /* ignore chmod errors on Windows */ }
 }

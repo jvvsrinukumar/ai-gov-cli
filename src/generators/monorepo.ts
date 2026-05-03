@@ -4,7 +4,7 @@ import type { GovernanceConfig } from '../types.js';
 import { safeWrite, type WriteOptions } from '../utils/safe-write.js';
 import { log } from '../utils/logger.js';
 
-export function generateMonorepoGovernance(c: GovernanceConfig, opts: WriteOptions): void {
+export function generateMonorepoGovernance(c: GovernanceConfig, opts: WriteOptions, steeringDir?: string): void {
     if (!c.scan.detectedMonorepo) return;
     log.section('Monorepo:');
 
@@ -17,7 +17,10 @@ export function generateMonorepoGovernance(c: GovernanceConfig, opts: WriteOptio
 
     const pkgRows = packages.map(p => `| \`${p}\` | _describe_ | _layer flow_ |`).join('\n');
 
-    safeWrite(join(c.projectDir, '.claude', 'steering', 'monorepo.md'), `# Monorepo Governance — ${c.project.appName}
+    // Default to .claude/steering/ for backward compatibility; Kiro passes .kiro/steering/
+    const outDir = steeringDir ?? join(c.projectDir, '.claude', 'steering');
+
+    safeWrite(join(outDir, 'monorepo.md'), `# Monorepo Governance — ${c.project.appName}
 
 **Tool:** ${c.scan.detectedMonorepo}
 **Packages:** ${packages.length}

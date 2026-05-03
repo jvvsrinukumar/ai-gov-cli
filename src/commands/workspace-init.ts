@@ -1,6 +1,6 @@
 import { existsSync, readdirSync, readFileSync, appendFileSync, mkdirSync, writeFileSync, chmodSync } from 'fs';
 import { join, basename } from 'path';
-import type { Stack, GovernanceConfig, ConflictMode } from '../types.js';
+import type { Stack, GovernanceConfig, ConflictMode, Agent } from '../types.js';
 import { createDefaultScanResult } from '../types.js';
 import { loadBaseProfile } from '../profiles.js';
 import { scanProject, checkSpecFirstEnabled } from '../scanners/index.js';
@@ -11,7 +11,7 @@ import { generateWorkspaceFiles, type WorkspaceProject, type WorkspaceConfig } f
 import { generateWorkspacePreCommit } from '../generators/git-hooks/workspace-pre-commit.js';
 import { log } from '../utils/logger.js';
 
-const HOOK_VERSION = '16.0.0';
+const HOOK_VERSION = '17.0.0';
 
 // Directories treated as group containers (Image 1 pattern)
 const GROUP_DIRS = ['backend', 'frontend', 'mobile', 'services', 'apps', 'packages', 'libs'];
@@ -35,10 +35,12 @@ export interface WorkspaceInitOptions {
     dryRun: boolean;
     overwrite: boolean;
     only?: string[];   // optional filter: only init these relative paths
+    agent?: Agent;     // target agent — defaults to 'claude-code'
 }
 
 export function runWorkspaceInit(options: WorkspaceInitOptions): void {
     const { dir, dryRun, overwrite } = options;
+    const agent = options.agent ?? 'claude-code';
     const workspaceName = basename(dir);
 
     log.header(`AI Governance — Workspace Init (${workspaceName})`);
@@ -92,6 +94,7 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
             const projectInfo = collectProjectInfo(stack, projectDir);
 
             const config: GovernanceConfig = {
+                agent,
                 stack,
                 profile,
                 scan,
@@ -110,13 +113,13 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
             runGovernance(config);
             generateGitHooks(config, projectDir);
 
-            // Inject workspace reference into project CLAUDE.md
+            // Inject workspace reference into project steering/CLAUDE.md
             if (!dryRun) {
-                injectWorkspaceReference(projectDir, project.relativePath);
+                injectWorkspaceReference(projectDir, project.relativePath, agent);
             }
 
             // Multi-repo: install per-project git hook if this project has its own .git/
-            if (installProjectGitHook(projectDir, project.relativePath, dryRun)) {
+            if (installProjectGitHook(projectDir, project.relativePath, dryRun, agent)) {
                 projectsWithOwnGit++;
             }
 
@@ -146,12 +149,14 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
         dryRun,
         overwrite,
         hookVersion: HOOK_VERSION,
+        agent,
     };
 
     generateWorkspaceFiles(wsConfig, wsOpts);
 
     // 4. Workspace git hooks — mode-aware
-    const wsHookDir = join(dir, '.claude', 'git-hooks');
+    const agentDir = agent === 'kiro' ? '.kiro' : '.claude';
+    const wsHookDir = join(dir, agentDir, 'git-hooks');
     log.header(`Workspace git hooks: ${workspaceName}`);
 
     // Always write the workspace-pre-commit.sh (useful even in multi-repo for CI / manual use)
@@ -160,9 +165,9 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
         const hookFile = join(wsHookDir, 'workspace-pre-commit.sh');
         writeFileSync(hookFile, generateWorkspacePreCommit());
         try { chmodSync(hookFile, 0o755); } catch { /* ignore on Windows */ }
-        log.detected('workspace-pre-commit.sh written → .claude/git-hooks/');
+        log.detected(`workspace-pre-commit.sh written → ${agentDir}/git-hooks/`);
     } else {
-        log.info('[dry-run] .claude/git-hooks/workspace-pre-commit.sh');
+        log.info(`[dry-run] ${agentDir}/git-hooks/workspace-pre-commit.sh`);
     }
 
     if (projectsWithOwnGit > 0) {
@@ -172,7 +177,7 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
     } else {
         // Monorepo: single .git/ at workspace root — install workspace hook
         if (!dryRun) {
-            installWorkspaceGitHook(dir);
+            installWorkspaceGitHook(dir, agent);
         } else {
             log.info('[dry-run] .git/hooks/pre-commit (workspace monorepo hook)');
         }
@@ -193,16 +198,16 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
     console.log('  Next steps:');
     if (projectsWithOwnGit > 0) {
         console.log('    1. Each project has its own git repo — git hooks installed per project');
-        console.log('    2. Review .claude/CLAUDE.md in each project');
-        console.log('    3. Fill in .claude/steering/project-registry.md at workspace root');
-        console.log('    4. Document API contracts in .claude/steering/cross-project-rules.md');
-        console.log('    5. Commit .claude/ and specs/ in each project separately');
+        console.log(`    2. Review ${agentDir}/ steering in each project`);
+        console.log(`    3. Fill in ${agentDir}/steering/project-registry.md at workspace root`);
+        console.log(`    4. Document API contracts in ${agentDir}/steering/cross-project-rules.md`);
+        console.log(`    5. Commit ${agentDir}/ in each project separately`);
     } else {
         console.log('    1. Monorepo — workspace git hook installed at .git/hooks/pre-commit');
-        console.log('    2. Review workspace .claude/CLAUDE.md');
-        console.log('    3. Fill in .claude/steering/project-registry.md');
-        console.log('    4. Document API contracts in .claude/steering/cross-project-rules.md');
-        console.log('    5. Commit .claude/ and specs/ directories');
+        console.log(`    2. Review workspace ${agentDir}/ steering`);
+        console.log(`    3. Fill in ${agentDir}/steering/project-registry.md`);
+        console.log(`    4. Document API contracts in ${agentDir}/steering/cross-project-rules.md`);
+        console.log(`    5. Commit ${agentDir}/ directories`);
     }
     console.log('');
 }
@@ -286,7 +291,7 @@ export function tryDetectStack(dir: string): string | null {
         // JS/TS ecosystem
         const pkgPath = existsSync(join(dir, 'package.json')) ? join(dir, 'package.json')
             : existsSync(join(dir, 'src', 'package.json')) ? join(dir, 'src', 'package.json')
-            : null;
+                : null;
 
         if (pkgPath) {
             const content = readFileSync(pkgPath, 'utf-8');
@@ -306,17 +311,38 @@ export function tryDetectStack(dir: string): string | null {
 // Inject workspace reference into project CLAUDE.md
 // ---------------------------------------------------------------------------
 
-function injectWorkspaceReference(projectDir: string, relPath: string): void {
-    const claudeMd = join(projectDir, '.claude', 'CLAUDE.md');
-    if (!existsSync(claudeMd)) return;
+function injectWorkspaceReference(projectDir: string, relPath: string, agent: Agent): void {
+    if (agent === 'kiro') {
+        // Kiro: inject into the first steering file (constitution.md)
+        const constitutionMd = join(projectDir, '.kiro', 'steering', 'constitution.md');
+        if (!existsSync(constitutionMd)) return;
+        const content = readFileSync(constitutionMd, 'utf-8');
+        if (content.includes('## Workspace Rules')) return;
 
-    const content = readFileSync(claudeMd, 'utf-8');
-    if (content.includes('## Workspace Rules')) return; // already injected
+        const depth = relPath.split('/').length;
+        const upPath = '../'.repeat(depth + 1); // +1 for .kiro/ dir
 
-    const depth = relPath.split('/').length; // 1 for flat, 2 for grouped
-    const upPath = '../'.repeat(depth + 1);  // +1 for .claude/ dir
+        const injection = `
+---
 
-    const injection = `
+## Workspace Rules
+> This project is part of a workspace. Workspace-level rules take precedence.
+> Read \`${upPath}.kiro/steering/workspace-policy.md\` before starting any task.
+> See \`${upPath}.kiro/steering/cross-project-rules.md\` for cross-project API contracts.
+`;
+        appendFileSync(constitutionMd, injection);
+        log.detected(`Workspace reference injected → ${relPath}/.kiro/steering/constitution.md`);
+    } else {
+        // Claude Code: inject into CLAUDE.md
+        const claudeMd = join(projectDir, '.claude', 'CLAUDE.md');
+        if (!existsSync(claudeMd)) return;
+        const content = readFileSync(claudeMd, 'utf-8');
+        if (content.includes('## Workspace Rules')) return;
+
+        const depth = relPath.split('/').length;
+        const upPath = '../'.repeat(depth + 1);
+
+        const injection = `
 ---
 
 ## Workspace Rules
@@ -324,9 +350,9 @@ function injectWorkspaceReference(projectDir: string, relPath: string): void {
 > Read \`${upPath}.claude/steering/workspace-policy.md\` before starting any task.
 > See \`${upPath}.claude/steering/cross-project-rules.md\` for cross-project API contracts.
 `;
-
-    appendFileSync(claudeMd, injection);
-    log.detected(`Workspace reference injected → ${relPath}/.claude/CLAUDE.md`);
+        appendFileSync(claudeMd, injection);
+        log.detected(`Workspace reference injected → ${relPath}/.claude/CLAUDE.md`);
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -419,16 +445,18 @@ function safeReadDir(dir: string) {
  * Installs .git/hooks/pre-commit and commit-msg wrappers in a project that
  * has its own git repository. Returns true if the project has its own .git/.
  */
-function installProjectGitHook(projectDir: string, relPath: string, dryRun: boolean): boolean {
+function installProjectGitHook(projectDir: string, relPath: string, dryRun: boolean, agent: Agent = 'claude-code'): boolean {
     const gitDir = join(projectDir, '.git');
     if (!existsSync(gitDir)) return false;
+
+    const agentHookDir = agent === 'kiro' ? '.kiro' : '.claude';
 
     // Detect existing hook system — show guide instead of overwriting
     const existing = detectExistingHookSystem(projectDir);
     if (existing) {
         log.warn(`  ${relPath}: existing ${existing} hook system detected — skipping auto-install`);
-        log.info(`    Manually add to your ${existing} config: bash .claude/git-hooks/pre-commit.sh`);
-        return true; // still counts as a multi-repo project
+        log.info(`    Manually add to your ${existing} config: bash ${agentHookDir}/git-hooks/pre-commit.sh`);
+        return true;
     }
 
     if (dryRun) {
@@ -441,17 +469,15 @@ function installProjectGitHook(projectDir: string, relPath: string, dryRun: bool
         const gitHooksDir = join(gitDir, 'hooks');
         mkdirSync(gitHooksDir, { recursive: true });
 
-        // Use dirname-relative path — avoids $(git rev-parse --show-toplevel) which
-        // returns Windows-style paths (C:\...) in native Git Bash, breaking exec.
         const preCommitWrapper = `#!/usr/bin/env bash
 # Installed by ai-gov workspace-init — delegates to project governance pre-commit.
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-exec bash "$REPO_ROOT/.claude/git-hooks/pre-commit.sh" "$@"
+exec bash "$REPO_ROOT/${agentHookDir}/git-hooks/pre-commit.sh" "$@"
 `;
         const commitMsgWrapper = `#!/usr/bin/env bash
 # Installed by ai-gov workspace-init — delegates to project governance commit-msg.
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-exec bash "$REPO_ROOT/.claude/git-hooks/commit-msg.sh" "$1"
+exec bash "$REPO_ROOT/${agentHookDir}/git-hooks/commit-msg.sh" "$1"
 `;
 
         writeFileSync(join(gitHooksDir, 'pre-commit'), preCommitWrapper);
@@ -488,16 +514,17 @@ function detectExistingHookSystem(projectDir: string): string | null {
 // Workspace-level git hook installation (monorepo)
 // ---------------------------------------------------------------------------
 
-function installWorkspaceGitHook(workspaceDir: string): void {
+function installWorkspaceGitHook(workspaceDir: string, agent: Agent = 'claude-code'): void {
     const gitDir = join(workspaceDir, '.git');
     if (!existsSync(gitDir)) return;
+    const agentHookDir = agent === 'kiro' ? '.kiro' : '.claude';
     try {
         const gitHooksDir = join(gitDir, 'hooks');
         mkdirSync(gitHooksDir, { recursive: true });
         const wrapper = `#!/usr/bin/env bash
 # Installed by ai-gov workspace — delegates to workspace pre-commit hook.
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-exec bash "$REPO_ROOT/.claude/git-hooks/workspace-pre-commit.sh"
+exec bash "$REPO_ROOT/${agentHookDir}/git-hooks/workspace-pre-commit.sh"
 `;
         const dest = join(gitHooksDir, 'pre-commit');
         writeFileSync(dest, wrapper);

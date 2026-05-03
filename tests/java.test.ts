@@ -28,6 +28,7 @@ function makeConfig(stack: Stack, scanOverrides: Partial<ScanResult> = {}): Gove
     const scan: ScanResult = { ...createDefaultScanResult(), ...scanOverrides };
     const blocks = computeContentBlocks(stack, profile, scan);
     return {
+        agent: 'claude-code',
         stack, profile, scan, blocks,
         project: { packageName: 'test', appName: 'test', appDescription: '', ticketSystem: 'Jira', ticketPrefix: 'T', legacyDescription: '' },
         isBackend: stack === 'nodejs' || stack === 'python' || (stack === 'java' && isJavaBackend(scan)),

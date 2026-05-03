@@ -1,8 +1,40 @@
 # AI Governance CLI
 
-> The scaffolding layer for Claude Code team adoption. When multiple developers use Claude Code on the same codebase without shared rules, you get inconsistency at machine speed — Claude rewrites the auth module because someone said "fix the login bug", skips specs because no one enforced them, commits credentials because there was no hook. This CLI fixes that.
+[![CI](https://github.com/jvvsrinukumar/ai-gov-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/jvvsrinukumar/ai-gov-cli/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/ai-gov.svg)](https://www.npmjs.com/package/ai-gov)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org/)
 
-**Version:** 16.0.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agent:** Claude Code
+> The scaffolding layer for AI agent team adoption. When multiple developers use Claude Code or Kiro on the same codebase without shared rules, you get inconsistency at machine speed. This CLI fixes that.
+
+**Version:** 17.0.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
+
+---
+
+## Quick Start
+
+```bash
+# Claude Code (default)
+npx ai-gov init
+
+# Kiro
+npx ai-gov init --agent kiro
+
+# Preview without writing
+npx ai-gov init --dry-run
+
+# Check your setup
+npx ai-gov doctor
+```
+
+**Choose your path:**
+
+| I use... | Start here |
+|----------|-----------|
+| **Claude Code** | [Step 1 — Claude Code setup](#step-1--set-up-the-governance-framework) · [Full Claude Code guide](docs/claude_code_setup_guide.md) |
+| **Kiro** | [Kiro Setup](#kiro-setup-alternative-to-step-1) · [Full Kiro guide](docs/kiro_setup_guide.md) |
+| **Both** | Run `init` once per agent — they don't conflict |
+| **Multi-project workspace** | [Workspace setup](#ai-gov-workspace) · [Full workspace guide](docs/workspace_setup_guide.md) |
 
 ---
 
@@ -142,7 +174,7 @@ When you say "build user profile feature", Claude creates a spec first before wr
 Commit these files to git so the whole team gets the same rules:
 
 ```bash
-git add .claude/ specs/ CLAUDE.md
+git add .claude/ CLAUDE.md
 git commit -m "chore: add ai-gov governance framework"
 git push
 ```
@@ -161,6 +193,96 @@ The CLI detects existing files and prompts you for each conflict:
 - **O** — replaces all files with freshly generated content
 
 Use `--update-hooks` to only update hooks that are on an older version, without touching steering files.
+
+---
+
+## Kiro Setup (alternative to Step 1)
+
+If your team uses Kiro instead of Claude Code:
+
+```bash
+npx ai-gov init --agent kiro
+```
+
+This generates governance files in `.kiro/` instead of `.claude/`:
+
+```
+your-project/
+├── .kiro/
+│   ├── .gitattributes
+│   ├── steering/                          ← Kiro reads these automatically (YAML front-matter)
+│   │   ├── constitution.md                ← inclusion: always
+│   │   ├── architecture.md                ← inclusion: always
+│   │   ├── coding-standards.md            ← inclusion: always
+│   │   ├── ai-usage-policy.md             ← inclusion: always
+│   │   ├── workflow.md                    ← inclusion: always
+│   │   ├── spec-first-workflow.md         ← inclusion: always
+│   │   ├── feature-readme.md              ← inclusion: always
+│   │   └── prompt-templates.md            ← inclusion: always
+│   ├── hooks/                             ← Kiro JSON hooks (auto-discovered)
+│   │   ├── block-dangerous-commands.json  ← preToolUse: blocks force push, rm -rf
+│   │   ├── protect-files.json             ← preToolUse: warns on high-risk files
+│   │   ├── pre-write-secrets-gate.json    ← preToolUse: blocks writes with credentials
+│   │   ├── check-secrets.json             ← fileEdited: scans for credentials (post-hoc)
+│   │   ├── check-file-size.json           ← postToolUse: warns >200 lines
+│   │   ├── format-code.json               ← postToolUse: auto-formats
+│   │   ├── analyze-code.json              ← postToolUse: runs linter
+│   │   ├── session-continuity.json        ← promptSubmit: context preservation
+│   │   ├── require-task-type.json         ← promptSubmit: task classification
+│   │   ├── post-task-checklist.json       ← postTaskExecution: verification
+│   │   ├── workflow-*.json (×6)           ← userTriggered: audit, new-feature, fix, refactor, hotfix, explore
+│   │   └── README.md
+│   └── specs/
+│       └── _template/                     ← Kiro-native spec location
+│           ├── requirements.md
+│           ├── design.md
+│           └── tasks.md
+```
+
+### Key differences from Claude Code
+
+| Aspect | Claude Code | Kiro |
+|--------|-------------|------|
+| Output directory | `.claude/` | `.kiro/` |
+| Steering files | Plain markdown | Markdown with YAML front-matter (`inclusion: always`) |
+| Hooks | Bash scripts registered in `settings.json` | JSON files auto-discovered by Kiro |
+| Commands | `.claude/commands/*.md` (slash commands) | `userTriggered` workflow hooks (same workflows, button-triggered) |
+| Spec templates | `specs/_template/` (project root) | `.kiro/specs/_template/` (Kiro-native location) |
+| Enforcement | Hard block via `exit 2` | Agent-enforced via `askAgent` DENY responses |
+
+### Enforcement model
+
+| Capability | Claude Code | Kiro |
+|---|---|---|
+| Block writes without spec | Hard block (`exit 2`) | `preToolUse` + `askAgent` DENIED |
+| Block dangerous commands | Hard block (`exit 2`) | `preToolUse` on shell + `askAgent` DENIED |
+| Block hardcoded secrets | Hard block (bash regex) | `preToolUse` + `askAgent` DENIED (pre-write gate) |
+| Enforce file size | Hard block (`wc -l`) | `postToolUse` + `askAgent` |
+| Format after write | `postToolUse` bash | `postToolUse` + `runCommand` |
+| Lint after write | `postToolUse` bash | `postToolUse` + `runCommand` |
+
+> **Enforcement strength caveat:** Claude Code hooks use `exit 2` — a process-level hard block that Claude cannot bypass. Kiro hooks use `askAgent` with DENY instructions — the agent is expected to honor the denial per Kiro's hook contract, but enforcement is cooperative (agent-enforced), not process-level. In practice, Kiro reliably honors `preToolUse` DENY responses, but it is not architecturally equivalent to a hard block.
+
+### Workflow shortcuts
+
+Kiro has no slash command system, but `userTriggered` hooks provide the same guided workflows:
+
+| Kiro Hook | Claude Code Equivalent | Trigger |
+|-----------|----------------------|---------|
+| `workflow-audit.json` | `/audit` | Button in Agent Hooks panel |
+| `workflow-new-feature.json` | `/new-feature` | Button in Agent Hooks panel |
+| `workflow-fix.json` | `/fix` | Button in Agent Hooks panel |
+| `workflow-refactor.json` | `/refactor` | Button in Agent Hooks panel |
+| `workflow-hotfix.json` | `/hotfix` | Button in Agent Hooks panel |
+| `workflow-explore.json` | `/explore` | Button in Agent Hooks panel |
+
+### Auto-detection
+
+If you don't specify `--agent`, the CLI auto-detects:
+- Existing `.kiro/` directory → uses Kiro
+- Existing `.claude/` directory → uses Claude Code
+- Neither exists → defaults to Claude Code (backward compatible)
+- Both exist → prompts you to choose (or defaults to Claude Code in CI)
 
 ---
 
@@ -332,6 +454,8 @@ This generates a CI pipeline that runs `ai-gov pr-check` on every pull request a
 
 You just commit the workflow file. GitHub/GitLab/Bitbucket handle the authentication automatically.
 
+> **Note:** "No tokens" means no manual secret creation. You still need to: (1) commit the generated workflow file, (2) push to a branch with PR protection enabled, and (3) ensure your repo's branch protection rules require the governance check to pass before merge. The CI platform provides the token — but you configure when and where it runs.
+
 ### GitHub Actions — step by step
 
 **Step 1** — Generate the workflow file (team lead does this once):
@@ -458,8 +582,8 @@ npx ai-gov init --ci github
 npx ai-gov doctor
 
 # 6. Commit and push everything
-git add .claude/ specs/ CLAUDE.md .github/
-git commit -m "chore: add ai-gov governance framework v16.0.0"
+git add .claude/ CLAUDE.md .github/
+git commit -m "chore: add ai-gov governance framework v17.0.0"
 git push
 ```
 
@@ -651,6 +775,7 @@ ai-gov init [options]
 | Flag | Description | Default |
 |------|-------------|---------|
 | `-s, --stack <stack>` | Force a specific stack: `flutter\|kotlin\|nodejs\|react\|angular\|swiftui\|python\|java` | auto-detect |
+| `-a, --agent <agent>` | Target agent: `claude-code\|kiro` | auto-detect |
 | `--overwrite` | Replace all existing files silently | false |
 | `--dry-run` | Preview what would be generated — nothing written | false |
 | `--update-hooks` | Update only hooks on an older version (safe re-run) | false |
@@ -1393,32 +1518,23 @@ ai-governance/
 │   ├── profiles.ts                        <- defaults per stack (8 profiles)
 │   ├── content-blocks.ts                  <- template variable computation
 │   ├── scanners/                          <- 8 stack scanners (40+ detection points each)
-│   ├── generators/
-│   │   ├── index.ts                       <- governance file orchestrator
+│   ├── agents/
+│   │   ├── detect-agent.ts                <- auto-detect from .kiro/ vs .claude/
+│   │   ├── types.ts                       <- AgentAdapter interface + agent registry
+│   │   ├── claude-code/                   <- Claude Code orchestrator
+│   │   │   ├── index.ts                   <- generates .claude/ governance files
+│   │   │   ├── hooks/                     <- 11 bash hook generators
+│   │   │   └── commands/                  <- 8 slash command generators
+│   │   └── kiro/                          <- Kiro orchestrator
+│   │       ├── index.ts                   <- generates .kiro/ governance files
+│   │       ├── steering.ts                <- YAML front-matter wrapper
+│   │       └── hooks/                     <- 20 JSON hook generators (governance + workflow)
+│   ├── generators/                        <- shared content generators (agent-agnostic)
+│   │   ├── index.ts                       <- dispatcher → agent registry
+│   │   ├── architecture.ts, constitution.ts, coding-standards.ts, ...
 │   │   ├── workspace/                     <- workspace-level file generators
-│   │   ├── hooks/
-│   │   │   ├── shared.ts                  <- JSON_HELPER + JSON_GUARD (python3/jq dual runtime)
-│   │   │   ├── check-secrets.ts
-│   │   │   ├── protect-files.ts
-│   │   │   ├── block-dangerous.ts
-│   │   │   └── ...                        <- 11 Claude Code hook generators total
-│   │   ├── git-hooks/                     <- git hook generators
-│   │   │   ├── index.ts
-│   │   │   ├── pre-commit.ts              <- python3/jq dual runtime cfg() function
-│   │   │   ├── commit-msg.ts
-│   │   │   ├── config.ts
-│   │   │   ├── workspace-pre-commit.ts    <- monorepo workspace orchestrator
-│   │   │   └── checks/
-│   │   │       ├── file-size.ts           <- hardcoded defaults + runtime override
-│   │   │       ├── secrets.ts
-│   │   │       ├── no-todos.ts
-│   │   │       ├── no-debug.ts            <- stack-aware debug patterns
-│   │   │       ├── format-check.ts
-│   │   │       └── lint-check.ts
-│   │   └── ci/
-│   │       ├── github.ts
-│   │       ├── gitlab.ts
-│   │       └── bitbucket.ts
+│   │   ├── git-hooks/                     <- git hook generators (agent-agnostic)
+│   │   └── ci/                            <- CI config generators (github/gitlab/bitbucket)
 │   ├── commands/
 │   │   ├── init-git-hooks.ts              <- hook detection + wrapper installation
 │   │   ├── init-ci.ts                     <- CI file writing
@@ -1436,32 +1552,39 @@ ai-governance/
 │       ├── file-helpers.ts                <- pkgHas, pubspecHas, gradleHas, pomHas
 │       ├── logger.ts                      <- colored console output
 │       └── tty.ts                         <- TTY detection + line reading
-├── tests/
-│   ├── git-hooks.test.ts                  <- git hook generator tests
-│   ├── pr-check.test.ts                   <- PR check runner tests
-│   ├── generators.test.ts                 <- generator smoke tests
-│   ├── scanners.test.ts                   <- 40+ scanner tests across 8 stacks
-│   ├── java.test.ts                       <- Java stack scanner tests
-│   ├── workspace.test.ts                  <- workspace discovery + init tests
-│   ├── upgrade.test.ts                    <- upgrade command tests (regen + preservation)
-│   ├── integration.test.ts                <- end-to-end: real bash scripts on real git repos
-│   └── fixtures/                          <- minimal manifest files per stack
+├── tests/                                 <- 14 test files, 487 tests
+│   ├── agent-detection.test.ts
+│   ├── backward-compat.test.ts
+│   ├── cli-integration.test.ts
+│   ├── generators.test.ts
+│   ├── git-hooks.test.ts
+│   ├── integration.test.ts
+│   ├── java.test.ts
+│   ├── kiro-hooks.test.ts
+│   ├── kiro-integration.test.ts
+│   ├── kiro-steering.test.ts
+│   ├── pr-check.test.ts
+│   ├── scanners.test.ts
+│   ├── upgrade.test.ts
+│   ├── workspace.test.ts
+│   └── fixtures/                          <- 10 minimal project fixtures per stack
 ├── docs/
-│   ├── INDEX.md                           <- docs navigation (status, audience, quick links)
+│   ├── INDEX.md                           <- docs navigation
 │   ├── complete_usage_guide.md            <- full usage guide (all scenarios)
-│   ├── workspace_setup_guide.md           <- git hooks + CI + PR check for workspace layouts
-│   ├── workspace_governance_guide.md      <- workspace commands, routing, cross-project specs
-│   ├── cli_workspace_commands.md          <- workspace commands quick reference
-│   ├── branching_and_ci_setup_guide.md    <- multi-branch, CI setup for all platforms
+│   ├── kiro_setup_guide.md                <- Kiro-specific setup
+│   ├── workspace_setup_guide.md           <- multi-project workspace setup
+│   ├── workspace_governance_guide.md      <- cross-team governance patterns
+│   ├── cli_workspace_commands.md          <- workspace commands reference
+│   ├── cli_developer_commands.md          <- daily developer commands
+│   ├── branching_and_ci_setup_guide.md    <- multi-branch, CI setup
 │   ├── upgrade_guide.md                   <- upgrading from older versions
-│   ├── runtime_requirements.md            <- python3/jq platform requirements
-│   └── cli_CHANGELOG.md                  <- version history (v14.3.0 → v16.0.0)
+│   └── runtime_requirements.md            <- python3/jq platform requirements
 ├── package.json
 ├── tsconfig.json
 └── jest.config.cjs
 ```
 
-**90+ source files · ~47,000 lines of TypeScript · 284 tests across 8 suites**
+**134 source files · ~14,700 lines of TypeScript · 487 tests across 14 suites**
 
 ---
 

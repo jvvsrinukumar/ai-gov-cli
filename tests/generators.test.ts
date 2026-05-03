@@ -14,20 +14,20 @@ import { computeContentBlocks } from '../src/content-blocks.js';
 import type { GovernanceConfig, ScanResult, Stack } from '../src/types.js';
 
 import { generateArchitecture } from '../src/generators/architecture.js';
-import { generateRootClaudeMd, generateMasterClaudeMd } from '../src/generators/claude-md.js';
+import { generateRootClaudeMd, generateMasterClaudeMd } from '../src/agents/claude-code/claude-md.js';
 import { generateCodingStandards } from '../src/generators/coding-standards.js';
 import { generateConstitution } from '../src/generators/constitution.js';
 import { generateWorkflow } from '../src/generators/workflow.js';
 import { generateAIUsagePolicy } from '../src/generators/ai-usage-policy.js';
 import { generateSpecFirstWorkflow } from '../src/generators/spec-first-workflow.js';
-import { generateSettingsJson } from '../src/generators/settings-json.js';
-import { generateCheckFileSize } from '../src/generators/hooks/check-file-size.js';
-import { generateCheckSecrets } from '../src/generators/hooks/check-secrets.js';
-import { generateProtectFiles } from '../src/generators/hooks/protect-files.js';
-import { generateAnalyzeCode } from '../src/generators/hooks/analyze-code.js';
-import { generateFormatCode } from '../src/generators/hooks/format-code.js';
-import { generateBlockDangerous } from '../src/generators/hooks/block-dangerous.js';
-import { generatePostTaskChecklist } from '../src/generators/hooks/post-task-checklist.js';
+import { generateSettingsJson } from '../src/agents/claude-code/settings-json.js';
+import { generateCheckFileSize } from '../src/agents/claude-code/hooks/check-file-size.js';
+import { generateCheckSecrets } from '../src/agents/claude-code/hooks/check-secrets.js';
+import { generateProtectFiles } from '../src/agents/claude-code/hooks/protect-files.js';
+import { generateAnalyzeCode } from '../src/agents/claude-code/hooks/analyze-code.js';
+import { generateFormatCode } from '../src/agents/claude-code/hooks/format-code.js';
+import { generateBlockDangerous } from '../src/agents/claude-code/hooks/block-dangerous.js';
+import { generatePostTaskChecklist } from '../src/agents/claude-code/hooks/post-task-checklist.js';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
@@ -49,6 +49,7 @@ function makeConfig(
     const scan: ScanResult = { ...createDefaultScanResult(), ...scanOverrides };
     const blocks = computeContentBlocks(stack, profile, scan);
     return {
+        agent: 'claude-code',
         stack,
         profile,
         scan,
@@ -66,7 +67,7 @@ function makeConfig(
 }
 
 // Silence all console output during generator tests
-beforeAll(() => { jest.spyOn(console, 'log').mockImplementation(() => {}); });
+beforeAll(() => { jest.spyOn(console, 'log').mockImplementation(() => { }); });
 afterAll(() => { jest.restoreAllMocks(); });
 
 // ─── Architecture ─────────────────────────────────────────────────────────────
