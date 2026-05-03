@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 import type { Stack } from './types.js';
 import { log } from './utils/logger.js';
@@ -64,6 +64,41 @@ export function detectStack(projectDir: string, explicit?: string): Stack {
         }
         log.warn('Node.js (fallback)'); return 'nodejs';
     }
+
+    // Fallback: scan for Java/Kotlin indicators when no root manifest exists
+    // (multi-module projects, Weasis-style structures, or src/main/java presence)
+    const javaIndicators = [
+        'src/main/java',
+        'src/main/kotlin',
+        'settings.gradle',
+        'settings.gradle.kts',
+        'mvnw',
+        'gradlew',
+    ];
+    const hasJavaIndicator = javaIndicators.some(f => existsSync(join(projectDir, f)));
+    if (hasJavaIndicator) {
+        // Check if it's Kotlin-dominant
+        if (existsSync(join(projectDir, 'src', 'main', 'kotlin'))) {
+            log.success('Kotlin (inferred from src/main/kotlin)'); return 'kotlin';
+        }
+        log.success('Java (inferred from project structure)'); return 'java';
+    }
+
+    // Check for pom.xml in immediate subdirectories (multi-module parent without root pom)
+    try {
+        const entries = readdirSync(projectDir, { withFileTypes: true });
+        for (const entry of entries) {
+            if (entry.isDirectory() && !entry.name.startsWith('.')) {
+                if (existsSync(join(projectDir, entry.name, 'pom.xml'))) {
+                    log.success('Java (inferred from sub-module pom.xml)'); return 'java';
+                }
+                if (existsSync(join(projectDir, entry.name, 'build.gradle.kts')) ||
+                    existsSync(join(projectDir, entry.name, 'build.gradle'))) {
+                    log.success('Java (inferred from sub-module gradle)'); return 'java';
+                }
+            }
+        }
+    } catch { /* ignore readdir errors */ }
 
     log.error('Could not detect stack. Use --stack to specify.');
     process.exit(1);
