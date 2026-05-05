@@ -32,35 +32,35 @@ export function generateAllKiroHooks(config: GovernanceConfig, opts: WriteOption
     };
 
     // preToolUse hooks
-    w('block-dangerous-commands.json', generateBlockDangerous(config));
-    w('protect-files.json', generateProtectFiles(config));
-    w('pre-write-secrets-gate.json', generatePreWriteSecretsGate(config));
-    w('spec-first-gate.json', generateSpecFirstGate(config));  // null if specFirstEnabled=false
+    w('block-dangerous-commands.hook', generateBlockDangerous(config));
+    w('protect-files.hook', generateProtectFiles(config));
+    w('pre-write-secrets-gate.hook', generatePreWriteSecretsGate(config));
+    w('spec-first-gate.hook', generateSpecFirstGate(config));  // null if specFirstEnabled=false
 
     // postToolUse hooks
-    w('format-code.json', generateFormatCode(config));          // null if no formatter
-    w('analyze-code.json', generateAnalyzeCode(config));        // null if no linter
-    w('check-file-size.json', generateCheckFileSize(config));
-    w('check-feature-readme.json', generateCheckFeatureReadme(config));
-    w('check-consistency.json', generateCheckConsistency(config));
+    w('format-code.hook', generateFormatCode(config));          // null if no formatter
+    w('analyze-code.hook', generateAnalyzeCode(config));        // null if no linter
+    w('check-file-size.hook', generateCheckFileSize(config));
+    w('check-feature-readme.hook', generateCheckFeatureReadme(config));
+    w('check-consistency.hook', generateCheckConsistency(config));
 
     // fileEdited hooks
-    w('check-secrets.json', generateCheckSecrets(config));
+    w('check-secrets.hook', generateCheckSecrets(config));
 
     // promptSubmit hooks
-    w('session-continuity.json', generateSessionContinuity(config));
-    w('require-task-type.json', generateRequireTaskType(config));
+    w('session-continuity.hook', generateSessionContinuity(config));
+    w('require-task-type.hook', generateRequireTaskType(config));
 
     // postTaskExecution hooks
-    w('post-task-checklist.json', generatePostTaskChecklist(config));
+    w('post-task-checklist.hook', generatePostTaskChecklist(config));
 
     // userTriggered workflow hooks
-    w('workflow-audit.json', generateWorkflowAudit(config));
-    w('workflow-new-feature.json', generateWorkflowNewFeature(config));
-    w('workflow-fix.json', generateWorkflowFix(config));
-    w('workflow-refactor.json', generateWorkflowRefactor(config));
-    w('workflow-hotfix.json', generateWorkflowHotfix(config));
-    w('workflow-explore.json', generateWorkflowExplore(config));
+    w('workflow-audit.hook', generateWorkflowAudit(config));
+    w('workflow-new-feature.hook', generateWorkflowNewFeature(config));
+    w('workflow-fix.hook', generateWorkflowFix(config));
+    w('workflow-refactor.hook', generateWorkflowRefactor(config));
+    w('workflow-hotfix.hook', generateWorkflowHotfix(config));
+    w('workflow-explore.hook', generateWorkflowExplore(config));
 
     // README
     w('README.md', generateHooksReadme(config));

@@ -97,10 +97,10 @@ describe('CLI --agent routing', () => {
         expect(arch).toMatch(/^---\ninclusion: always\n---\n/);
     });
 
-    test('kiro hooks are JSON files, not bash scripts', () => {
+    test('kiro hooks are .hook files, not bash scripts', () => {
         const config = makeConfig('kiro', 'nodejs', {}, { projectDir: tmpDir });
         runGovernance(config);
-        const hookFile = join(tmpDir, '.kiro', 'hooks', 'block-dangerous-commands.json');
+        const hookFile = join(tmpDir, '.kiro', 'hooks', 'block-dangerous-commands.hook');
         expect(existsSync(hookFile)).toBe(true);
         const json = JSON.parse(readFileSync(hookFile, 'utf-8'));
         expect(json.when.type).toBe('preToolUse');
@@ -129,12 +129,12 @@ describe('CLI --agent routing', () => {
     test('kiro init with specFirstEnabled generates spec-first-gate hook', () => {
         const config = makeConfig('kiro', 'nodejs', {}, { projectDir: tmpDir, specFirstEnabled: true });
         runGovernance(config);
-        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'spec-first-gate.json'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'spec-first-gate.hook'))).toBe(true);
     });
 
     test('kiro init without specFirstEnabled does NOT generate spec-first-gate hook', () => {
         const config = makeConfig('kiro', 'nodejs', {}, { projectDir: tmpDir, specFirstEnabled: false });
         runGovernance(config);
-        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'spec-first-gate.json'))).toBe(false);
+        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'spec-first-gate.hook'))).toBe(false);
     });
 });

@@ -94,7 +94,7 @@ describe('Kiro hook schema validation', () => {
     ];
 
     for (const { name, generate } of hookGenerators) {
-        test(`${name}.json validates against Kiro schema`, () => {
+        test(`${name}.hook validates against Kiro schema`, () => {
             const output = generate(makeConfig());
             expect(output).not.toBeNull();
             const result = validateKiroHookSchema(output!);
@@ -237,7 +237,7 @@ describe('Kiro hook version', () => {
     ];
 
     for (const { name, generate } of generators) {
-        test(`${name}.json contains version 17.0.0`, () => {
+        test(`${name}.hook contains version 17.0.0`, () => {
             const cfg = makeConfig();
             cfg.hookVersion = '17.0.0';
             const json = JSON.parse(generate(cfg)!);
@@ -279,7 +279,7 @@ describe('No Claude Code artifacts in Kiro hooks', () => {
         const hooksDir = join(tmpDir, '.kiro', 'hooks');
         let allContent = '';
         for (const f of readdirSync(hooksDir)) {
-            if (f.endsWith('.json')) {
+            if (f.endsWith('.hook')) {
                 allContent += readFileSync(join(hooksDir, f), 'utf-8') + '\n';
             }
         }
@@ -324,19 +324,19 @@ describe('Workflow hook schema validation', () => {
     ];
 
     for (const { name, generate } of workflowGenerators) {
-        test(`${name}.json validates against Kiro schema`, () => {
+        test(`${name}.hook validates against Kiro schema`, () => {
             const output = generate(makeConfig());
             const result = validateKiroHookSchema(output);
             expect(result.errors).toEqual([]);
             expect(result.valid).toBe(true);
         });
 
-        test(`${name}.json uses userTriggered event`, () => {
+        test(`${name}.hook uses userTriggered event`, () => {
             const json = JSON.parse(generate(makeConfig()));
             expect(json.when.type).toBe('userTriggered');
         });
 
-        test(`${name}.json uses askAgent action`, () => {
+        test(`${name}.hook uses askAgent action`, () => {
             const json = JSON.parse(generate(makeConfig()));
             expect(json.then.type).toBe('askAgent');
         });
