@@ -19,9 +19,7 @@ import { runWorkspaceInit, discoverProjects } from './commands/workspace-init.js
 import { runUpgrade } from './commands/upgrade.js';
 import { runOnboard } from './commands/onboard.js';
 import { detectAgent } from './agents/detect-agent.js';
-
-const VERSION = '17.0.0';
-const HOOK_VERSION = '17.0.0';
+import { VERSION, HOOK_VERSION } from './constants.js';
 
 const program = new Command();
 
@@ -123,7 +121,7 @@ program
 
         if (options.gitHooks) {
             generateGitHooks(config, projectDir);
-            installGitHookWrappers(projectDir, options.force ?? false, options.dryRun ?? false);
+            installGitHookWrappers(projectDir, options.force ?? false, options.dryRun ?? false, agent);
         }
         if (options.ci) {
             generateCIConfig(config, options.ci);
@@ -323,21 +321,27 @@ program
                 log.error('No projects found in workspace.');
                 process.exit(1);
             }
-            const agent = detectAgent(workspaceDir, options.agent);
-            const agentDir = agent === 'kiro' ? '.kiro' : '.claude';
-            log.header(`Workspace Upgrade (${agent}) — ${projects.length} project(s)`);
+            const wsAgent = detectAgent(workspaceDir, options.agent);
+            log.header(`Workspace Upgrade — ${projects.length} project(s)`);
             let upgraded = 0;
             let skipped = 0;
             for (const project of projects) {
                 const projectDir = join(workspaceDir, project.relativePath);
-                if (!existsSync(join(projectDir, agentDir))) {
-                    log.warn(`  Skipping ${project.relativePath} — no ${agentDir}/ (run workspace init first)`);
+                // Detect agent per-project so mixed-agent workspaces work correctly
+                const hasKiro = existsSync(join(projectDir, '.kiro'));
+                const hasClaude = existsSync(join(projectDir, '.claude'));
+                const projectAgent = options.agent
+                    ? wsAgent
+                    : hasKiro ? 'kiro' : hasClaude ? 'claude-code' : null;
+                if (!projectAgent) {
+                    log.warn(`  Skipping ${project.relativePath} — no .kiro/ or .claude/ (run workspace init first)`);
                     skipped++;
                     continue;
                 }
-                console.log(`\n  Upgrading ${project.relativePath} [${project.stack}]...`);
+                const agentDir = projectAgent === 'kiro' ? '.kiro' : '.claude';
+                console.log(`\n  Upgrading ${project.relativePath} [${project.stack}] (${agentDir})...`);
                 try {
-                    runUpgrade({ dir: projectDir, force: options.force, dryRun: options.dryRun });
+                    runUpgrade({ dir: projectDir, force: options.force, dryRun: options.dryRun, agent: projectAgent });
                     upgraded++;
                 } catch (err) {
                     const msg = err instanceof Error ? err.message : String(err);
@@ -347,7 +351,7 @@ program
             console.log('');
             log.header('Workspace upgrade complete');
             console.log(`  Upgraded: ${upgraded}  Skipped: ${skipped}`);
-            console.log('  Next: git add ' + agentDir + '/ && git commit -m "chore: upgrade ai-gov hooks"');
+            console.log('  Next: git add -A && git commit -m "chore: upgrade ai-gov hooks"');
             console.log('');
             return;
         }
@@ -533,7 +537,7 @@ function addToGitignore(projectDir: string): void {
     try {
         const content = existsSync(gi) ? readFileSync(gi, 'utf-8') : '';
         if (!content.includes('ai-gov')) {
-            appendFileSync(gi, '\n# AI governance CLI\nai_governance_v14*.sh\n');
+            appendFileSync(gi, '\n# AI governance CLI\nonboard.sh\n');
         }
     } catch { /* ignore */ }
 }

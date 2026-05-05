@@ -87,7 +87,8 @@ export function runOnboard(options: OnboardOptions): void {
 
     if (!preCommitMissing && !commitMsgMissing) {
         const preContent = readFileSync(preCommitWrapper, 'utf-8');
-        if (preContent.includes('ai-gov')) {
+        const msgContent = readFileSync(commitMsgWrapper, 'utf-8');
+        if (preContent.includes('ai-gov') && msgContent.includes('ai-gov')) {
             ok('.git/hooks/pre-commit wrapper installed');
             ok('.git/hooks/commit-msg wrapper installed');
         } else {
@@ -97,7 +98,7 @@ export function runOnboard(options: OnboardOptions): void {
         }
     } else {
         console.log('  Installing git hook wrappers...');
-        installGitHookWrappers(projectDir, false, false);
+        installGitHookWrappers(projectDir, false, false, agent);
 
         if (existsSync(preCommitWrapper)) {
             ok('.git/hooks/pre-commit wrapper installed');

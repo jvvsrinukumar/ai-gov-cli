@@ -17,13 +17,20 @@ import { formatGitlab } from './formatters/gitlab.js';
 import { formatJson } from './formatters/json.js';
 
 function loadGovernanceConfig(projectDir: string): GovernanceConfig | null {
-    const configPath = join(projectDir, '.claude', 'governance.json');
-    if (!existsSync(configPath)) return null;
-    try {
-        return JSON.parse(readFileSync(configPath, 'utf-8')) as GovernanceConfig;
-    } catch {
-        return null;
+    // Check both agent directories — .claude/ (Claude Code) and .kiro/ (Kiro)
+    const candidates = [
+        join(projectDir, '.claude', 'governance.json'),
+        join(projectDir, '.kiro', 'governance.json'),
+    ];
+    for (const configPath of candidates) {
+        if (!existsSync(configPath)) continue;
+        try {
+            return JSON.parse(readFileSync(configPath, 'utf-8')) as GovernanceConfig;
+        } catch {
+            return null;
+        }
     }
+    return null;
 }
 
 function formatOutput(results: CheckResult[], changedFiles: string[], format: string): string {
@@ -43,8 +50,11 @@ export async function runPRCheck(
     const changedFiles = getChangedFiles(projectDir, baseBranch);
     const diff = getDiff(projectDir, baseBranch);
 
-    // Cap at 100 files for large PRs
-    const filesToCheck = changedFiles.slice(0, 100);
+    const FILE_CAP = 100;
+    if (changedFiles.length > FILE_CAP) {
+        console.warn(`\n  ⚠️  Large PR: ${changedFiles.length} files changed — governance checks limited to first ${FILE_CAP} files.\n`);
+    }
+    const filesToCheck = changedFiles.slice(0, FILE_CAP);
 
     const config = loadGovernanceConfig(projectDir);
 

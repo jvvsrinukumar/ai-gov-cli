@@ -28,8 +28,7 @@ import { computeContentBlocks, isJavaBackend as isJavaBackendCheck } from '../co
 import { generateGitHooks } from '../generators/git-hooks/index.js';
 import { log } from '../utils/logger.js';
 import { agentRegistry } from '../agents/types.js';
-
-const HOOK_VERSION = '17.0.0';
+import { HOOK_VERSION } from '../constants.js';
 
 export interface UpgradeOptions {
     dir: string;
@@ -48,7 +47,6 @@ export function runUpgrade(options: UpgradeOptions): void {
         process.exit(1);
     }
 
-    const claudeDir = join(projectDir, '.claude');
     const kiroDir = join(projectDir, '.kiro');
     const agent: Agent = (options.agent as Agent) ?? (existsSync(kiroDir) ? 'kiro' : 'claude-code');
     const agentDirName = agent === 'kiro' ? '.kiro' : '.claude';
@@ -175,6 +173,14 @@ function readExistingProjectInfo(projectDir: string, stack: Stack, agent: Agent)
                     if (existsSync(pub)) {
                         const m = readFileSync(pub, 'utf-8').match(/^name:\s*(.+)/m);
                         if (m) appName = m[1].trim();
+                    }
+                    break;
+                }
+                case 'swiftui': {
+                    const pkg = join(projectDir, 'Package.swift');
+                    if (existsSync(pkg)) {
+                        const m = readFileSync(pkg, 'utf-8').match(/name:\s*"([^"]+)"/);
+                        if (m) appName = m[1];
                     }
                     break;
                 }

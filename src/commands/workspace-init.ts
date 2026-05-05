@@ -10,8 +10,7 @@ import { generateGitHooks } from '../generators/git-hooks/index.js';
 import { generateWorkspaceFiles, type WorkspaceProject, type WorkspaceConfig } from '../generators/workspace/index.js';
 import { generateWorkspacePreCommit } from '../generators/git-hooks/workspace-pre-commit.js';
 import { log } from '../utils/logger.js';
-
-const HOOK_VERSION = '17.0.0';
+import { HOOK_VERSION } from '../constants.js';
 
 // Directories treated as group containers (Image 1 pattern)
 const GROUP_DIRS = ['backend', 'frontend', 'mobile', 'services', 'apps', 'packages', 'libs'];
@@ -163,7 +162,7 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
     if (!dryRun) {
         mkdirSync(wsHookDir, { recursive: true });
         const hookFile = join(wsHookDir, 'workspace-pre-commit.sh');
-        writeFileSync(hookFile, generateWorkspacePreCommit());
+        writeFileSync(hookFile, generateWorkspacePreCommit(agent));
         try { chmodSync(hookFile, 0o755); } catch { /* ignore on Windows */ }
         log.detected(`workspace-pre-commit.sh written → ${agentDir}/git-hooks/`);
     } else {
@@ -373,6 +372,14 @@ function collectProjectInfo(stack: Stack, projectDir: string) {
                 }
                 break;
             }
+            case 'swiftui': {
+                const pkg = join(projectDir, 'Package.swift');
+                if (existsSync(pkg)) {
+                    const m = readFileSync(pkg, 'utf-8').match(/name:\s*"([^"]+)"/);
+                    if (m) packageName = m[1];
+                }
+                break;
+            }
             case 'python': {
                 const pyp = join(projectDir, 'pyproject.toml');
                 if (existsSync(pyp)) {
@@ -540,7 +547,7 @@ function addToGitignore(workspaceDir: string): void {
     try {
         const content = existsSync(gi) ? readFileSync(gi, 'utf-8') : '';
         if (!content.includes('ai-gov')) {
-            appendFileSync(gi, '\n# AI governance CLI\nai_governance_v14*.sh\n');
+            appendFileSync(gi, '\n# AI governance CLI\nonboard.sh\n');
         }
     } catch { /* ignore */ }
 }

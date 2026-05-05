@@ -62,8 +62,14 @@ export function scanProject(
 }
 
 // v14.2: Universal spec-first enablement check — applies to ALL stacks
+// Checks both Claude Code (specs/) and Kiro (.kiro/specs/) locations.
 export function checkSpecFirstEnabled(projectDir: string): boolean {
-    const specsDir = join(projectDir, 'specs');
+    // Prefer .kiro/specs/ if it exists (Kiro agent), fall back to specs/ (Claude Code)
+    const kiroSpecsDir = join(projectDir, '.kiro', 'specs');
+    const claudeSpecsDir = join(projectDir, 'specs');
+    const specsDir = existsSync(kiroSpecsDir) ? kiroSpecsDir : claudeSpecsDir;
+    const specsGitPath = existsSync(kiroSpecsDir) ? '.kiro/specs/' : 'specs/';
+
     if (existsSync(specsDir)) {
         try {
             const entries = readdirSync(specsDir, { withFileTypes: true });
@@ -75,7 +81,7 @@ export function checkSpecFirstEnabled(projectDir: string): boolean {
         } catch { /* ignore */ }
     }
     try {
-        const result = execSync(`git -C "${projectDir}" log --oneline -- specs/ 2>/dev/null | wc -l`, { stdio: 'pipe' }).toString().trim();
+        const result = execSync(`git -C "${projectDir}" log --oneline -- ${specsGitPath} 2>/dev/null | wc -l`, { stdio: 'pipe' }).toString().trim();
         if (parseInt(result, 10) > 0) {
             log.detected('Spec-first: enabled (git spec history detected)');
             return true;

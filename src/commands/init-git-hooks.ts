@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { chmodSync } from 'fs';
+import type { Agent } from '../types.js';
 import { log } from '../utils/logger.js';
 
 export function detectExistingHookSystem(projectDir: string): string | null {
@@ -18,24 +19,25 @@ export function detectExistingHookSystem(projectDir: string): string | null {
     return null;
 }
 
-export function installGitHookWrappers(projectDir: string, force: boolean, dryRun = false): void {
+export function installGitHookWrappers(projectDir: string, force: boolean, dryRun = false, agent: Agent = 'claude-code'): void {
+    const agentHookDir = agent === 'kiro' ? '.kiro' : '.claude';
     const existing = detectExistingHookSystem(projectDir);
 
     if (existing && !force) {
         console.log('');
         console.log(`  Existing hook system detected: ${existing}`);
         console.log('');
-        console.log('  ai-gov scripts are generated in .claude/git-hooks/ (committed to repo).');
+        console.log(`  ai-gov scripts are generated in ${agentHookDir}/git-hooks/ (committed to repo).`);
 
         const integrationGuide: Record<string, string[]> = {
             husky: [
                 `  To integrate with husky, add to .husky/pre-commit:`,
                 '',
-                '    bash .claude/git-hooks/pre-commit.sh',
+                `    bash ${agentHookDir}/git-hooks/pre-commit.sh`,
                 '',
                 '  And add to .husky/commit-msg:',
                 '',
-                '    bash .claude/git-hooks/commit-msg.sh "$1"',
+                `    bash ${agentHookDir}/git-hooks/commit-msg.sh "$1"`,
             ],
             lefthook: [
                 '  To integrate with lefthook, add to lefthook.yml:',
@@ -43,11 +45,11 @@ export function installGitHookWrappers(projectDir: string, force: boolean, dryRu
                 '    pre-commit:',
                 '      commands:',
                 '        ai-gov:',
-                '          run: bash .claude/git-hooks/pre-commit.sh',
+                `          run: bash ${agentHookDir}/git-hooks/pre-commit.sh`,
                 '    commit-msg:',
                 '      commands:',
                 '        ai-gov:',
-                '          run: bash .claude/git-hooks/commit-msg.sh {1}',
+                `          run: bash ${agentHookDir}/git-hooks/commit-msg.sh {1}`,
             ],
             'pre-commit': [
                 '  To integrate with pre-commit, add to .pre-commit-config.yaml:',
@@ -56,18 +58,18 @@ export function installGitHookWrappers(projectDir: string, force: boolean, dryRu
                 '      hooks:',
                 '        - id: ai-gov-pre-commit',
                 '          name: ai-gov governance',
-                '          entry: bash .claude/git-hooks/pre-commit.sh',
+                `          entry: bash ${agentHookDir}/git-hooks/pre-commit.sh`,
                 '          language: system',
                 '          pass_filenames: false',
             ],
             custom: [
                 '  To integrate, add to your existing .git/hooks/pre-commit:',
                 '',
-                '    bash .claude/git-hooks/pre-commit.sh',
+                `    bash ${agentHookDir}/git-hooks/pre-commit.sh`,
                 '',
                 '  And add to .git/hooks/commit-msg:',
                 '',
-                '    bash .claude/git-hooks/commit-msg.sh "$1"',
+                `    bash ${agentHookDir}/git-hooks/commit-msg.sh "$1"`,
             ],
         };
 
@@ -76,7 +78,7 @@ export function installGitHookWrappers(projectDir: string, force: boolean, dryRu
 
         console.log('');
         console.log('  Or to replace entirely:');
-        console.log('    ai-gov init --git-hooks --force');
+        console.log(`    ai-gov init --git-hooks --force${agent === 'kiro' ? ' --agent kiro' : ''}`);
         console.log('');
         return;
     }
@@ -96,15 +98,15 @@ export function installGitHookWrappers(projectDir: string, force: boolean, dryRu
     // Avoids $(git rev-parse --show-toplevel) which returns Windows paths (C:\...)
     // on native Git Bash and breaks the exec call.
     const preCommitWrapper = `#!/usr/bin/env bash
-# Installed by ai-gov — calls .claude/git-hooks/pre-commit.sh
+# Installed by ai-gov — calls ${agentHookDir}/git-hooks/pre-commit.sh
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-exec bash "$REPO_ROOT/.claude/git-hooks/pre-commit.sh" "$@"
+exec bash "$REPO_ROOT/${agentHookDir}/git-hooks/pre-commit.sh" "$@"
 `;
 
     const commitMsgWrapper = `#!/usr/bin/env bash
-# Installed by ai-gov — calls .claude/git-hooks/commit-msg.sh
+# Installed by ai-gov — calls ${agentHookDir}/git-hooks/commit-msg.sh
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-exec bash "$REPO_ROOT/.claude/git-hooks/commit-msg.sh" "$1"
+exec bash "$REPO_ROOT/${agentHookDir}/git-hooks/commit-msg.sh" "$1"
 `;
 
     writeFileSync(join(gitHooksDir, 'pre-commit'), preCommitWrapper);

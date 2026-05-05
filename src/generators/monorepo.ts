@@ -17,8 +17,9 @@ export function generateMonorepoGovernance(c: GovernanceConfig, opts: WriteOptio
 
     const pkgRows = packages.map(p => `| \`${p}\` | _describe_ | _layer flow_ |`).join('\n');
 
-    // Default to .claude/steering/ for backward compatibility; Kiro passes .kiro/steering/
-    const outDir = steeringDir ?? join(c.projectDir, '.claude', 'steering');
+    // Use agent-aware default path when steeringDir is not explicitly provided
+    const agentDirName = c.agent === 'kiro' ? '.kiro' : '.claude';
+    const outDir = steeringDir ?? join(c.projectDir, agentDirName, 'steering');
 
     safeWrite(join(outDir, 'monorepo.md'), `# Monorepo Governance — ${c.project.appName}
 

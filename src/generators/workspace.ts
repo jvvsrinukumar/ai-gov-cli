@@ -60,72 +60,72 @@ export function generateWorkspaceFiles(config: WorkspaceConfig, opts: WriteOptio
     // Claude Code workspace: full output
     log.section('Workspace root:');
     safeWrite(join(workspaceDir, 'CLAUDE.md'), generateWorkspaceRootRedirect(), opts);
-    safeWrite(join(workspaceDir, '.claude', 'CLAUDE.md'), generateWorkspaceMasterClaudeMd(config), opts);
+    safeWrite(join(workspaceDir, agentDir, 'CLAUDE.md'), generateWorkspaceMasterClaudeMd(config), opts);
 
     log.section('Workspace steering:');
     safeWrite(
-        join(workspaceDir, '.claude', 'steering', 'workspace-policy.md'),
+        join(workspaceDir, agentDir, 'steering', 'workspace-policy.md'),
         generateWorkspacePolicy(workspaceName),
         opts,
     );
     safeWrite(
-        join(workspaceDir, '.claude', 'steering', 'cross-project-rules.md'),
+        join(workspaceDir, agentDir, 'steering', 'cross-project-rules.md'),
         generateCrossProjectRules(config),
         opts,
     );
     safeWrite(
-        join(workspaceDir, '.claude', 'steering', 'project-registry.md'),
+        join(workspaceDir, agentDir, 'steering', 'project-registry.md'),
         generateProjectRegistry(config),
         opts,
     );
 
     log.section('Workspace commands:');
     safeWrite(
-        join(workspaceDir, '.claude', 'commands', 'audit.md'),
+        join(workspaceDir, agentDir, 'commands', 'audit.md'),
         generateWorkspaceAuditCommand(config),
         opts,
     );
     safeWrite(
-        join(workspaceDir, '.claude', 'commands', 'new-feature.md'),
+        join(workspaceDir, agentDir, 'commands', 'new-feature.md'),
         generateWorkspaceNewFeatureCommand(config),
         opts,
     );
     safeWrite(
-        join(workspaceDir, '.claude', 'commands', 'edit-feature.md'),
+        join(workspaceDir, agentDir, 'commands', 'edit-feature.md'),
         generateWorkspaceEditFeatureCommand(config),
         opts,
     );
     safeWrite(
-        join(workspaceDir, '.claude', 'commands', 'explore.md'),
+        join(workspaceDir, agentDir, 'commands', 'explore.md'),
         generateWorkspaceExploreCommand(config),
         opts,
     );
     safeWrite(
-        join(workspaceDir, '.claude', 'commands', 'fix.md'),
+        join(workspaceDir, agentDir, 'commands', 'fix.md'),
         generateWorkspaceFixCommand(config),
         opts,
     );
     safeWrite(
-        join(workspaceDir, '.claude', 'commands', 'refactor.md'),
+        join(workspaceDir, agentDir, 'commands', 'refactor.md'),
         generateWorkspaceRefactorCommand(config),
         opts,
     );
     safeWrite(
-        join(workspaceDir, '.claude', 'commands', 'hotfix.md'),
+        join(workspaceDir, agentDir, 'commands', 'hotfix.md'),
         generateWorkspaceHotfixCommand(config),
         opts,
     );
 
     log.section('Workspace hooks:');
     safeWrite(
-        join(workspaceDir, '.claude', 'hooks', 'cross-project-spec-check.sh'),
+        join(workspaceDir, agentDir, 'hooks', 'cross-project-spec-check.sh'),
         generateCrossProjectSpecCheck(config),
         opts,
     );
 
     log.section('Workspace overview:');
     safeWrite(
-        join(workspaceDir, '.claude', 'steering', 'workspace-overview.md'),
+        join(workspaceDir, agentDir, 'steering', 'workspace-overview.md'),
         generateWorkspaceOverview(config),
         opts,
     );

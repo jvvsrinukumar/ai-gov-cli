@@ -6,10 +6,49 @@ MSG=$(head -1 "$MSG_FILE")
 DIR="$(cd "$(dirname "$0")" && pwd)"
 CONFIG="$DIR/config.json"
 
-command -v jq &>/dev/null || exit 0
+# Require jq or python3 — fail clearly instead of silently passing
+HAS_JQ=false
+HAS_PY=false
+command -v jq &>/dev/null && HAS_JQ=true
+command -v python3 &>/dev/null && HAS_PY=true
+
+if [[ "$HAS_JQ" == "false" && "$HAS_PY" == "false" ]]; then
+    echo ""
+    echo "  ❌ commit-msg hook: requires jq or python3 to validate commit messages"
+    echo "  Install jq (brew install jq / apt install jq) or python3, then retry."
+    echo ""
+    exit 1
+fi
+
+# Config reader — uses jq if available, falls back to python3
+cfg() {
+    local expr="$1" default="$2"
+    if [[ "$HAS_JQ" == "true" ]]; then
+        local val
+        val=$(jq -r "\${expr}" "$CONFIG" 2>/dev/null)
+        [[ -n "$val" && "$val" != "null" ]] && echo "$val" || echo "$default"
+    else
+        python3 -c "
+import json,sys,re
+try:
+    with open(sys.argv[1]) as f:
+        c=json.load(f)
+    keys=re.findall(r'[a-zA-Z0-9_-]+', sys.argv[2].split('//')[0])
+    v=c
+    for k in keys:
+        v=v.get(k) if isinstance(v,dict) else None
+    if isinstance(v,list): print('|'.join(str(i) for i in v))
+    elif v is True: print('true')
+    elif v is False: print('false')
+    elif v is not None: print(str(v))
+    else: print(sys.argv[3])
+except: print(sys.argv[3])
+" "$CONFIG" "$expr" "$default" 2>/dev/null || echo "$default"
+    fi
+}
 
 # Skip if disabled
-enabled=$(jq -r '.["commit-msg"]["conventional-commits"] // true' "$CONFIG" 2>/dev/null)
+enabled=$(cfg '.["commit-msg"]["conventional-commits"]' "true")
 [[ "$enabled" != "true" ]] && exit 0
 
 # Skip merge commits
@@ -24,9 +63,13 @@ echo "$MSG" | grep -qE '^(fixup|squash)! ' && exit 0
 # Skip during rebase
 [[ -d ".git/rebase-merge" || -d ".git/rebase-apply" ]] && exit 0
 
-# Read allowed types from config (fallback to defaults)
-TYPES=$(jq -r '.["commit-msg"]["allowed-types"] // ["feat","fix","refactor","hotfix","docs","test","chore","style","perf","ci","build"] | join("|")' "$CONFIG" 2>/dev/null)
-MIN_LEN=$(jq -r '.["commit-msg"]["min-description-length"] // 10' "$CONFIG" 2>/dev/null)
+# Read allowed types — jq handles array join natively; python3 cfg() joins with |
+if [[ "$HAS_JQ" == "true" ]]; then
+    TYPES=$(jq -r '.["commit-msg"]["allowed-types"] // ["feat","fix","refactor","hotfix","docs","test","chore","style","perf","ci","build"] | join("|")' "$CONFIG" 2>/dev/null || echo "feat|fix|refactor|hotfix|docs|test|chore|style|perf|ci|build")
+else
+    TYPES=$(cfg '.["commit-msg"]["allowed-types"]' "feat|fix|refactor|hotfix|docs|test|chore|style|perf|ci|build")
+fi
+MIN_LEN=$(cfg '.["commit-msg"]["min-description-length"]' "10")
 
 # Validate format: type(scope): description
 if ! echo "$MSG" | grep -qE "^($TYPES)(\\([a-zA-Z0-9_-]+\\))?: .{\${MIN_LEN},}"; then
@@ -48,9 +91,9 @@ if ! echo "$MSG" | grep -qE "^($TYPES)(\\([a-zA-Z0-9_-]+\\))?: .{\${MIN_LEN},}";
 fi
 
 # Check ticket reference if required
-REQ_TICKET=$(jq -r '.["commit-msg"]["require-ticket-ref"] // false' "$CONFIG" 2>/dev/null)
+REQ_TICKET=$(cfg '.["commit-msg"]["require-ticket-ref"]' "false")
 if [[ "$REQ_TICKET" == "true" ]]; then
-    TICKET_PAT=$(jq -r '.["commit-msg"]["ticket-pattern"] // "[A-Z]+-[0-9]+"' "$CONFIG" 2>/dev/null)
+    TICKET_PAT=$(cfg '.["commit-msg"]["ticket-pattern"]' "[A-Z]+-[0-9]+")
     FULL_MSG=$(cat "$MSG_FILE")
     if ! echo "$FULL_MSG" | grep -qE "$TICKET_PAT"; then
         echo ""
