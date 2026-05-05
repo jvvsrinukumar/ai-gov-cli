@@ -1,7 +1,7 @@
 {
   "name": "ai-gov",
-  "version": "15.2.0",
-  "description": "AI Governance Framework for Claude Code — scan-adaptive steering, hooks, and spec templates",
+  "version": "17.0.0",
+  "description": "AI Governance Framework for Claude Code & Kiro — scan-adaptive steering, hooks, and spec templates",
   "type": "module",
   "bin": {
     "ai-gov": "dist/bin/ai-gov.js"
@@ -11,17 +11,24 @@
     "dist/**/*.d.ts",
     "README.md",
     "LICENSE",
-    "CHANGELOG.md"
+    "CHANGELOG.md",
+    "onboard.sh"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "build": "tsc",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run build && npm test",
     "dev": "tsx src/cli.ts",
     "test": "jest --config jest.config.cjs",
-    "lint": "eslint src/"
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "claude-code",
+    "kiro",
     "ai-governance",
     "claude",
     "steering",
@@ -33,7 +40,10 @@
     "angular",
     "kotlin",
     "python",
-    "swiftui"
+    "swiftui",
+    "java",
+    "spring-boot",
+    "maven"
   ],
   "author": "Srinu Jonnalagadda <jvvsrinukumar@gmail.com>",
   "license": "MIT",

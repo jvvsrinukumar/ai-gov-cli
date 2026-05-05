@@ -1,9 +1,9 @@
-# ai-gov Complete Usage Guide — v15.2.0
+# ai-gov Complete Usage Guide — v16.0.0
 
 > Step-by-step guide for developers, team leads, and CI/CD engineers.
 > Covers all three governance layers: AI Steering · Git Hooks · CI + PR Check.
 
-**Version:** 15.2.0
+**Version:** 16.0.0
 **Audience:** New adopters and teams upgrading from v15.1.0
 
 ---
@@ -32,25 +32,20 @@ Before starting, verify these are installed:
 node --version     # must be >= 18.0.0
 npm --version      # any recent version
 git --version      # any recent version
-jq --version       # must be >= 1.6  ← most common missing tool
 claude --version   # Claude Code CLI
 ```
 
-### Install jq (required by ALL hooks)
+### Runtime for hooks (python3 preferred, jq fallback)
 
-```bash
-# macOS
-brew install jq
+Hooks need **python3** or **jq** to read `config.json`. python3 is preferred.
 
-# Ubuntu / Debian / WSL2
-sudo apt-get update && sudo apt-get install -y jq
+| Platform | Install python3 | Install jq (fallback) |
+|----------|----------------|----------------------|
+| macOS | `brew install python3` | `brew install jq` |
+| Ubuntu / Debian / WSL2 | `sudo apt-get install -y python3` | `sudo apt-get install -y jq` |
+| Windows | `winget install Python.Python.3` | `winget install jqlang.jq` |
 
-# Windows (PowerShell as admin)
-winget install jqlang.jq
-# Also install Git Bash: https://git-scm.com/download/win
-```
-
-> **jq is the #1 setup issue.** If jq is missing, every governance hook silently skips. You get zero enforcement with no error message.
+> If **neither** is installed, hooks emit a warning and skip — no silent failures. Run `ai-gov doctor` to check.
 
 ### Windows note
 
@@ -64,7 +59,7 @@ The CLI (`ai-gov init`) runs on bare Windows. The bash hook scripts (`.claude/gi
 
 ```bash
 npm install -g ai-gov
-ai-gov --version    # → 15.2.0
+ai-gov --version    # → 16.0.0
 ```
 
 ### Option B — npx (no install)
@@ -82,7 +77,7 @@ cd ai-gov-cli
 npm install
 npm run build
 npm link            # makes 'ai-gov' available globally
-ai-gov --version    # → 15.2.0
+ai-gov --version    # → 16.0.0
 ```
 
 ---
@@ -109,7 +104,7 @@ Shows every file that would be created with line counts — nothing is written. 
 
 ```
 ============================================
- AI Governance v15.2.0 (Scan-Adaptive · Claude Code)
+ AI Governance v16.0.0 (Scan-Adaptive · Claude Code)
 ============================================
 
   ~ Detecting stack...
@@ -183,18 +178,18 @@ Expected output:
   ✓   check-consistency.sh
   ✓   check-file-size.sh
   ✓   post-task-checklist.sh
-  ✓ jq installed (required by hooks)
+  ✓ python3 available (hooks runtime)
 
 All checks passed!
 ```
 
-If any hook shows `✗`, run `ai-gov init` again. If jq shows `✗`, install it first.
+If any hook shows `✗`, run `ai-gov init` again. If runtime check fails, install python3 or jq.
 
 ### Step 5: Commit the governance files
 
 ```bash
 git add .claude/ specs/ CLAUDE.md
-git commit -m "chore: add AI governance framework v15.2.0"
+git commit -m "chore: add AI governance framework v16.0.0"
 git push
 ```
 
@@ -254,7 +249,7 @@ Git Hooks:
 
 ```bash
 git add .claude/git-hooks/
-git commit -m "chore: add git governance hooks v15.2.0"
+git commit -m "chore: add git governance hooks v16.0.0"
 git push
 ```
 
@@ -715,6 +710,7 @@ The `no-debug.sh` script is generated per stack:
 | Kotlin | `println(`, `Log.d(`, `Log.v(` |
 | Node.js | `console.log(` |
 | Python | `print(`, `breakpoint(`, `pdb.set_trace(` |
+| Java | `System.out.print`, `System.err.print`, `.printStackTrace(` |
 
 ### Bypass rules (for emergencies)
 
@@ -838,7 +834,7 @@ Audit date: 2026-04-26
 
 HEALTH SCORECARD
 ────────────────
-Governance       A  97/100  All 8 steering files present, hooks v15.2.0
+Governance       A  97/100  All 8 steering files present, hooks v16.0.0
 Architecture     B  85/100  1 component fetches API directly without custom hook
 Code Patterns    A  90/100  92% Zustand usage, 3 components still use local state
 Feature Structure B  78/100  5/6 features have spec + README
@@ -870,7 +866,7 @@ ai-gov init [options]
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `-s, --stack <stack>` | flutter \| kotlin \| nodejs \| react \| angular \| swiftui \| python | auto-detect |
+| `-s, --stack <stack>` | flutter \| kotlin \| nodejs \| react \| angular \| swiftui \| python \| java | auto-detect |
 | `--overwrite` | Replace all existing governance files | false |
 | `--dry-run` | Preview all changes — nothing is written | false |
 | `--update-hooks` | Update only hooks that are at a lower version than the CLI | false |
@@ -984,26 +980,26 @@ ai-gov doctor -d /path/to/project
 
 ## 10. Upgrading from v15.1.0
 
-v15.2.0 adds git hooks and CI/PR check on top of the existing governance files. No existing files are changed by the upgrade.
+v16.0.0 adds git hooks and CI/PR check on top of the existing governance files. No existing files are changed by the upgrade.
 
 ```bash
 # 1. Install the new version
-npm install -g ai-gov@15.2.0
-ai-gov --version   # → 15.2.0
+npm install -g ai-gov@16.0.0
+ai-gov --version   # → 16.0.0
 
 # 2. Update hooks in your project
 cd /path/to/your/project
 ai-gov init --update-hooks
 
-# 3. Add git hooks (new in 15.2.0)
+# 3. Add git hooks (new in 16.0.0)
 ai-gov init --git-hooks
 
-# 4. Add CI config (new in 15.2.0)
+# 4. Add CI config (new in 16.0.0)
 ai-gov init --ci github    # or gitlab or bitbucket
 
 # 5. Commit everything
 git add .claude/git-hooks/ .github/workflows/
-git commit -m "chore: upgrade governance to v15.2.0 — git hooks + CI"
+git commit -m "chore: upgrade governance to v16.0.0 — git hooks + CI"
 git push
 ```
 
@@ -1016,8 +1012,8 @@ Each teammate runs `ai-gov init --git-hooks` once after pulling to install their
 | Problem | Cause | Fix |
 |---------|-------|-----|
 | `ai-gov: command not found` | Not installed or npm link not done | `npm install -g ai-gov` |
-| Hooks don't fire at all | `jq` not installed | `brew install jq` (macOS) or `sudo apt install jq` |
-| Claude skips spec and codes directly | `.claude/CLAUDE.md` missing or jq missing | Run `ai-gov doctor` — it will identify the missing piece |
+| Hooks don't fire at all | `python3` and `jq` both missing | `brew install python3` (macOS) or `sudo apt install python3` |
+| Claude skips spec and codes directly | `.claude/CLAUDE.md` missing or runtime missing | Run `ai-gov doctor` — it will identify the missing piece |
 | `permission denied` on hook scripts | chmod not applied | `chmod +x .claude/git-hooks/*.sh .claude/git-hooks/checks/*.sh` |
 | Existing husky hooks stopped firing | ai-gov `--force` overwrote them | Add `bash .claude/git-hooks/pre-commit.sh` back to `.husky/pre-commit` |
 | `pr-check` shows 0 changed files | Running on main branch with no diverged commits | Switch to a feature branch first |
@@ -1046,4 +1042,4 @@ ai-gov pr-check --format json | jq '.'
 
 ---
 
-*Document covers ai-gov v15.2.0. For changes since v15.1.0 see CHANGELOG.md.*
+*Document covers ai-gov v16.0.0. For changes since v15.1.0 see CHANGELOG.md.*

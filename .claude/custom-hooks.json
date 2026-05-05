@@ -1,7 +1,0 @@
-{
-  "_comment": "v13: Add your custom hooks here. This file is NEVER overwritten by the governance script.",
-  "_usage": "Add entries to PreToolUse, PostToolUse, or Stop arrays. They will be merged into settings.json on each run.",
-  "PreToolUse": [],
-  "PostToolUse": [],
-  "Stop": []
-}

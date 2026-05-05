@@ -126,7 +126,7 @@ ${b.taskUIPhase}
 ${b.taskTestPhase}
 
 ## Phase 7 — Wrap-Up
-- [ ] **[S]** Post-task checklist (.claude/CLAUDE.md)
+- [ ] **[S]** Post-task checklist (${c.agent === 'kiro' ? '.kiro/steering/constitution.md' : '.claude/CLAUDE.md'})
 - [ ] **[S]** Update feature README
 
 ---

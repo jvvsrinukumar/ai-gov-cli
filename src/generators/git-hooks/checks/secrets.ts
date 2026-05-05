@@ -2,11 +2,29 @@ export function generateSecretsCheck(): string {
     return `#!/usr/bin/env bash
 CONFIG_DIR="$1"
 CONFIG="$CONFIG_DIR/config.json"
-command -v jq &>/dev/null || exit 0
 
-# Read skip dirs and extensions from config
-SKIP_DIRS=$(jq -r '.["pre-commit"].secrets["skip-dirs"] // ["test","tests","__tests__","spec","fixtures","mocks","__mocks__","factories","seeds"] | join("|")' "$CONFIG" 2>/dev/null)
-SKIP_EXTS=$(jq -r '.["pre-commit"].secrets["skip-extensions"] // [".md",".txt",".env.example",".env.template"] | join("|")' "$CONFIG" 2>/dev/null)
+# Defaults
+SKIP_DIRS="test|tests|__tests__|spec|fixtures|mocks|__mocks__|factories|seeds"
+SKIP_EXTS=".md|.txt|.env.example|.env.template"
+
+# Override from config.json if python3 or jq is available
+if command -v python3 &>/dev/null && [[ -f "$CONFIG" ]]; then
+    _read_cfg=$(python3 -c "
+import json,sys
+try:
+    c=json.load(open(sys.argv[1]))
+    s=c.get('pre-commit',{}).get('secrets',{})
+    print('|'.join(s.get('skip-dirs',['test','tests','__tests__','spec','fixtures','mocks','__mocks__','factories','seeds'])))
+    print('|'.join(s.get('skip-extensions',['.md','.txt','.env.example','.env.template'])))
+except:
+    print('test|tests|__tests__|spec|fixtures\\n.md|.txt|.env.example')
+" "$CONFIG" 2>/dev/null)
+    SKIP_DIRS=$(echo "$_read_cfg" | sed -n '1p')
+    SKIP_EXTS=$(echo "$_read_cfg" | sed -n '2p')
+elif command -v jq &>/dev/null && [[ -f "$CONFIG" ]]; then
+    SKIP_DIRS=$(jq -r '.["pre-commit"].secrets["skip-dirs"] // ["test","tests","__tests__","spec","fixtures","mocks","__mocks__","factories","seeds"] | join("|")' "$CONFIG" 2>/dev/null)
+    SKIP_EXTS=$(jq -r '.["pre-commit"].secrets["skip-extensions"] // [".md",".txt",".env.example",".env.template"] | join("|")' "$CONFIG" 2>/dev/null)
+fi
 
 FOUND=0
 
@@ -16,10 +34,8 @@ while IFS= read -r file; do
     # Skip by directory
     [[ -n "$SKIP_DIRS" ]] && echo "$file" | grep -qE "($SKIP_DIRS)/" && continue
 
-    # Skip by extension
-    for ext in $SKIP_EXTS; do
-        [[ "$file" == *"$ext" ]] && continue 2
-    done
+    # Skip by extension (SKIP_EXTS is |-separated, use grep for regex alternation)
+    [[ -n "$SKIP_EXTS" ]] && echo "$file" | grep -qE "(\${SKIP_EXTS})$" && continue
 
     # Get added lines for this file directly (avoids sed delimiter issues with paths containing /)
     ADDED=$(git diff --cached -U0 --diff-filter=ACMR -- "$file" 2>/dev/null | grep '^+' | grep -v '^+++' || true)

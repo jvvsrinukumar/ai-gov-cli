@@ -215,7 +215,7 @@ test: add fixture for Flutter Riverpod + Drift
 ## Pull Request Checklist
 
 - [ ] `npm run build` passes (zero TypeScript errors)
-- [ ] `npm test` passes (40+ tests)
+- [ ] `npm test` passes (284+ tests)
 - [ ] New detections have test coverage
 - [ ] New hooks are registered in settings-json.ts and hooks-readme.ts
 - [ ] CHANGELOG.md updated

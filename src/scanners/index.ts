@@ -11,6 +11,7 @@ import { scanReact } from './react.js';
 import { scanAngular } from './angular.js';
 import { scanSwiftUI } from './swiftui.js';
 import { scanPython } from './python.js';
+import { scanJava } from './java.js';
 import { scanJsPackageManager, scanJsScripts, scanJsTooling, scanJsTestFramework } from './shared-js.js';
 
 export function scanProject(
@@ -45,6 +46,7 @@ export function scanProject(
             break;
         case 'swiftui': scanSwiftUI(projectDir, profile, scan); break;
         case 'python': scanPython(projectDir, profile, scan); break;
+        case 'java': scanJava(projectDir, profile, scan); break;
     }
 
     scanHighRiskByName(stack, projectDir, profile, scan);
@@ -60,8 +62,14 @@ export function scanProject(
 }
 
 // v14.2: Universal spec-first enablement check — applies to ALL stacks
+// Checks both Claude Code (specs/) and Kiro (.kiro/specs/) locations.
 export function checkSpecFirstEnabled(projectDir: string): boolean {
-    const specsDir = join(projectDir, 'specs');
+    // Prefer .kiro/specs/ if it exists (Kiro agent), fall back to specs/ (Claude Code)
+    const kiroSpecsDir = join(projectDir, '.kiro', 'specs');
+    const claudeSpecsDir = join(projectDir, 'specs');
+    const specsDir = existsSync(kiroSpecsDir) ? kiroSpecsDir : claudeSpecsDir;
+    const specsGitPath = existsSync(kiroSpecsDir) ? '.kiro/specs/' : 'specs/';
+
     if (existsSync(specsDir)) {
         try {
             const entries = readdirSync(specsDir, { withFileTypes: true });
@@ -73,7 +81,7 @@ export function checkSpecFirstEnabled(projectDir: string): boolean {
         } catch { /* ignore */ }
     }
     try {
-        const result = execSync(`git -C "${projectDir}" log --oneline -- specs/ 2>/dev/null | wc -l`, { stdio: 'pipe' }).toString().trim();
+        const result = execSync(`git -C "${projectDir}" log --oneline -- ${specsGitPath} 2>/dev/null | wc -l`, { stdio: 'pipe' }).toString().trim();
         if (parseInt(result, 10) > 0) {
             log.detected('Spec-first: enabled (git spec history detected)');
             return true;
@@ -90,6 +98,9 @@ function scanHighRiskByName(
     let srcRoot = projectDir;
     switch (stack) {
         case 'kotlin': srcRoot = join(projectDir, 'app/src/main'); break;
+        case 'java':
+            if (existsSync(join(projectDir, 'src/main/java'))) srcRoot = join(projectDir, 'src/main/java');
+            break;
         case 'python': if (existsSync(join(projectDir, 'app'))) srcRoot = join(projectDir, 'app'); break;
         default:
             if (existsSync(join(projectDir, 'src'))) srcRoot = join(projectDir, 'src');

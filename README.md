@@ -1,16 +1,52 @@
 # AI Governance CLI
 
-> Scan-adaptive governance framework for Claude Code. Detects your stack automatically and generates steering files, git hooks, CI configs, and spec templates — all tailored to what's actually in your project.
+[![CI](https://github.com/jvvsrinukumar/ai-gov-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/jvvsrinukumar/ai-gov-cli/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/ai-gov.svg)](https://www.npmjs.com/package/ai-gov)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org/)
 
-**Version:** 15.2.0
-**Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python
-**Agent:** Claude Code
+> The scaffolding layer for AI agent team adoption. When multiple developers use Claude Code or Kiro on the same codebase without shared rules, you get inconsistency at machine speed. This CLI fixes that.
+
+**Version:** 17.0.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
 
 ---
 
-## What it does in one sentence
+## Quick Start
 
-`ai-gov init` scans your project, figures out your stack, and generates ~40 governance files that teach Claude Code your architecture rules — and optionally installs git hooks that enforce commit standards and a CI check that runs on every pull request.
+```bash
+# Claude Code (default)
+npx ai-gov init
+
+# Kiro
+npx ai-gov init --agent kiro
+
+# Preview without writing
+npx ai-gov init --dry-run
+
+# Check your setup
+npx ai-gov doctor
+```
+
+**Choose your path:**
+
+| I use... | Start here |
+|----------|-----------|
+| **Claude Code** | [Step 1 — Claude Code setup](#step-1--set-up-the-governance-framework) · [Full Claude Code guide](docs/claude_code_setup_guide.md) |
+| **Kiro** | [Kiro Setup](#kiro-setup-alternative-to-step-1) · [Full Kiro guide](docs/kiro_setup_guide.md) |
+| **Both** | Run `init` once per agent — they don't conflict |
+| **Multi-project workspace** | [Workspace setup](#ai-gov-workspace) · [Full workspace guide](docs/workspace_setup_guide.md) |
+
+---
+
+## The problem it solves
+
+When one developer uses Claude Code, the output is fast and often good. When five developers use it on the same codebase with no shared rules, you get five different interpretations of the architecture, five different commit styles, and no one noticing when Claude drifts from the spec.
+
+`ai-gov init` scans your project, detects your stack, and generates ~40 governance files that give Claude the same architectural context every session — for every developer. It optionally installs git hooks that enforce commit standards, and a CI check that runs on every pull request.
+
+`ai-gov workspace` does the same across an entire workspace — scanning every sub-project at once, generating per-project governance tailored to each detected stack, and adding shared workspace-level steering files that all projects inherit.
+
+**The closest analogy:** ESLint did not make JavaScript developers write better code. It made inconsistency visible and preventable. This does the same for Claude Code team usage — not perfect outputs, but significantly fewer divergent decisions across the team.
 
 ---
 
@@ -21,8 +57,10 @@
 | **Layer 1 — AI Steering** | `npx ai-gov init` | Generates Claude Code steering files, hooks, and spec templates in `.claude/`. Claude reads these automatically and follows your architecture rules. |
 | **Layer 2 — Git Hooks** | `npx ai-gov init --git-hooks` | Generates pre-commit and commit-msg bash scripts. Runs when any developer does `git commit`. Checks file size, secrets, TODOs, debug statements, and commit message format. |
 | **Layer 3 — CI + PR Check** | `npx ai-gov init --ci github` | Generates a CI pipeline that runs governance on every PR and posts results as a comment. Also available standalone: `npx ai-gov pr-check`. |
+| **Workspace** | `npx ai-gov workspace` | Scans a workspace root, auto-discovers all sub-projects, runs per-project governance for each detected stack, and generates shared workspace-level steering files. Auto-detects monorepo vs multi-repo and installs git hooks accordingly. |
+| **Upgrade** | `npx ai-gov upgrade` | Re-generates hooks, commands, and CLAUDE.md for an existing project. Preserves team-specific steering files by default. Use `--force` to also upgrade steering files. |
 
-You can do Layer 1 only. Or Layer 1 + 2. Or all three. They're independent.
+You can do Layer 1 only. Or Layer 1 + 2. Or all three. They're independent. Use `workspace` when multiple projects live under one root.
 
 ---
 
@@ -31,22 +69,18 @@ You can do Layer 1 only. Or Layer 1 + 2. Or all three. They're independent.
 ### Prerequisites
 
 - **Node.js** >= 18
-- **jq** — required by all bash hook scripts
+- **python3 or jq** — used by all generated bash hook scripts to read config.json
 
-```bash
-# macOS
-brew install jq
+| Runtime | macOS | Linux/Ubuntu | Windows |
+|---------|-------|--------------|---------|
+| **python3** | Built-in (no install) | Default on Ubuntu 20+ | Available via `winget install Python.Python.3` or WSL2 |
+| **jq** | `brew install jq` | `sudo apt install jq` | `winget install jqlang.jq` |
 
-# Ubuntu / Debian
-sudo apt install jq
+**python3 is preferred** — it is available on every macOS and standard Linux environment with zero setup. jq is accepted as an alternative. When neither is present, hooks print a visible warning and exit 0 (governance is skipped, not crashed).
 
-# Windows (winget)
-winget install jqlang.jq
-# Also install Git Bash: https://git-scm.com/download/win
-# Or enable WSL2: wsl --install
-```
+Run `npx ai-gov doctor` after setup — it checks which runtime is available and tells you exactly what to install if something is missing.
 
-> **Windows note:** The CLI (`ai-gov init`) runs on bare Windows. The generated bash scripts require Git Bash or WSL2. Without it, hooks are silently skipped.
+> **Windows note:** The CLI (`ai-gov init`) runs on bare Windows. The generated bash hook scripts require Git Bash or WSL2. Without one of those, hooks are skipped with a warning.
 
 ### Run without installing (recommended for first try)
 
@@ -140,7 +174,7 @@ When you say "build user profile feature", Claude creates a spec first before wr
 Commit these files to git so the whole team gets the same rules:
 
 ```bash
-git add .claude/ specs/ CLAUDE.md
+git add .claude/ CLAUDE.md
 git commit -m "chore: add ai-gov governance framework"
 git push
 ```
@@ -159,6 +193,96 @@ The CLI detects existing files and prompts you for each conflict:
 - **O** — replaces all files with freshly generated content
 
 Use `--update-hooks` to only update hooks that are on an older version, without touching steering files.
+
+---
+
+## Kiro Setup (alternative to Step 1)
+
+If your team uses Kiro instead of Claude Code:
+
+```bash
+npx ai-gov init --agent kiro
+```
+
+This generates governance files in `.kiro/` instead of `.claude/`:
+
+```
+your-project/
+├── .kiro/
+│   ├── .gitattributes
+│   ├── steering/                          ← Kiro reads these automatically (YAML front-matter)
+│   │   ├── constitution.md                ← inclusion: always
+│   │   ├── architecture.md                ← inclusion: always
+│   │   ├── coding-standards.md            ← inclusion: always
+│   │   ├── ai-usage-policy.md             ← inclusion: always
+│   │   ├── workflow.md                    ← inclusion: always
+│   │   ├── spec-first-workflow.md         ← inclusion: always
+│   │   ├── feature-readme.md              ← inclusion: always
+│   │   └── prompt-templates.md            ← inclusion: always
+│   ├── hooks/                             ← Kiro JSON hooks (auto-discovered)
+│   │   ├── block-dangerous-commands.json  ← preToolUse: blocks force push, rm -rf
+│   │   ├── protect-files.json             ← preToolUse: warns on high-risk files
+│   │   ├── pre-write-secrets-gate.json    ← preToolUse: blocks writes with credentials
+│   │   ├── check-secrets.json             ← fileEdited: scans for credentials (post-hoc)
+│   │   ├── check-file-size.json           ← postToolUse: warns >200 lines
+│   │   ├── format-code.json               ← postToolUse: auto-formats
+│   │   ├── analyze-code.json              ← postToolUse: runs linter
+│   │   ├── session-continuity.json        ← promptSubmit: context preservation
+│   │   ├── require-task-type.json         ← promptSubmit: task classification
+│   │   ├── post-task-checklist.json       ← postTaskExecution: verification
+│   │   ├── workflow-*.json (×6)           ← userTriggered: audit, new-feature, fix, refactor, hotfix, explore
+│   │   └── README.md
+│   └── specs/
+│       └── _template/                     ← Kiro-native spec location
+│           ├── requirements.md
+│           ├── design.md
+│           └── tasks.md
+```
+
+### Key differences from Claude Code
+
+| Aspect | Claude Code | Kiro |
+|--------|-------------|------|
+| Output directory | `.claude/` | `.kiro/` |
+| Steering files | Plain markdown | Markdown with YAML front-matter (`inclusion: always`) |
+| Hooks | Bash scripts registered in `settings.json` | JSON files auto-discovered by Kiro |
+| Commands | `.claude/commands/*.md` (slash commands) | `userTriggered` workflow hooks (same workflows, button-triggered) |
+| Spec templates | `specs/_template/` (project root) | `.kiro/specs/_template/` (Kiro-native location) |
+| Enforcement | Hard block via `exit 2` | Agent-enforced via `askAgent` DENY responses |
+
+### Enforcement model
+
+| Capability | Claude Code | Kiro |
+|---|---|---|
+| Block writes without spec | Hard block (`exit 2`) | `preToolUse` + `askAgent` DENIED |
+| Block dangerous commands | Hard block (`exit 2`) | `preToolUse` on shell + `askAgent` DENIED |
+| Block hardcoded secrets | Hard block (bash regex) | `preToolUse` + `askAgent` DENIED (pre-write gate) |
+| Enforce file size | Hard block (`wc -l`) | `postToolUse` + `askAgent` |
+| Format after write | `postToolUse` bash | `postToolUse` + `runCommand` |
+| Lint after write | `postToolUse` bash | `postToolUse` + `runCommand` |
+
+> **Enforcement strength caveat:** Claude Code hooks use `exit 2` — a process-level hard block that Claude cannot bypass. Kiro hooks use `askAgent` with DENY instructions — the agent is expected to honor the denial per Kiro's hook contract, but enforcement is cooperative (agent-enforced), not process-level. In practice, Kiro reliably honors `preToolUse` DENY responses, but it is not architecturally equivalent to a hard block.
+
+### Workflow shortcuts
+
+Kiro has no slash command system, but `userTriggered` hooks provide the same guided workflows:
+
+| Kiro Hook | Claude Code Equivalent | Trigger |
+|-----------|----------------------|---------|
+| `workflow-audit.json` | `/audit` | Button in Agent Hooks panel |
+| `workflow-new-feature.json` | `/new-feature` | Button in Agent Hooks panel |
+| `workflow-fix.json` | `/fix` | Button in Agent Hooks panel |
+| `workflow-refactor.json` | `/refactor` | Button in Agent Hooks panel |
+| `workflow-hotfix.json` | `/hotfix` | Button in Agent Hooks panel |
+| `workflow-explore.json` | `/explore` | Button in Agent Hooks panel |
+
+### Auto-detection
+
+If you don't specify `--agent`, the CLI auto-detects:
+- Existing `.kiro/` directory → uses Kiro
+- Existing `.claude/` directory → uses Claude Code
+- Neither exists → defaults to Claude Code (backward compatible)
+- Both exist → prompts you to choose (or defaults to Claude Code in CI)
 
 ---
 
@@ -204,7 +328,7 @@ your-project/
         └── commit-msg                     <- thin wrapper -> .claude/git-hooks/commit-msg.sh
 ```
 
-> **Important for new team members:** The `.git/hooks/` wrappers are local — git does not commit them. Each developer must run `npx ai-gov init --git-hooks` once after cloning the repo. The actual check scripts in `.claude/git-hooks/` ARE committed, so the logic is shared. The wrapper is just a pointer.
+> **Important for new team members:** The `.git/hooks/` wrappers are local — git does not commit them. Each developer must run `npx ai-gov onboard` once after cloning the repo (or use the curl script below). The actual check scripts in `.claude/git-hooks/` ARE committed, so the logic is shared. The wrapper is just a pointer.
 
 ### What happens when a developer commits
 
@@ -329,6 +453,8 @@ This generates a CI pipeline that runs `ai-gov pr-check` on every pull request a
 | Bitbucket Pipelines | Built-in pipeline credentials | None |
 
 You just commit the workflow file. GitHub/GitLab/Bitbucket handle the authentication automatically.
+
+> **Note:** "No tokens" means no manual secret creation. You still need to: (1) commit the generated workflow file, (2) push to a branch with PR protection enabled, and (3) ensure your repo's branch protection rules require the governance check to pass before merge. The CI platform provides the token — but you configure when and where it runs.
 
 ### GitHub Actions — step by step
 
@@ -456,8 +582,8 @@ npx ai-gov init --ci github
 npx ai-gov doctor
 
 # 6. Commit and push everything
-git add .claude/ specs/ CLAUDE.md .github/
-git commit -m "chore: add ai-gov governance framework v15.2.0"
+git add .claude/ CLAUDE.md .github/
+git commit -m "chore: add ai-gov governance framework v17.0.0"
 git push
 ```
 
@@ -465,8 +591,22 @@ After this, every developer on the team:
 
 - Gets the Claude Code steering rules automatically (they are in `.claude/`, which is committed)
 - Gets the git hook logic automatically (`.claude/git-hooks/` is committed)
-- Needs to run `npx ai-gov init --git-hooks` **once** after cloning to install the local `.git/hooks/` wrappers
+- Needs to run **`npx ai-gov onboard`** once after cloning — installs the local `.git/hooks/` wrappers, verifies runtime (python3/jq), and confirms the setup is complete
 - Gets CI checks automatically on every PR (the workflow file is committed)
+
+### New developer onboarding (50+ teams)
+
+Share this with your team in Slack/email — they run one command:
+
+```bash
+# Option A — no Node.js required (pure bash)
+curl -s https://raw.githubusercontent.com/jvvsrinukumar/ai-gov-cli/main/onboard.sh | bash
+
+# Option B — via npx (requires Node.js 18+)
+npx ai-gov onboard
+```
+
+Both commands: verify `.claude/` governance files are present, check python3/jq runtime, install `.git/hooks/` wrappers, and print a summary of what every commit will be checked for. Takes under 10 seconds.
 
 ---
 
@@ -634,7 +774,8 @@ ai-gov init [options]
 
 | Flag | Description | Default |
 |------|-------------|---------|
-| `-s, --stack <stack>` | Force a specific stack: `flutter\|kotlin\|nodejs\|react\|angular\|swiftui\|python` | auto-detect |
+| `-s, --stack <stack>` | Force a specific stack: `flutter\|kotlin\|nodejs\|react\|angular\|swiftui\|python\|java` | auto-detect |
+| `-a, --agent <agent>` | Target agent: `claude-code\|kiro` | auto-detect |
 | `--overwrite` | Replace all existing files silently | false |
 | `--dry-run` | Preview what would be generated — nothing written | false |
 | `--update-hooks` | Update only hooks on an older version (safe re-run) | false |
@@ -704,13 +845,172 @@ ai-gov pr-check --format json | jq '.summary'
 
 Only Credentials blocks by default. Promote any check to blocking by editing `.claude/governance.json`.
 
+### `ai-gov workspace`
+
+```bash
+ai-gov workspace [options]
+```
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-d, --dir <path>` | Workspace root directory | `process.cwd()` |
+| `--dry-run` | Preview what would be generated — nothing written | false |
+| `--overwrite` | Replace all existing governance files silently | false |
+| `--only <projects>` | Comma-separated list of relative project paths to init | all discovered |
+
+**Workspace layouts supported:**
+
+*Grouped (backend/frontend folders):*
+```
+workspace/
+  backend/
+    accushield-kiosk-apis/    ← Node.js — auto-detected
+    corporate_node/           ← Node.js — auto-detected
+  frontend/
+    corporate_angular/        ← Angular — auto-detected
+```
+
+*Flat (all projects at root level):*
+```
+workspace/
+  corporate_node/             ← Node.js — auto-detected
+  staff-server/               ← Node.js — auto-detected
+  volunteer-server/           ← Node.js — auto-detected
+```
+
+**Group directories scanned automatically:** `backend/`, `frontend/`, `mobile/`, `services/`, `apps/`, `packages/`, `libs/`
+
+**Stack detected per project from:** `package.json`, `pubspec.yaml`, `pom.xml`, `build.gradle`, `pyproject.toml`, `Package.swift`, `settings.gradle`
+
+```bash
+# Auto-discover and init all projects
+ai-gov workspace --dir /path/to/workspace
+
+# Preview without writing
+ai-gov workspace --dir /path/to/workspace --dry-run
+
+# Only specific projects
+ai-gov workspace --dir /path/to/workspace --only backend/corporate_node,frontend/corporate_angular
+
+# Overwrite existing governance
+ai-gov workspace --dir /path/to/workspace --overwrite
+```
+
+**Monorepo vs multi-repo — auto-detected:**
+
+`ai-gov workspace` checks each discovered project for its own `.git/` directory:
+
+| Layout | Detection | Git hook install |
+|--------|-----------|-----------------|
+| **Monorepo** (single `.git/` at workspace root) | No per-project `.git/` found | One workspace hook at `.git/hooks/pre-commit` delegates to `workspace-pre-commit.sh` |
+| **Multi-repo** (each project has own `.git/`) | Per-project `.git/` found | Per-project `.git/hooks/pre-commit` + `commit-msg` wrappers delegating to each project's `.claude/git-hooks/pre-commit.sh` |
+
+If husky, lefthook, or pre-commit is already detected in a project, the CLI prints integration guidance instead of overwriting.
+
+**What gets generated:**
+
+```
+workspace/
+  .claude/
+    CLAUDE.md                         ← workspace master rules (lists all projects)
+    git-hooks/
+      workspace-pre-commit.sh         ← monorepo orchestrator (runs all project checks)
+    steering/
+      workspace-policy.md             ← shared AI usage policy for all projects
+      cross-project-rules.md          ← API contracts, no cross-src imports rule
+      project-registry.md             ← table of all projects + stacks + status
+
+  backend/
+    corporate_node/
+      .claude/                        ← full per-project governance (Node.js rules)
+        CLAUDE.md                         references workspace rules
+        git-hooks/                        per-project pre-commit + checks
+        steering/ hooks/ commands/
+      specs/
+
+  frontend/
+    corporate_angular/
+      .claude/                        ← full per-project governance (Angular rules)
+        CLAUDE.md                         references workspace rules
+        git-hooks/                        per-project pre-commit + checks
+        steering/ hooks/ commands/
+      specs/
+```
+
+Each project's `.claude/CLAUDE.md` is automatically appended with a workspace reference section pointing to the shared steering files.
+
+### `ai-gov upgrade`
+
+```bash
+ai-gov upgrade [options]
+```
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-d, --dir <path>` | Project directory to upgrade | `process.cwd()` |
+| `-s, --stack <stack>` | Override stack detection | auto-detect |
+| `--force` | Also overwrite steering files (architecture.md, coding-standards.md, etc.) | false |
+| `--dry-run` | Preview what would be upgraded — nothing written | false |
+
+Designed for teams upgrading from an older ai-gov version. Always regenerates hooks, git-hooks, commands, and `.claude/CLAUDE.md` (these change with every version). Keeps steering files by default — they contain team-specific content that must not be overwritten accidentally.
+
+```bash
+# Upgrade hooks + commands in current directory
+ai-gov upgrade
+
+# Preview what would change
+ai-gov upgrade --dry-run
+
+# Also upgrade steering files (use when major architectural guidance has changed)
+ai-gov upgrade --force
+
+# Upgrade a specific project
+ai-gov upgrade --dir ./backend/api
+```
+
+After upgrading, commit `.claude/` so all teammates get the updated hooks:
+
+```bash
+git add .claude/
+git commit -m "chore: upgrade ai-gov hooks to v16.0.0"
+git push
+```
+
+**What always gets upgraded:**
+- `.claude/hooks/` — all 11 Claude Code hook scripts
+- `.claude/git-hooks/` — pre-commit.sh + 6 check scripts
+- `.claude/commands/` — all 7 slash commands
+- `.claude/CLAUDE.md` — embedded rules (always must be current)
+
+**What is kept by default (use `--force` to overwrite):**
+- `.claude/steering/` — architecture.md, coding-standards.md, workflow.md, constitution.md
+- `specs/` — your feature specs are never touched
+
+### `ai-gov onboard`
+
+```bash
+ai-gov onboard [--dir <path>]
+```
+
+For new developers after cloning a repo that already has governance set up. Installs local `.git/hooks/` wrappers, checks python3/jq runtime, verifies `.claude/` governance files are present.
+
+```bash
+# Set up current directory (after cloning)
+npx ai-gov onboard
+
+# Set up a specific directory
+npx ai-gov onboard --dir ./my-project
+```
+
+Equivalent to the curl script: `curl -s https://raw.githubusercontent.com/jvvsrinukumar/ai-gov-cli/main/onboard.sh | bash`
+
 ### `ai-gov doctor`
 
 ```bash
 ai-gov doctor [-d <path>]
 ```
 
-Checks: CLAUDE.md exists, settings.json valid, all 10+ hooks present, jq installed, git hooks wired.
+Checks: CLAUDE.md exists, settings.json valid, all 11 hooks present, python3 or jq installed, git hooks wired, config.json schema valid. Exits with code 1 if neither python3 nor jq is available (hooks are unenforced).
 
 ---
 
@@ -846,6 +1146,7 @@ If you type a command with no argument, Claude asks for the missing information 
 | Angular | Models (interfaces, enums) | Service (HTTP, transforms) | State (NgRx actions/effects) | Component (smart + presentational) | Tests |
 | Node.js | Domain (entity, DTOs, schemas) | Repository (ORM queries) | Service (business logic) | Controller/Routes (API, Swagger) | Tests |
 | Python | Schemas (Pydantic models) | Repository (SQLAlchemy) | Service (business logic) | Router (FastAPI endpoints, DI) | Tests |
+| Java | Domain (JPA entities, DTOs) | Repository (Spring Data) | Service (business logic) | Controller (REST endpoints) | Tests |
 
 **When NOT to use `/new-feature`:**
 - The feature already exists and you want to change it → use `/edit-feature`
@@ -1081,6 +1382,9 @@ Framework (FastAPI / Django / Flask), ORM (SQLModel / SQLAlchemy / Tortoise), mi
 ### SwiftUI
 TCA, DI (Resolver / Swinject / Factory), state (@Observable / ObservableObject), async/await, network (Alamofire / Moya / URLSession), local DB (SwiftData / GRDB / Realm), @MainActor, min iOS version
 
+### Java
+Build system (Maven / Gradle), Java version (8–21+), preview features (--enable-preview), framework (Spring Boot / Spring WebFlux / Quarkus / Micronaut / JAX-RS / Javalin / Spark), DI (Spring DI / Guice / OSGi SCR / CDI / Dagger), UI (Swing / JavaFX — desktop layer flow override), ORM (JPA/Hibernate / MyBatis / jOOQ / Spring JDBC), DB (MongoDB / Redis via Spring Data), test (JUnit 5 / JUnit 4 / TestNG + Mockito / AssertJ / Testcontainers / WireMock / ArchUnit), linter (Checkstyle / SpotBugs / PMD / Error Prone), formatter (Spotless / Google Java Format), OSGi (Felix / Equinox / bnd — bundle layer flow override), multi-module (Maven modules / Gradle includes), logging (SLF4J / Logback / Log4j2), API docs (springdoc-openapi / springfox), Lombok, MapStruct
+
 ---
 
 ## When to use this (and when not to)
@@ -1088,21 +1392,47 @@ TCA, DI (Resolver / Swinject / Factory), state (@Observable / ObservableObject),
 ### Worth it when
 
 - **Teams of 3+ using Claude Code** on a shared codebase — the spec-first enforcement prevents "Claude rewrote the auth module because someone said fix the login bug"
-- **Production codebases** where architecture consistency matters — hooks catch layer violations in real time
-- **Regulated environments** needing an audit trail — spec files document what was planned vs what was built
-- **Onboarding new devs** who use Claude Code — steering files teach Claude your project's patterns
+- **Production codebases** where architecture consistency matters — hooks catch layer violations before they reach the repo
+- **Regulated environments** needing an audit trail — spec files document what was planned vs what was built, with dated governance audit reports
+- **Onboarding new devs** who use Claude Code — steering files give Claude your project's patterns from their first session, not after a week of corrections
+- **Workspaces with mixed stacks** — a team running Node.js + React + Flutter gets stack-specific governance per project, with shared cross-project rules
 
-### Overkill when
+### Not worth it when
 
-- **Solo dev prototyping** — the spec-first hook blocks every file write without filling out three markdown templates
+- **Solo dev prototyping** — the spec-first hook requires filling three markdown templates before writing any file. Right tool for teams, wrong tool for exploration
 - **Small utilities** — a 200-line Express API does not need 40 governance files
-- **Teams that do not use Claude Code** — this framework is designed specifically for Claude Code's hook system
+- **Teams not using Claude Code** — every feature in this framework is built on Claude Code's hook system. It has no value without it
 
-### What it will not do
+### What it will not do — be clear about this
 
-- Won't write your code — it governs HOW Claude writes code
-- Won't catch runtime bugs — hooks check structure and process, not logic
-- Won't replace code review — it reduces the surface area of what needs reviewing
+- **Will not make Claude deterministic.** Steering files give Claude a better starting point each session. Claude still makes its own decisions. A developer who ignores the spec gate gets zero benefit from it.
+- **Will not govern code quality.** The hooks check file size, secrets, commit format, and TODO accumulation. They do not check whether the code is correct or whether the architecture was actually followed inside the files.
+- **Will not maintain itself.** The generated `architecture.md` is a starting point. If your real project has a `/domain/aggregates/` folder that isn't in the generated file tree, Claude will work around it. Someone on the team needs to read and edit the steering files after init — and keep them current as the project evolves.
+- **Will not replace engineering discipline.** The spec-first hook is opt-in by default. The `--no-verify` bypass exists. A team that doesn't take governance seriously will route around every control this tool provides. It is a forcing function, not a guarantee.
+
+---
+
+## Role in the Claude Code ecosystem
+
+Most teams that adopt Claude Code go through the same arc:
+
+1. **One developer** uses it, gets fast results, loves it
+2. **Two or three developers** start using it — outputs are fast but increasingly inconsistent
+3. **Five or more developers** — Claude produces code that works in isolation but doesn't fit the project. Auth was rewritten twice. The payment service doesn't follow the same patterns as everything else. Nobody can tell which files Claude touched vs which a developer wrote
+
+The gap between "Claude Code installed" and "Claude Code used consistently across a team" is where this CLI operates. It does not make Claude smarter. It gives every developer on the team the same architectural context every session — so Claude's starting point is your actual project, not a generic interpretation of whatever the developer typed.
+
+**What ai-gov sets up vs what it cannot control:**
+
+| ai-gov sets up | Still needs human action |
+|----------------|--------------------------|
+| Steering files — Claude reads your architecture rules every session | Someone reads and edits them to match reality |
+| Spec-first enforcement — Claude cannot write code without an approved spec | Team lead must enable it and enforce the gate |
+| Pre-commit hooks — secrets, file size, commit format blocked at commit time | Team norm: `--no-verify` is for emergencies only |
+| CI check — every PR gets a governance report | Team lead must act on blockers, not merge around them |
+| `/audit` command — 11-step governance health check | Someone runs it. Periodically. Not once. |
+
+The tool provides the infrastructure. The team provides the discipline. Both are required.
 
 ---
 
@@ -1185,68 +1515,76 @@ ai-governance/
 │   ├── types.ts                           <- all interfaces and types
 │   ├── cli.ts                             <- Commander setup + all commands
 │   ├── detect-stack.ts                    <- auto-detection from manifest files
-│   ├── profiles.ts                        <- defaults per stack (7 profiles)
+│   ├── profiles.ts                        <- defaults per stack (8 profiles)
 │   ├── content-blocks.ts                  <- template variable computation
-│   ├── scanners/                          <- 7 stack scanners (40+ detection points each)
-│   ├── generators/
-│   │   ├── index.ts                       <- governance file orchestrator
-│   │   ├── git-hooks/                     <- git hook generators
-│   │   │   ├── index.ts
-│   │   │   ├── pre-commit.ts
-│   │   │   ├── commit-msg.ts
-│   │   │   ├── config.ts
-│   │   │   └── checks/
-│   │   │       ├── file-size.ts
-│   │   │       ├── secrets.ts
-│   │   │       ├── no-todos.ts
-│   │   │       ├── no-debug.ts            <- stack-aware debug patterns
-│   │   │       ├── format-check.ts
-│   │   │       └── lint-check.ts
-│   │   └── ci/
-│   │       ├── github.ts
-│   │       ├── gitlab.ts
-│   │       └── bitbucket.ts
+│   ├── scanners/                          <- 8 stack scanners (40+ detection points each)
+│   ├── agents/
+│   │   ├── detect-agent.ts                <- auto-detect from .kiro/ vs .claude/
+│   │   ├── types.ts                       <- AgentAdapter interface + agent registry
+│   │   ├── claude-code/                   <- Claude Code orchestrator
+│   │   │   ├── index.ts                   <- generates .claude/ governance files
+│   │   │   ├── hooks/                     <- 11 bash hook generators
+│   │   │   └── commands/                  <- 8 slash command generators
+│   │   └── kiro/                          <- Kiro orchestrator
+│   │       ├── index.ts                   <- generates .kiro/ governance files
+│   │       ├── steering.ts                <- YAML front-matter wrapper
+│   │       └── hooks/                     <- 20 JSON hook generators (governance + workflow)
+│   ├── generators/                        <- shared content generators (agent-agnostic)
+│   │   ├── index.ts                       <- dispatcher → agent registry
+│   │   ├── architecture.ts, constitution.ts, coding-standards.ts, ...
+│   │   ├── workspace/                     <- workspace-level file generators
+│   │   ├── git-hooks/                     <- git hook generators (agent-agnostic)
+│   │   └── ci/                            <- CI config generators (github/gitlab/bitbucket)
 │   ├── commands/
 │   │   ├── init-git-hooks.ts              <- hook detection + wrapper installation
-│   │   └── init-ci.ts                     <- CI file writing
+│   │   ├── init-ci.ts                     <- CI file writing
+│   │   ├── workspace-init.ts              <- workspace discovery + mono/multi-repo detection
+│   │   ├── upgrade.ts                     <- re-generate hooks/commands, preserve steering
+│   │   └── onboard.ts                     <- new developer setup (installs wrappers, verifies runtime)
 │   ├── pr-check/
 │   │   ├── index.ts                       <- orchestrator
 │   │   ├── types.ts                       <- CheckResult, CheckItem
 │   │   ├── checks/                        <- 8 checks
-│   │   │   ├── architecture.ts
-│   │   │   ├── file-size.ts
-│   │   │   ├── credentials.ts
-│   │   │   ├── spec-coverage.ts
-│   │   │   ├── test-coverage.ts
-│   │   │   ├── todos.ts
-│   │   │   ├── commit-messages.ts
-│   │   │   └── pr-description.ts
-│   │   └── formatters/                    <- 4 output formats
-│   │       ├── terminal.ts
-│   │       ├── github.ts
-│   │       ├── gitlab.ts
-│   │       └── json.ts
+│   │   └── formatters/                    <- 4 output formats (terminal/github/gitlab/json)
 │   └── utils/
 │       ├── safe-write.ts                  <- write with dry-run/diff/version-check
 │       ├── git.ts                         <- getChangedFiles, getDiff, getCommitMessages
-│       ├── file-helpers.ts                <- pkgHas, pubspecHas, gradleHas
+│       ├── file-helpers.ts                <- pkgHas, pubspecHas, gradleHas, pomHas
 │       ├── logger.ts                      <- colored console output
 │       └── tty.ts                         <- TTY detection + line reading
-├── tests/
-│   ├── git-hooks.test.ts                  <- 10 tests
-│   ├── pr-check.test.ts                   <- 8 tests
-│   ├── generators.test.ts                 <- generator smoke tests
-│   ├── scanners.test.ts                   <- 40+ scanner tests across 6 stacks
-│   └── fixtures/                          <- minimal manifest files per stack
+├── tests/                                 <- 14 test files, 487 tests
+│   ├── agent-detection.test.ts
+│   ├── backward-compat.test.ts
+│   ├── cli-integration.test.ts
+│   ├── generators.test.ts
+│   ├── git-hooks.test.ts
+│   ├── integration.test.ts
+│   ├── java.test.ts
+│   ├── kiro-hooks.test.ts
+│   ├── kiro-integration.test.ts
+│   ├── kiro-steering.test.ts
+│   ├── pr-check.test.ts
+│   ├── scanners.test.ts
+│   ├── upgrade.test.ts
+│   ├── workspace.test.ts
+│   └── fixtures/                          <- 10 minimal project fixtures per stack
 ├── docs/
+│   ├── INDEX.md                           <- docs navigation
 │   ├── complete_usage_guide.md            <- full usage guide (all scenarios)
-│   └── branching_and_ci_setup_guide.md    <- multi-branch, CI setup for all platforms
+│   ├── kiro_setup_guide.md                <- Kiro-specific setup
+│   ├── workspace_setup_guide.md           <- multi-project workspace setup
+│   ├── workspace_governance_guide.md      <- cross-team governance patterns
+│   ├── cli_workspace_commands.md          <- workspace commands reference
+│   ├── cli_developer_commands.md          <- daily developer commands
+│   ├── branching_and_ci_setup_guide.md    <- multi-branch, CI setup
+│   ├── upgrade_guide.md                   <- upgrading from older versions
+│   └── runtime_requirements.md            <- python3/jq platform requirements
 ├── package.json
 ├── tsconfig.json
 └── jest.config.cjs
 ```
 
-**83 source files · ~8,500 lines of TypeScript · 129 tests**
+**134 source files · ~14,700 lines of TypeScript · 487 tests across 14 suites**
 
 ---
 

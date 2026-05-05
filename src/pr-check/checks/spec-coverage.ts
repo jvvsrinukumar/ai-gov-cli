@@ -4,7 +4,10 @@ import type { CheckResult } from '../types.js';
 
 export function checkSpecCoverage(changedFiles: string[], projectDir: string): CheckResult {
     const items: CheckResult['items'] = [];
-    const specsDir = join(projectDir, 'specs');
+    // Support both Claude Code (specs/) and Kiro (.kiro/specs/)
+    const specsDir = existsSync(join(projectDir, '.kiro', 'specs'))
+        ? join(projectDir, '.kiro', 'specs')
+        : join(projectDir, 'specs');
 
     if (!existsSync(specsDir)) {
         return { name: 'Spec Coverage', status: 'skip', details: 'No specs/ directory found', items: [] };

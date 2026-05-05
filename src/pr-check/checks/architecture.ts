@@ -6,15 +6,20 @@ import type { CheckResult } from '../types.js';
 export function checkArchitecture(changedFiles: string[], config: GovernanceConfig | null, projectDir?: string): CheckResult {
     const items: CheckResult['items'] = [];
 
-    // Try to read layer flow from governance config, or fall back to CLAUDE.md
+    // Try to read layer flow from governance config, or fall back to steering files
     let layerFlow = config?.profile?.layerFlow || '';
     if (!layerFlow && projectDir) {
-        const claudeMd = join(projectDir, '.claude', 'CLAUDE.md');
-        if (existsSync(claudeMd)) {
+        // Check Claude Code: .claude/CLAUDE.md, then Kiro: .kiro/steering/architecture.md
+        const candidates = [
+            join(projectDir, '.claude', 'CLAUDE.md'),
+            join(projectDir, '.kiro', 'steering', 'architecture.md'),
+        ];
+        for (const candidate of candidates) {
+            if (!existsSync(candidate)) continue;
             try {
-                const content = readFileSync(claudeMd, 'utf-8');
+                const content = readFileSync(candidate, 'utf-8');
                 const match = content.match(/Never skip a layer.*?`([^`]+)`/);
-                if (match) layerFlow = match[1];
+                if (match) { layerFlow = match[1]; break; }
             } catch { /* ignore */ }
         }
     }

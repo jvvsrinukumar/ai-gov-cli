@@ -14,7 +14,8 @@ import { generateFormatCheck } from './checks/format-check.js';
 import { generateLintCheck } from './checks/lint-check.js';
 
 export function generateGitHooks(config: GovernanceConfig, projectDir: string): void {
-    const hooksDir = join(projectDir, '.claude', 'git-hooks');
+    const agentDir = config.agent === 'kiro' ? '.kiro' : '.claude';
+    const hooksDir = join(projectDir, agentDir, 'git-hooks');
     const checksDir = join(hooksDir, 'checks');
 
     mkdirSync(checksDir, { recursive: true });

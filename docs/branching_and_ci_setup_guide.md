@@ -3,7 +3,7 @@
 > This guide is written for freshers, students, and junior developers.
 > Every step is explained. Nothing is assumed. Copy-paste and follow.
 
-**Version:** 15.2.0
+**Version:** 16.0.0
 **Last updated:** April 2026
 
 ---
@@ -161,17 +161,22 @@ on:
 node --version     # Need 18.0.0 or higher
 npm --version      # Any recent version
 git --version      # Any recent version
-jq --version       # Need 1.6 or higher — THIS IS THE MOST MISSED ONE
+python3 --version  # Preferred runtime for hooks (or install jq as fallback)
 
-# Install jq if missing
+# Install python3 if missing (preferred)
 # macOS:
-brew install jq
+brew install python3
 
 # Ubuntu/Debian/WSL2:
-sudo apt-get update && sudo apt-get install -y jq
+sudo apt-get install -y python3
 
-# Windows (PowerShell as admin):
-winget install jqlang.jq
+# Windows:
+winget install Python.Python.3
+
+# Alternative: install jq instead (hooks use python3 first, jq as fallback)
+# macOS: brew install jq
+# Linux: sudo apt-get install -y jq
+# Windows: winget install jqlang.jq
 ```
 
 ### Step 1 — Go to your project
@@ -238,7 +243,7 @@ git add .gitlab-ci.yml                            # GitLab
 # OR
 git add bitbucket-pipelines.yml                   # Bitbucket
 
-git commit -m "chore: add ai-gov governance framework v15.2.0"
+git commit -m "chore: add ai-gov governance framework v16.0.0"
 git push origin develop    # or whatever your main integration branch is
 ```
 
@@ -255,9 +260,9 @@ Team — I've added ai-gov governance to the project. Here's what you need to do
 2. Install git hooks (one-time, takes 5 seconds):
    npx ai-gov init --git-hooks
 
-3. Make sure jq is installed:
-   jq --version
-   If not: brew install jq (macOS) or sudo apt install jq (Linux)
+3. Make sure python3 or jq is installed (hooks require one):
+   python3 --version
+   If not: brew install python3 (macOS) or sudo apt install python3 (Linux)
 
 That's it. From now on:
 - Your commits will be checked automatically (secrets, file size, commit message format)
@@ -279,13 +284,13 @@ git pull origin develop
 # Step 2: Install git hooks locally
 npx ai-gov init --git-hooks
 
-# Step 3: Verify jq is installed
-jq --version
-# If you see "jq-1.6" or higher → you're good
-# If you see "command not found" → install it:
-#   macOS: brew install jq
-#   Linux: sudo apt-get install -y jq
-#   Windows: winget install jqlang.jq
+# Step 3: Verify python3 or jq is installed (hooks need one)
+python3 --version
+# If not found → install python3:
+#   macOS: brew install python3
+#   Linux: sudo apt-get install -y python3
+#   Windows: winget install Python.Python.3
+# Fallback: install jq instead (brew install jq / apt install jq)
 
 # Step 4: Verify setup
 npx ai-gov doctor
@@ -690,7 +695,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install governance CLI
-        run: npm install -g ai-gov@15.2.0
+        run: npm install -g ai-gov@16.0.0
 
       - name: Run governance check
         run: ai-gov pr-check --base ${{ github.event.pull_request.base.ref }} --format github > /tmp/governance-report.md
@@ -879,7 +884,7 @@ governance-check:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq
-    - npm install -g ai-gov@15.2.0
+    - npm install -g ai-gov@16.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab
   rules:
@@ -937,7 +942,7 @@ governance-check:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq curl
-    - npm install -g ai-gov@15.2.0
+    - npm install -g ai-gov@16.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab > /tmp/report.md
     - |
@@ -1059,7 +1064,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq
-            - npm install -g ai-gov@15.2.0
+            - npm install -g ai-gov@16.0.0
             - ai-gov pr-check --base $BITBUCKET_PR_DESTINATION_BRANCH --format terminal
 ```
 
@@ -1104,7 +1109,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq curl
-            - npm install -g ai-gov@15.2.0
+            - npm install -g ai-gov@16.0.0
             - ai-gov pr-check --base $BITBUCKET_PR_DESTINATION_BRANCH --format terminal > /tmp/report.txt
             - cat /tmp/report.txt
             - |
@@ -1236,7 +1241,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install governance CLI
-        run: npm install -g ai-gov@15.2.0
+        run: npm install -g ai-gov@16.0.0
 
       - name: Run governance check
         run: ai-gov pr-check --base ${{ github.event.pull_request.base.ref }} --format github > /tmp/governance-report.md
@@ -1280,7 +1285,7 @@ governance-check:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq
-    - npm install -g ai-gov@15.2.0
+    - npm install -g ai-gov@16.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab
   rules:
@@ -1319,7 +1324,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq
-            - npm install -g ai-gov@15.2.0
+            - npm install -g ai-gov@16.0.0
             - |
               # Only run for specific target branches
               TARGET="$BITBUCKET_PR_DESTINATION_BRANCH"
@@ -1361,32 +1366,37 @@ You never hardcode `--base main`. The CI variable automatically resolves to what
 
 ## 15. Challenges You Will Face & How to Fix Them
 
-### Challenge 1: "jq: command not found" — hooks silently skip
+### Challenge 1: "ai-gov hook skipped" — runtime missing
 
-**What happens:** You commit code, see no governance output at all. No errors, no checks, nothing. Commits go through unchecked.
+**What happens:** You commit code and see `⚠️  ai-gov hook skipped: install jq or python3`. Governance checks don't run.
 
-**Why:** Every hook script starts with `command -v jq &>/dev/null || exit 0`. If jq isn't installed, hooks exit silently with success.
+**Why:** Hooks need either `python3` or `jq` to parse `config.json`. If neither is installed, the hook emits a warning and exits (no silent failure — you will see the message).
 
 **How to detect:**
 ```bash
-jq --version
-# If you see "command not found" → that's the problem
+python3 --version    # preferred
+jq --version         # fallback
+# "command not found" on both → that's the problem
+# Run: ai-gov doctor — it shows which runtime is active
 ```
 
 **How to fix:**
 ```bash
-# macOS
-brew install jq
+# macOS (install python3 — preferred)
+brew install python3
 
 # Ubuntu/Debian/WSL2
-sudo apt-get update && sudo apt-get install -y jq
+sudo apt-get install -y python3
 
 # Windows
-winget install jqlang.jq
+winget install Python.Python.3
 # AND make sure you're using Git Bash, not PowerShell
+
+# Alternative: install jq as fallback instead
+# brew install jq / apt install jq / winget install jqlang.jq
 ```
 
-**Prevention:** Add `jq --version` to your project's README setup instructions. Run `ai-gov doctor` — it checks for jq.
+**Prevention:** Run `ai-gov doctor` after setup — it reports the active runtime. Add `ai-gov onboard` to your team README.
 
 ---
 
@@ -1683,7 +1693,7 @@ npx ai-gov doctor
 
 # Commit
 git add .claude/ specs/ CLAUDE.md .github/    # adjust for your platform
-git commit -m "chore: add ai-gov governance framework v15.2.0"
+git commit -m "chore: add ai-gov governance framework v16.0.0"
 git push origin develop
 ```
 
@@ -1694,8 +1704,8 @@ git clone <repo-url>
 cd your-project
 npm install
 npx ai-gov init --git-hooks    # installs local .git/hooks/ wrappers
-jq --version                   # verify jq is installed
-npx ai-gov doctor              # verify everything
+npx ai-gov onboard             # installs hooks, checks runtime, verifies setup
+npx ai-gov doctor              # verify everything is active
 ```
 
 ### Daily workflow
@@ -1755,4 +1765,4 @@ add login screen                                        ❌ (missing type prefix
 
 ---
 
-*This guide covers ai-gov v15.2.0. For CLI reference and troubleshooting, see [complete_usage_guide.md](./complete_usage_guide.md).*
+*This guide covers ai-gov v16.0.0. For CLI reference and troubleshooting, see [complete_usage_guide.md](./complete_usage_guide.md).*

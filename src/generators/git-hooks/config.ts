@@ -5,6 +5,9 @@ export function generateGitHooksConfig(): string {
                 "enabled": true,
                 "max-lines": 300,
                 "frontend-only": true,
+                // Note: ".java" is not included — Java backend files (controllers, services) are
+                // exempt from the frontend-only file-size gate. Add ".java" here only if you want
+                // to enforce size limits on Java source files in this workspace.
                 "frontend-extensions": [".dart", ".tsx", ".jsx", ".ts", ".kt"],
                 "exclude-patterns": []
             },

@@ -1,10 +1,14 @@
 import type { GovernanceConfig } from '../types.js';
 
 export function generateConstitution(c: GovernanceConfig): string {
+    const priorityChain = c.agent === 'kiro'
+        ? 'constitution.md > steering files > specs'
+        : 'constitution.md > CLAUDE.md > steering files > specs';
+
     return `# Constitution — ${c.project.appName}
 
 > **These rules are ABSOLUTE. You must never violate them.**
-> **Priority: constitution.md > CLAUDE.md > steering files > specs**
+> **Priority: ${priorityChain}**
 
 ## Hard Rules — You Must Obey These
 ${c.blocks.hardRules}

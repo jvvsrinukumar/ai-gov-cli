@@ -7,6 +7,59 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.0.0] — 2026-05-02
+
+### Added
+- **Kiro agent support** — `ai-gov init --agent kiro` generates governance files in `.kiro/` with Kiro-native formats: steering files with YAML front-matter (`inclusion: always`), JSON hooks auto-discovered by Kiro IDE, and spec templates in `.kiro/specs/_template/`.
+- **`--agent` flag** on `init`, `workspace`, `upgrade`, and `doctor` commands. Accepts `claude-code` or `kiro`. Auto-detects from existing `.kiro/` or `.claude/` directories when not specified.
+- **Agent auto-detection** — CLI detects which agent to target based on existing governance directories. Defaults to `claude-code` for backward compatibility.
+- **12 Kiro JSON hooks** — `block-dangerous-commands`, `protect-files`, `spec-first-gate` (conditional), `format-code`, `analyze-code`, `check-file-size`, `check-secrets`, `session-continuity`, `post-task-checklist`, `check-feature-readme`, `check-consistency`, `require-task-type`.
+- **6 Kiro workflow hooks** — `userTriggered` hooks equivalent to Claude Code slash commands: `workflow-audit`, `workflow-new-feature`, `workflow-fix`, `workflow-refactor`, `workflow-hotfix`, `workflow-explore`. Triggered from the Agent Hooks panel in Kiro.
+- **Pre-write secrets gate** — `preToolUse` hook (`pre-write-secrets-gate.json`) that catches hardcoded credentials BEFORE they are written to disk. Complements the post-hoc `check-secrets` fileEdited hook.
+- **`src/agents/` directory** — new agent-specific modules: `src/agents/claude-code/` (extracted from generators), `src/agents/kiro/` (new Kiro orchestrator, steering wrapper, JSON hook generators).
+- **`src/agents/detect-agent.ts`** — agent detection logic with interactive prompt for ambiguous cases.
+- **`src/agents/kiro/steering.ts`** — `wrapWithFrontMatter()` utility for Kiro YAML front-matter.
+
+### Changed
+- **`src/generators/index.ts`** — now a thin dispatcher routing to agent-specific orchestrators.
+- **`src/generators/monorepo.ts`** — accepts optional `steeringDir` parameter for agent-aware output paths.
+- **`src/generators/git-hooks/index.ts`** — uses `config.agent` to write to `.kiro/git-hooks/` or `.claude/git-hooks/`.
+- **`src/commands/workspace-init.ts`** — agent-aware workspace generation, injection, and git hook installation.
+- **`src/commands/upgrade.ts`** — agent-aware upgrade with Kiro-specific hook regeneration and steering upgrade.
+- **`src/commands/onboard.ts`** — auto-detects agent from existing directories, agent-aware messages.
+- **`GovernanceConfig`** — added `agent: Agent` field (`'claude-code' | 'kiro'`).
+- **Version bumped** to 17.0.0 across CLI, hooks, CI templates, and workspace scripts.
+
+### Refactored
+- Claude Code-specific generators moved from `src/generators/` to `src/agents/claude-code/` (hooks, commands, claude-md, settings-json, extensions).
+- Shared content generators (architecture, coding-standards, constitution, etc.) remain in `src/generators/` — used by both agents.
+
+---
+
+## [16.0.0] — 2026-04-27
+
+### Added
+- **Java stack support** — `ai-gov init` now auto-detects Java projects (Maven via `pom.xml`, Gradle via `build.gradle`/`build.gradle.kts`) and generates fully tailored governance files.
+- **`src/scanners/java.ts`** — new scanner detecting: build system (Maven/Gradle), Java version (8–21+), preview features, web framework (Spring Boot/WebFlux/Quarkus/Micronaut/JAX-RS/Javalin/Spark), DI (Spring DI/Guice/OSGi SCR/CDI/Dagger), UI (Swing/JavaFX with desktop layer flow override), ORM (JPA/Hibernate/MyBatis/jOOQ/Spring JDBC), testing (JUnit 5/4/TestNG + Mockito/AssertJ/Testcontainers/WireMock/ArchUnit), linter (Checkstyle/SpotBugs/PMD/Error Prone), formatter (Spotless/Google Java Format), OSGi bundles (Felix/Equinox/bnd), multi-module, logging (SLF4J/Logback/Log4j2), API docs (springdoc-openapi/springfox), Lombok, MapStruct.
+- **`pomHas()` + `readPom()` helpers** in `src/utils/file-helpers.ts` — reads root and child module POMs for dependency detection.
+- **Java profile** in `src/profiles.ts` — default layer flow `Controller → Service → Repository → Entity`, Maven commands, Spring DI defaults. Scanner overrides for Gradle builds, desktop apps, and OSGi bundles.
+- **Java detection** in `src/detect-stack.ts` — disambiguates Java vs Kotlin for both Maven (`kotlin-maven-plugin` check) and Gradle (`kotlin` plugin check) projects.
+- **Java-specific content** in generators: architecture (Spring/OSGi/desktop project structures), format-code hook (`mvn spotless:apply`/`./gradlew spotlessApply`), no-debug patterns (`System.out.print`, `.printStackTrace()`), audit command (3 switch blocks), new-feature command (Java phases + file templates).
+- **Java `isBackend` logic** — Java is conditionally backend (Spring/JAX-RS/Quarkus/Micronaut) or desktop (Swing/JavaFX/OSGi-only), affecting content blocks, architecture, and task phases.
+
+### Changed
+- `Stack` union type now includes `'java'` (8 stacks total).
+- `ScanResult` has 6 new Java-specific fields: `detectedJavaVersion`, `detectedPreviewFeatures`, `detectedBuildSystem`, `detectedOSGi`, `detectedLombok`, `detectedMapStruct`.
+- Version bumped to 16.0.0 in `package.json`, `src/cli.ts`, CI generators, README, and all docs.
+- README, `docs/cli_README.md`, `docs/complete_usage_guide.md`, `docs/cli_deep_dive.md` updated with Java detection details, debug patterns, and active stack lists.
+
+### Fixed
+- **`isJavaBackend()` default logic** — rewrote to treat desktop as the exception. Java is now desktop only when Swing or JavaFX is detected with no web framework (`detectedSubtype`) and no OSGi. All other cases (plain Maven libraries, CLI tools, batch processors, OSGi platforms like Weasis) correctly default to backend governance rules. Previously, any project without an explicit web framework subtype returned `false`, causing the OSGi architecture block and Spring-style content to never render for OSGi or plain Java projects.
+- **Gradle Java detection false positive** — the Gradle branch now requires an explicit `java` plugin declaration (`apply plugin: 'java'`, `id 'java'`, or `plugins { java }`) before returning `'java'`. Previously any Gradle project without Kotlin markers was silently detected as Java, including Groovy-only Gradle builds.
+- **Multi-module Gradle threshold** — changed `includes.length > 1` to `>= 1` in `detectMultiModule`. A Gradle project with a single `include(':app')` in `settings.gradle` now correctly sets `detectedMultimodule = true`.
+
+---
+
 ## [15.2.0] — 2026-04-26
 
 ### Added

@@ -14,7 +14,6 @@ export interface WriteOptions {
 }
 
 export function safeWrite(filePath: string, content: string, opts: WriteOptions): boolean {
-    mkdirSync(dirname(filePath), { recursive: true });
     const rel = relative(opts.projectDir, filePath);
 
     if (opts.dryRun) {
@@ -64,6 +63,7 @@ export function safeWrite(filePath: string, content: string, opts: WriteOptions)
         return false;
     }
 
+    mkdirSync(dirname(filePath), { recursive: true });
     writeFileSync(filePath, content);
     log.created(rel);
     return true;

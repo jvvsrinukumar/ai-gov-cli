@@ -4,12 +4,14 @@ export function generateAIUsagePolicy(c: GovernanceConfig): string {
     const analyzeLine = c.profile.analyzeCmd
         ? `\n- Run analysis: \`${c.profile.analyzeCmd}\``
         : '';
+    const agentName = c.agent === 'kiro' ? 'Kiro' : 'Claude Code';
+    const specFolder = c.agent === 'kiro' ? '.kiro/specs/<feature>/' : 'specs/<feature>/';
 
     return `# AI Usage Policy — ${c.project.appName}
 
 ## Prerequisites
 - A ${c.project.ticketSystem} ticket must exist
-- For new features: spec folder \`specs/<feature>/\` must exist
+- For new features: spec folder \`${specFolder}\` must exist
 - Read architecture.md and coding-standards.md before every task
 
 ## New Feature Rules
@@ -39,7 +41,7 @@ ${c.blocks.highRiskDisplay}
 - Run tests: \`${c.profile.testCmd}\`${analyzeLine}
 
 ## PR Checklist
-- [ ] Claude Code was used
+- [ ] ${agentName} was used
 - [ ] Change type: Feature / Edit Feature / Bug Fix / Refactor / Hotfix
 - [ ] Files created/modified listed
 - [ ] Architecture compliance confirmed

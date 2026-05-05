@@ -5,12 +5,18 @@ export function generateSpecFirstWorkflow(c: GovernanceConfig): string {
         ? ` (generate scaffold with ${c.scan.scaffoldTool} first)`
         : '';
 
+    const hookRef = c.agent === 'kiro' ? 'spec-first-gate.kiro.hook' : 'check-spec-exists.sh';
+    const registrationRef = c.agent === 'kiro'
+        ? 'the spec-first-gate.kiro.hook is present in .kiro/hooks/'
+        : 'the check-spec-exists.sh hook is registered in settings.json';
+    const specsRoot = c.agent === 'kiro' ? '.kiro/specs' : 'specs';
+
     const enforcementNote = c.specFirstEnabled
         ? `> **ABSOLUTE RULE: No feature code may be generated until a spec exists AND is complete.**
-> **This is enforced by the check-spec-exists.sh hook. Do not attempt to work around it.**`
+> **This is enforced by the ${hookRef}. Do not attempt to work around it.**`
         : `> **Spec-first workflow is available but not yet enforced for this project.**
-> **No spec history was found — the check-spec-exists.sh hook is generated but not registered in settings.json.**
-> **To activate: create your first feature spec (\`cp -r specs/_template specs/<feature>\`) and re-run the governance script.**`;
+> **No spec history was found — ${registrationRef}.**
+> **To activate: create your first feature spec (\`cp -r ${specsRoot}/_template ${specsRoot}/<feature>\`) and re-run the governance script.**`;
 
     return `# Spec-First Workflow
 
@@ -19,8 +25,8 @@ ${enforcementNote}
 ## Flow
 \`\`\`
 1. "create feature <n>"
-2. Check: specs/<n>/ exists?
-   NO  → cp -r specs/_template specs/<n>
+2. Check: ${specsRoot}/<n>/ exists?
+   NO  → cp -r ${specsRoot}/_template ${specsRoot}/<n>
    YES → read existing spec
 3. Fill requirements.md — replace ALL placeholders, write user stories, select data source
 4. Fill design.md — hard rules compliance, layer mapping, file list
