@@ -29,7 +29,7 @@ export function generateWorkspaceFiles(config: WorkspaceConfig, opts: WriteOptio
         log.section('Workspace steering:');
         safeWrite(
             join(workspaceDir, agentDir, 'steering', 'workspace-policy.md'),
-            generateWorkspacePolicy(workspaceName),
+            generateWorkspacePolicy(workspaceName, agent),
             opts,
         );
         safeWrite(
@@ -65,7 +65,7 @@ export function generateWorkspaceFiles(config: WorkspaceConfig, opts: WriteOptio
     log.section('Workspace steering:');
     safeWrite(
         join(workspaceDir, agentDir, 'steering', 'workspace-policy.md'),
-        generateWorkspacePolicy(workspaceName),
+        generateWorkspacePolicy(workspaceName, agent),
         opts,
     );
     safeWrite(

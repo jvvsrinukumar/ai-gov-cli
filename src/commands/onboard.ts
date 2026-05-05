@@ -128,7 +128,7 @@ export function runOnboard(options: OnboardOptions): void {
         console.log('    • TODOs and debug statements (warnings)');
         console.log('');
         if (agent === 'kiro') {
-            console.log('  Kiro hooks are active (from .kiro/hooks/ JSON files in git).');
+            console.log('  Kiro hooks are active (from .kiro/hooks/*.kiro.hook files in git).');
         } else {
             console.log('  Claude Code hooks are active (from .claude/hooks/ in git).');
         }

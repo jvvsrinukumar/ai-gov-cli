@@ -17,33 +17,72 @@ export function generateWorkflowHotfix(c: GovernanceConfig): string {
 
 Test command: ${testCmd}
 
-Ask the user: "What is breaking in production?"
+> This is a new session — you have no conversation history. Speed matters but safety matters more.
 
-RULES — This is a hotfix. Speed matters but safety matters more:
-- Smallest possible change
+## STEP 0 — Ask ONE question immediately
+
+Do not read any files yet. Ask:
+
+"What is breaking in production?
+ — Error message or symptom (paste it)
+ — File or feature area (if known)
+ — Is this blocking all users, or only some? (helps assess urgency)"
+
+Do not ask anything else. Use whatever the user gives you to proceed.
+
+---
+
+## STEP 1 — IDENTIFY
+
+Read the file(s) in the area the user described.
+Find the exact line(s) causing the production issue.
+Do not read more than necessary — this is a hotfix, not an audit.
+
+Present:
+- Affected file: [path:line]
+- What it does now: [one sentence]
+- Why it breaks: [one sentence]
+
+---
+
+## STEP 2 — FIX (minimal)
+
+Apply the smallest possible change that resolves the issue.
+
+Hard rules:
 - No refactoring
 - No feature additions
 - No dependency updates
-- Must have a test
+- No changes outside the root cause
+- If the fix requires changing more than 3 files: STOP and ask the user — it may not be a hotfix
 
-STEP 1 — IDENTIFY
-Read the affected file(s). Find the exact line(s) causing the production issue.
+Show: file name, line range, what changed (before → after).
 
-STEP 2 — FIX (minimal)
-Apply the smallest change that resolves the issue.
-Present what you changed and why.
+---
 
-STEP 3 — TEST
+## STEP 3 — TEST
+
 Run: ${testCmd}
-Write a regression test if one doesn't exist.
+If tests pass: continue.
+If tests fail: diagnose before deploying.
 
-STEP 4 — SUMMARY
+Write a regression test if one does not exist for this failure path.
+Run: ${testCmd} again. New test must pass.
+
+---
+
+## STEP 4 — SUMMARY
+
 Output:
-- What broke: [one sentence]
-- Root cause: [one sentence]
-- Fix applied: [file:line — what changed]
-- Test added: [yes/no — test name]
-- Safe to deploy: [yes, with confidence level]`,
+\`\`\`
+HOTFIX SUMMARY
+  What broke:    [one sentence]
+  Root cause:    [one sentence]
+  Fix applied:   [file:line — what changed]
+  Test added:    yes — <test name> / no — <reason>
+  Tests passing: yes / no
+  Safe to deploy: yes / needs review — <reason>
+\`\`\``,
         },
     }, null, 2) + '\n';
 }

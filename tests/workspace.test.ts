@@ -403,6 +403,93 @@ describe('generateWorkspaceFiles — steering files', () => {
     });
 });
 
+// ─── Group 3b: Kiro workspace — agent-conditional content ────────────────────
+
+describe('generateWorkspaceFiles (Kiro) — agent-conditional content', () => {
+    let root: string;
+
+    beforeEach(() => { root = mkTmp(); });
+    afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+    function runKiroWorkspace(): void {
+        generateWorkspaceFiles(makeWsConfig(root, { agent: 'kiro' }), { ...WS_OPTS, projectDir: root });
+    }
+
+    test('writes to .kiro/steering/ not .claude/steering/', () => {
+        runKiroWorkspace();
+        expect(existsSync(join(root, '.kiro', 'steering', 'workspace-policy.md'))).toBe(true);
+        expect(existsSync(join(root, '.claude', 'steering', 'workspace-policy.md'))).toBe(false);
+    });
+
+    test('workspace-policy.md says "Kiro was used" not "Claude Code was used"', () => {
+        runKiroWorkspace();
+        const content = readFileSync(join(root, '.kiro', 'steering', 'workspace-policy.md'), 'utf-8');
+        expect(content).toContain('- [ ] Kiro was used');
+        expect(content).not.toContain('Claude Code was used');
+    });
+
+    test('workspace-policy.md references .kiro/steering/ not .claude/CLAUDE.md', () => {
+        runKiroWorkspace();
+        const content = readFileSync(join(root, '.kiro', 'steering', 'workspace-policy.md'), 'utf-8');
+        expect(content).not.toContain('.claude/CLAUDE.md');
+        expect(content).toContain('.kiro/steering/');
+    });
+
+    test('workspace-policy.md spec path uses .kiro/specs/', () => {
+        runKiroWorkspace();
+        const content = readFileSync(join(root, '.kiro', 'steering', 'workspace-policy.md'), 'utf-8');
+        expect(content).toContain('.kiro/specs/<feature>/');
+        expect(content).not.toMatch(/`specs\/<feature>\/`/);
+    });
+
+    test('project-registry.md governance status header uses .kiro/', () => {
+        runKiroWorkspace();
+        const content = readFileSync(join(root, '.kiro', 'steering', 'project-registry.md'), 'utf-8');
+        expect(content).toContain('.kiro/');
+        expect(content).not.toContain('| .claude/');
+    });
+
+    test('workspace spec templates written to .kiro/specs/', () => {
+        runKiroWorkspace();
+        expect(existsSync(join(root, '.kiro', 'specs', '_cross-project-template', 'requirements.md'))).toBe(true);
+        expect(existsSync(join(root, 'specs', '_cross-project-template', 'requirements.md'))).toBe(false);
+    });
+
+    test('workspace spec tasks reference .kiro/steering/cross-project-rules.md', () => {
+        runKiroWorkspace();
+        const content = readFileSync(join(root, '.kiro', 'specs', '_cross-project-template', 'tasks.md'), 'utf-8');
+        expect(content).toContain('.kiro/steering/cross-project-rules.md');
+        expect(content).not.toContain('.claude/steering/cross-project-rules.md');
+    });
+
+    test('does NOT write CLAUDE.md for Kiro workspace', () => {
+        runKiroWorkspace();
+        expect(existsSync(join(root, 'CLAUDE.md'))).toBe(false);
+        expect(existsSync(join(root, '.kiro', 'CLAUDE.md'))).toBe(false);
+    });
+
+    test('workspace-overview.md references Kiro not Claude Code', () => {
+        runKiroWorkspace();
+        const content = readFileSync(join(root, '.kiro', 'steering', 'workspace-overview.md'), 'utf-8');
+        expect(content).toContain('Kiro');
+        expect(content).not.toContain('Claude Code');
+    });
+
+    test('workspace-overview.md references .kiro/specs/ not specs/', () => {
+        runKiroWorkspace();
+        const content = readFileSync(join(root, '.kiro', 'steering', 'workspace-overview.md'), 'utf-8');
+        expect(content).toContain('.kiro/specs/');
+        expect(content).not.toMatch(/at `specs\//);
+    });
+
+    test('workspace-overview.md references kiro hooks not cross-project-spec-check', () => {
+        runKiroWorkspace();
+        const content = readFileSync(join(root, '.kiro', 'steering', 'workspace-overview.md'), 'utf-8');
+        expect(content).toContain('session-continuity.kiro.hook');
+        expect(content).not.toContain('cross-project-spec-check');
+    });
+});
+
 // ─── Group 4: Integration / --only filtering ──────────────────────────────────
 
 describe('discoverProjects — --only filter simulation', () => {

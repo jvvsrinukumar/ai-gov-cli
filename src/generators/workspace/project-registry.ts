@@ -2,6 +2,7 @@ import type { WorkspaceConfig } from './types.js';
 
 export function generateProjectRegistry(config: WorkspaceConfig): string {
     const { workspaceName, projects } = config;
+    const agentDir = config.agent === 'kiro' ? '.kiro/' : '.claude/';
 
     const rows = projects
         .map(p => `| \`${p.relativePath}\` | ${p.stack} | ${p.group || 'root'} | _describe_ |`)
@@ -24,7 +25,7 @@ ${rows}
 
 ## Governance Status
 
-| Path | .claude/ | specs/ | hooks | CI |
+| Path | ${agentDir} | specs/ | hooks | CI |
 |------|:--------:|:------:|:-----:|:--:|
 ${projects.map(p => `| \`${p.relativePath}\` | ✓ | ✓ | ✓ | — |`).join('\n')}
 

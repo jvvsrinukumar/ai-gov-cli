@@ -248,6 +248,12 @@ describe('generateConstitution', () => {
         expect(out.length).toBeGreaterThan(300);
     });
 
+    test('claude-code: priority chain includes CLAUDE.md', () => {
+        const out = generateConstitution(makeConfig('nodejs'));
+        expect(out).toContain('CLAUDE.md');
+        expect(out).toContain('constitution.md > CLAUDE.md > steering files > specs');
+    });
+
     test('all stacks: non-empty output', () => {
         for (const stack of ['nodejs', 'react', 'flutter', 'python'] as Stack[]) {
             expect(generateConstitution(makeConfig(stack)).length).toBeGreaterThan(100);
@@ -290,6 +296,17 @@ describe('generateAIUsagePolicy', () => {
         expect(out).toContain('Refactor');
         expect(out).toContain('Hotfix');
     });
+
+    test('claude-code: PR checklist says Claude Code was used', () => {
+        const out = generateAIUsagePolicy(makeConfig('nodejs'));
+        expect(out).toContain('- [ ] Claude Code was used');
+    });
+
+    test('claude-code: spec folder references specs/ not .kiro/specs/', () => {
+        const out = generateAIUsagePolicy(makeConfig('nodejs'));
+        expect(out).toContain('specs/<feature>/');
+        expect(out).not.toContain('.kiro/specs/');
+    });
 });
 
 // ─── Spec First Workflow ──────────────────────────────────────────────────────
@@ -303,6 +320,18 @@ describe('generateSpecFirstWorkflow', () => {
     test('specFirstEnabled=false: uses opt-in language', () => {
         const out = generateSpecFirstWorkflow(makeConfig('nodejs', {}, { specFirstEnabled: false }));
         expect(out).not.toContain('ABSOLUTE RULE');
+    });
+
+    test('claude-code: references check-spec-exists.sh and settings.json', () => {
+        const out = generateSpecFirstWorkflow(makeConfig('nodejs', {}, { specFirstEnabled: true }));
+        expect(out).toContain('check-spec-exists.sh');
+        expect(out).not.toContain('spec-first-gate.kiro.hook');
+    });
+
+    test('claude-code: spec path uses specs/ not .kiro/specs/', () => {
+        const out = generateSpecFirstWorkflow(makeConfig('nodejs'));
+        expect(out).toContain('specs/<n>/');
+        expect(out).not.toContain('.kiro/specs/');
     });
 });
 
@@ -582,7 +611,7 @@ describe('computeContentBlocks', () => {
     test('all fields are strings (no undefined)', () => {
         const cfg = makeConfig('nodejs');
         const blocks = computeContentBlocks(cfg.stack, cfg.profile, cfg.scan);
-        for (const [key, val] of Object.entries(blocks)) {
+        for (const [, val] of Object.entries(blocks)) {
             expect(typeof val).toBe('string');
         }
     });

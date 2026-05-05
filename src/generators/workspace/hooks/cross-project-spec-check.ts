@@ -127,6 +127,12 @@ exit 0
 
 export function generateWorkspaceOverview(config: WorkspaceConfig): string {
     const { workspaceName, projects } = config;
+    const agent = config.agent ?? 'claude-code';
+    const agentName = agent === 'kiro' ? 'Kiro' : 'Claude Code';
+    const hookRef = agent === 'kiro'
+        ? 'session-continuity.kiro.hook and workflow hooks'
+        : 'cross-project-spec-check hook';
+    const specsRoot = agent === 'kiro' ? '.kiro/specs' : 'specs';
 
     const backends = backendProjects(projects);
     const frontends = frontendProjects(projects);
@@ -167,9 +173,9 @@ export function generateWorkspaceOverview(config: WorkspaceConfig): string {
 
     return `# Workspace Overview — ${workspaceName}
 
-> This file is read by the \`cross-project-spec-check\` hook to understand
+> This file is read by the \`${hookRef}\` to understand
 > the workspace layout and route tasks to the correct governance level.
-> Keep it accurate — it determines whether Claude Code uses project-level or
+> Keep it accurate — it determines whether ${agentName} uses project-level or
 > workspace-level governance for each task.
 
 **Total projects:** ${projects.length}
@@ -177,7 +183,7 @@ ${sections}
 ## Cross-Project Features
 
 > List features that span multiple projects. Each should have a unified spec
-> at \`specs/<feature>/\` at the workspace root.
+> at \`${specsRoot}/<feature>/\` at the workspace root.
 
 | Feature | Backend project | Frontend project | Spec exists? |
 |---------|----------------|-----------------|:------------:|
@@ -185,7 +191,7 @@ ${sections}
 
 ## Communication Patterns
 
-> How do projects communicate? This helps Claude Code understand the API contract layer.
+> How do projects communicate? This helps ${agentName} understand the API contract layer.
 
 | From | To | Method | Base URL |
 |------|----|--------|----------|

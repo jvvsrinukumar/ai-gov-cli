@@ -16,42 +16,92 @@ export function generateWorkflowRefactor(c: GovernanceConfig): string {
             type: 'askAgent',
             prompt: `REFACTOR — Plan-first refactor workflow for ${stackDisplay}.
 
+Stack: ${stackDisplay}
 Layer flow: ${layerFlow}
 Test command: ${testCmd}
 
-Ask the user: "What is the refactor scope?" (which files/patterns to change)
+> This is a new session — you have no conversation history. Get context from disk first.
 
-Then execute:
+## STEP 0 — Orient from disk before asking anything
 
-STEP 1 — READ ALL AFFECTED FILES
-Read every file in scope before proposing changes.
+Read .kiro/specs/ for any Refactor tasks that are in progress.
+Check .kiro/steering/architecture.md for the current layer structure.
 
-STEP 2 — IMPACT ANALYSIS (THE GATE)
-Present:
-- Files that WILL change (current pattern → after pattern)
-- Files that will NOT change (and why they're unaffected)
-- Behaviour change: None (structural only) or describe what changes
-- Test risk: low / medium / high
+Then ask exactly ONE question:
 
-Wait for explicit "approved" before proceeding.
+If an in-progress Refactor task found:
+  "I found an in-progress refactor: [name — N tasks remaining].
+   Continue this, or describe a new refactor scope?"
 
-STEP 3 — RUN TESTS BEFORE REFACTORING
+If nothing found:
+  "What is the refactor scope?
+   — What pattern or structure to change (e.g. 'extract service layer', 'rename X to Y', 'split large file')
+   — Which files or directories are in scope
+   — Goal: what the code should look like after"
+
+Do not ask follow-up questions. Use the user's answer to proceed directly to Step 1.
+
+---
+
+## STEP 1 — READ ALL FILES IN SCOPE
+
+Read every file the user mentioned. Also read files that import from or are imported by scope files.
+Do not propose changes yet. Map the full dependency surface.
+
+---
+
+## STEP 2 — IMPACT ANALYSIS GATE
+
+Present (do NOT make any changes yet):
+
+\`\`\`
+IMPACT ANALYSIS
+
+Files that WILL change:
+  <file>: [current pattern] → [after pattern]
+  ...
+
+Files that will NOT change:
+  <file>: [reason it is unaffected]
+  ...
+
+Behaviour change: None (structural only) / [describe if any]
+Test risk: low / medium / high
+  Reason: [why]
+
+Estimated file count: N files
+\`\`\`
+
+Ask: "Does this look right? Say **ok** to proceed, or tell me what to adjust."
+Do NOT touch any file until user says ok / approved / proceed.
+
+---
+
+## STEP 3 — RUN TESTS BEFORE REFACTORING
+
 Run: ${testCmd}
-If tests fail before the refactor, stop and report.
+If any tests fail before the refactor starts: STOP. Report the failures.
+Do not proceed with a refactor on a broken baseline.
 
-STEP 4 — APPLY REFACTOR
-Apply changes file by file. Confirm each change in one sentence.
-If unexpected dependency found, stop and report.
+---
 
-STEP 5 — RUN TESTS AFTER
+## STEP 4 — APPLY REFACTOR
+
+Apply changes file by file. After each file: one-sentence confirmation of what changed.
+If you discover an unexpected dependency mid-refactor: STOP. Report it. Ask how to proceed.
+
+Rules:
+- No behaviour changes — if you spot a bug, note it but do not fix it
+- No feature additions during refactor
+- No dependency version changes
+
+---
+
+## STEP 5 — RUN TESTS AFTER
+
 Run: ${testCmd}
 If pass: "Refactor complete. Tests pass. N files changed."
-If fail: diagnose and fix before closing.
-
-RULES:
-- No behaviour changes — if a bug is found, note it but don't fix it
-- No feature additions during refactor
-- Tests must pass at the end`,
+If fail: diagnose which test broke and why before closing. Fix test failures caused by the refactor.`,
         },
     }, null, 2) + '\n';
 }

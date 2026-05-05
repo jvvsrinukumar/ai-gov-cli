@@ -33,25 +33,25 @@ your-project/
 │   │   ├── feature-readme.md              ← README policy per feature (inclusion: always)
 │   │   └── prompt-templates.md            ← Reusable templates (inclusion: always)
 │   ├── hooks/                             ← Kiro JSON hooks (auto-discovered)
-│   │   ├── block-dangerous-commands.json  ← Blocks force push, rm -rf
-│   │   ├── protect-files.json             ← Warns on high-risk file edits
-│   │   ├── pre-write-secrets-gate.json    ← Blocks writes with hardcoded credentials
-│   │   ├── spec-first-gate.json           ← Blocks writes without spec (if enabled)
-│   │   ├── check-secrets.json             ← Scans for hardcoded credentials
-│   │   ├── check-file-size.json           ← Warns on files > 200 lines
-│   │   ├── format-code.json               ← Auto-formats after write
-│   │   ├── analyze-code.json              ← Runs linter after write
-│   │   ├── check-feature-readme.json      ← Reminds to update feature README
-│   │   ├── check-consistency.json         ← Detects spec-vs-code drift
-│   │   ├── session-continuity.json        ← Context preservation
-│   │   ├── require-task-type.json         ← Task classification prompt
-│   │   ├── post-task-checklist.json       ← Post-task verification
-│   │   ├── workflow-audit.json            ← Governance audit (userTriggered)
-│   │   ├── workflow-new-feature.json      ← Spec-first feature workflow (userTriggered)
-│   │   ├── workflow-fix.json              ← Bug fix workflow (userTriggered)
-│   │   ├── workflow-refactor.json         ← Refactor with impact gate (userTriggered)
-│   │   ├── workflow-hotfix.json           ← Emergency production fix (userTriggered)
-│   │   ├── workflow-explore.json          ← Read-only exploration (userTriggered)
+│   │   ├── block-dangerous-commands.kiro.hook  ← Blocks force push, rm -rf
+│   │   ├── protect-files.kiro.hook             ← Warns on high-risk file edits
+│   │   ├── pre-write-secrets-gate.kiro.hook    ← Blocks writes with hardcoded credentials
+│   │   ├── spec-first-gate.kiro.hook           ← Blocks writes without spec (if enabled)
+│   │   ├── check-secrets.kiro.hook             ← Scans for hardcoded credentials
+│   │   ├── check-file-size.kiro.hook           ← Warns on files > 200 lines
+│   │   ├── format-code.kiro.hook               ← Auto-formats after write
+│   │   ├── analyze-code.kiro.hook              ← Runs linter after write
+│   │   ├── check-feature-readme.kiro.hook      ← Reminds to update feature README
+│   │   ├── check-consistency.kiro.hook         ← Detects spec-vs-code drift
+│   │   ├── session-continuity.kiro.hook        ← Context preservation
+│   │   ├── require-task-type.kiro.hook         ← Task classification prompt
+│   │   ├── post-task-checklist.kiro.hook       ← Post-task verification
+│   │   ├── workflow-audit.kiro.hook            ← Governance audit (userTriggered)
+│   │   ├── workflow-new-feature.kiro.hook      ← Spec-first feature workflow (userTriggered)
+│   │   ├── workflow-fix.kiro.hook              ← Bug fix workflow (userTriggered)
+│   │   ├── workflow-refactor.kiro.hook         ← Refactor with impact gate (userTriggered)
+│   │   ├── workflow-hotfix.kiro.hook           ← Emergency production fix (userTriggered)
+│   │   ├── workflow-explore.kiro.hook          ← Read-only exploration (userTriggered)
 │   │   └── README.md
 │   └── specs/
 │       └── _template/                     ← Spec templates (Kiro-native location)
@@ -62,7 +62,7 @@ your-project/
 
 ## How Kiro Hooks Work
 
-Kiro hooks are JSON files that Kiro discovers automatically from `.kiro/hooks/`. Each hook has:
+Kiro hooks are JSON files (with `.kiro.hook` extension) that Kiro discovers automatically from `.kiro/hooks/`. Each hook has:
 
 - **`when`** — the event that triggers the hook
 - **`then`** — what happens (either `askAgent` or `runCommand`)
@@ -91,14 +91,14 @@ These are the Kiro equivalent of Claude Code's slash commands (`/audit`, `/new-f
 
 | Hook | Equivalent | What It Does |
 |------|-----------|--------------|
-| `workflow-audit.json` | `/audit` | Full governance audit: observe → compare to steering → report drift |
-| `workflow-new-feature.json` | `/new-feature` | Spec-first 3-gate workflow: requirements → design → tasks → implement |
-| `workflow-fix.json` | `/fix` | Bug diagnosis: reproduce → root cause → minimal fix → regression test |
-| `workflow-refactor.json` | `/refactor` | Impact analysis gate → tests before → apply → tests after |
-| `workflow-hotfix.json` | `/hotfix` | Emergency fix: smallest change, must have test |
-| `workflow-explore.json` | `/explore` | Read-only exploration: trace data flows, map dependencies |
+| `workflow-audit.kiro.hook` | `/audit` | Full governance audit: observe → compare to steering → report drift |
+| `workflow-new-feature.kiro.hook` | `/new-feature` | Spec-first 3-gate workflow: requirements → design → tasks → implement |
+| `workflow-fix.kiro.hook` | `/fix` | Bug diagnosis: reproduce → root cause → minimal fix → regression test |
+| `workflow-refactor.kiro.hook` | `/refactor` | Impact analysis gate → tests before → apply → tests after |
+| `workflow-hotfix.kiro.hook` | `/hotfix` | Emergency fix: smallest change, must have test |
+| `workflow-explore.kiro.hook` | `/explore` | Read-only exploration: trace data flows, map dependencies |
 
-To use: open the **Agent Hooks** panel in Kiro, find the workflow, and click the trigger button.
+To use: open the **Agent Hooks** panel in Kiro, find the workflow, and click the play button (▷) or select the hook and click **Start Hook**.
 
 ## Adding Git Hooks
 

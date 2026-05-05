@@ -1,4 +1,10 @@
-export function generateWorkspacePolicy(workspaceName: string): string {
+export function generateWorkspacePolicy(workspaceName: string, agent: 'claude-code' | 'kiro' = 'claude-code'): string {
+    const agentName = agent === 'kiro' ? 'Kiro' : 'Claude Code';
+    const projectRulesRef = agent === 'kiro'
+        ? 'the project\'s `.kiro/steering/` files'
+        : 'the project\'s `.claude/CLAUDE.md`';
+    const specPath = agent === 'kiro' ? '.kiro/specs/<feature>/' : 'specs/<feature>/';
+
     return `# Workspace AI Usage Policy — ${workspaceName}
 
 ## Scope
@@ -9,12 +15,12 @@ Each project may extend it with project-specific rules in their own \`steering/a
 
 ### Before Starting Any Task
 1. Identify the project you are working in
-2. Read the project's \`.claude/CLAUDE.md\`
+2. Read ${projectRulesRef}
 3. Read the project's \`steering/architecture.md\`
 4. Confirm a ticket/issue exists for the work
 
 ### New Feature Rules
-1. Spec must exist: \`specs/<feature>/\` with \`requirements.md\`, \`design.md\`, \`tasks.md\`
+1. Spec must exist: \`${specPath}\` with \`requirements.md\`, \`design.md\`, \`tasks.md\`
 2. State full implementation plan — every file, layer, dependencies
 3. Wait for developer confirmation before writing code
 4. Do not touch files in other projects unless the task explicitly requires it
@@ -38,7 +44,7 @@ Each project may extend it with project-specific rules in their own \`steering/a
 5. Never make changes that span projects without explicit instruction
 
 ## PR Checklist (per project)
-- [ ] Claude Code was used
+- [ ] ${agentName} was used
 - [ ] Change type: Feature / Edit Feature / Bug Fix / Refactor / Hotfix
 - [ ] Only files within the target project were modified (or cross-project change was approved)
 - [ ] Tests written or reason for skipping documented

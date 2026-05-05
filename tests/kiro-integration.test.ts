@@ -64,9 +64,9 @@ describe('Kiro init integration', () => {
         expect(existsSync(join(tmpDir, '.kiro', 'steering', 'constitution.md'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'steering', 'coding-standards.md'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'steering', 'workflow.md'))).toBe(true);
-        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'block-dangerous-commands.hook'))).toBe(true);
-        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'protect-files.hook'))).toBe(true);
-        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'check-secrets.hook'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'block-dangerous-commands.kiro.hook'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'protect-files.kiro.hook'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'check-secrets.kiro.hook'))).toBe(true);
     });
 
     test('fresh kiro init on Flutter project: steering contains Flutter content', () => {
@@ -79,7 +79,7 @@ describe('Kiro init integration', () => {
     test('fresh kiro init on Node.js project: hooks reference .js extensions', () => {
         const config = makeKiroConfig('nodejs', {}, { projectDir: tmpDir });
         runGovernance(config);
-        const secrets = readFileSync(join(tmpDir, '.kiro', 'hooks', 'check-secrets.hook'), 'utf-8');
+        const secrets = readFileSync(join(tmpDir, '.kiro', 'hooks', 'check-secrets.kiro.hook'), 'utf-8');
         expect(secrets).toContain('.js');
     });
 
@@ -155,8 +155,8 @@ describe('Kiro workspace integration', () => {
 
     test('workspace kiro init creates per-project .kiro/hooks/', () => {
         runWorkspaceInit({ dir: wsDir, dryRun: false, overwrite: true, agent: 'kiro' });
-        expect(existsSync(join(wsDir, 'frontend', 'web', '.kiro', 'hooks', 'block-dangerous-commands.hook'))).toBe(true);
-        expect(existsSync(join(wsDir, 'backend', 'api', '.kiro', 'hooks', 'block-dangerous-commands.hook'))).toBe(true);
+        expect(existsSync(join(wsDir, 'frontend', 'web', '.kiro', 'hooks', 'block-dangerous-commands.kiro.hook'))).toBe(true);
+        expect(existsSync(join(wsDir, 'backend', 'api', '.kiro', 'hooks', 'block-dangerous-commands.kiro.hook'))).toBe(true);
     });
 
     test('workspace kiro init does NOT create .claude/ anywhere', () => {
@@ -189,7 +189,7 @@ describe('Kiro upgrade integration', () => {
 
     test('kiro upgrade regenerates hooks', () => {
         // Modify a hook to verify it gets regenerated
-        const hookPath = join(tmpDir, '.kiro', 'hooks', 'block-dangerous-commands.hook');
+        const hookPath = join(tmpDir, '.kiro', 'hooks', 'block-dangerous-commands.kiro.hook');
         writeFileSync(hookPath, '{"modified": true}');
 
         // Re-run hooks generation (simulating upgrade)

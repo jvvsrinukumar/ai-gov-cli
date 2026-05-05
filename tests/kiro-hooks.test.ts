@@ -94,7 +94,7 @@ describe('Kiro hook schema validation', () => {
     ];
 
     for (const { name, generate } of hookGenerators) {
-        test(`${name}.hook validates against Kiro schema`, () => {
+        test(`${name}.kiro.hook validates against Kiro schema`, () => {
             const output = generate(makeConfig());
             expect(output).not.toBeNull();
             const result = validateKiroHookSchema(output!);
@@ -237,7 +237,7 @@ describe('Kiro hook version', () => {
     ];
 
     for (const { name, generate } of generators) {
-        test(`${name}.hook contains version 17.0.0`, () => {
+        test(`${name}.kiro.hook contains version 17.0.0`, () => {
             const cfg = makeConfig();
             cfg.hookVersion = '17.0.0';
             const json = JSON.parse(generate(cfg)!);
@@ -279,7 +279,7 @@ describe('No Claude Code artifacts in Kiro hooks', () => {
         const hooksDir = join(tmpDir, '.kiro', 'hooks');
         let allContent = '';
         for (const f of readdirSync(hooksDir)) {
-            if (f.endsWith('.hook')) {
+            if (f.endsWith('.kiro.hook')) {
                 allContent += readFileSync(join(hooksDir, f), 'utf-8') + '\n';
             }
         }
@@ -311,6 +311,7 @@ import { generateWorkflowFix } from '../src/agents/kiro/hooks/workflow-fix.js';
 import { generateWorkflowRefactor } from '../src/agents/kiro/hooks/workflow-refactor.js';
 import { generateWorkflowHotfix } from '../src/agents/kiro/hooks/workflow-hotfix.js';
 import { generateWorkflowExplore } from '../src/agents/kiro/hooks/workflow-explore.js';
+import { generateWorkflowEditFeature } from '../src/agents/kiro/hooks/workflow-edit-feature.js';
 import { generatePreWriteSecretsGate } from '../src/agents/kiro/hooks/pre-write-secrets-gate.js';
 
 describe('Workflow hook schema validation', () => {
@@ -321,22 +322,23 @@ describe('Workflow hook schema validation', () => {
         { name: 'workflow-refactor', generate: generateWorkflowRefactor },
         { name: 'workflow-hotfix', generate: generateWorkflowHotfix },
         { name: 'workflow-explore', generate: generateWorkflowExplore },
+        { name: 'workflow-edit-feature', generate: generateWorkflowEditFeature },
     ];
 
     for (const { name, generate } of workflowGenerators) {
-        test(`${name}.hook validates against Kiro schema`, () => {
+        test(`${name}.kiro.hook validates against Kiro schema`, () => {
             const output = generate(makeConfig());
             const result = validateKiroHookSchema(output);
             expect(result.errors).toEqual([]);
             expect(result.valid).toBe(true);
         });
 
-        test(`${name}.hook uses userTriggered event`, () => {
+        test(`${name}.kiro.hook uses userTriggered event`, () => {
             const json = JSON.parse(generate(makeConfig()));
             expect(json.when.type).toBe('userTriggered');
         });
 
-        test(`${name}.hook uses askAgent action`, () => {
+        test(`${name}.kiro.hook uses askAgent action`, () => {
             const json = JSON.parse(generate(makeConfig()));
             expect(json.then.type).toBe('askAgent');
         });
@@ -440,6 +442,132 @@ describe('Workflow hook content correctness — stack-specific values', () => {
         expect(json.then.prompt).toContain(cfg.profile.layerFlow);
     });
 
+    test('workflow-audit: references .kiro/steering/ not .claude/', () => {
+        const cfg = makeConfig('nodejs');
+        const json = JSON.parse(generateWorkflowAudit(cfg));
+        expect(json.then.prompt).toContain('.kiro/steering/');
+        expect(json.then.prompt).not.toContain('.claude/steering/');
+        expect(json.then.prompt).not.toContain('.claude/CLAUDE.md');
+    });
+
+    test('workflow-audit: persist records go to .kiro/ not .claude/', () => {
+        const cfg = makeConfig('react');
+        const json = JSON.parse(generateWorkflowAudit(cfg));
+        expect(json.then.prompt).toContain('.kiro/audit-report.md');
+        expect(json.then.prompt).toContain('.kiro/dead-code.md');
+        expect(json.then.prompt).toContain('.kiro/developer-actions.md');
+        expect(json.then.prompt).not.toContain('.claude/audit-report.md');
+        expect(json.then.prompt).not.toContain('.claude/dead-code.md');
+        expect(json.then.prompt).not.toContain('.claude/developer-actions.md');
+    });
+
+    test('workflow-audit: contains all 6 phases', () => {
+        const cfg = makeConfig('nodejs');
+        const json = JSON.parse(generateWorkflowAudit(cfg));
+        expect(json.then.prompt).toContain('PHASE 1');
+        expect(json.then.prompt).toContain('PHASE 2');
+        expect(json.then.prompt).toContain('PHASE 3');
+        expect(json.then.prompt).toContain('PHASE 4');
+        expect(json.then.prompt).toContain('PHASE 5');
+        expect(json.then.prompt).toContain('PHASE 6');
+    });
+
+    test('workflow-audit: contains all 12 steps', () => {
+        const cfg = makeConfig('nodejs');
+        const json = JSON.parse(generateWorkflowAudit(cfg));
+        for (let step = 1; step <= 12; step++) {
+            expect(json.then.prompt).toContain(`Step ${step}`);
+        }
+    });
+
+    test('workflow-audit: hooks referenced use .kiro.hook extension not .sh', () => {
+        const cfg = makeConfig('nodejs');
+        const json = JSON.parse(generateWorkflowAudit(cfg));
+        expect(json.then.prompt).toContain('.kiro.hook');
+        expect(json.then.prompt).not.toContain('.sh');
+    });
+
+    test('workflow-audit: .kiro/hooks/ referenced not .claude/hooks/', () => {
+        const cfg = makeConfig('nodejs');
+        const json = JSON.parse(generateWorkflowAudit(cfg));
+        expect(json.then.prompt).toContain('.kiro/hooks/');
+        expect(json.then.prompt).not.toContain('.claude/hooks/');
+    });
+
+    test('workflow-audit (python): contains stack-specific dead code signals', () => {
+        const cfg = makeConfig('python');
+        const json = JSON.parse(generateWorkflowAudit(cfg));
+        expect(json.then.prompt).toContain('include_router');
+    });
+
+    test('workflow-audit (kotlin): contains stack-specific observation questions', () => {
+        const cfg = makeConfig('kotlin');
+        const json = JSON.parse(generateWorkflowAudit(cfg));
+        expect(json.then.prompt).toContain('Jetpack Compose');
+    });
+
+    test('workflow-audit (java): contains stack-specific dead code signals', () => {
+        const cfg = makeConfig('java');
+        const json = JSON.parse(generateWorkflowAudit(cfg));
+        expect(json.then.prompt).toContain('@Service');
+        expect(json.then.prompt).toContain('@Repository');
+    });
+
+    // ── Edit Feature ─────────────────────────────────────────────────────────
+    test('workflow-edit-feature (nodejs): reads .kiro/specs/ and references test command', () => {
+        const cfg = makeConfig('nodejs');
+        const json = JSON.parse(generateWorkflowEditFeature(cfg));
+        expect(json.then.prompt).toContain('.kiro/specs/');
+        expect(json.then.prompt).toContain('npm test');
+        expect(json.then.prompt).toContain('Node.js');
+    });
+
+    test('workflow-edit-feature: writes to .kiro/specs/ not specs/ or .claude/', () => {
+        const cfg = makeConfig('react');
+        const json = JSON.parse(generateWorkflowEditFeature(cfg));
+        expect(json.then.prompt).toContain('.kiro/specs/<name>/requirements.md');
+        expect(json.then.prompt).toContain('.kiro/specs/<name>/design.md');
+        expect(json.then.prompt).toContain('.kiro/specs/<name>/tasks.md');
+        expect(json.then.prompt).not.toContain('.claude/');
+        expect(json.then.prompt).not.toContain('specs/$ARGUMENTS');
+    });
+
+    test('workflow-edit-feature: preserves done tasks and marks new tasks', () => {
+        const cfg = makeConfig('nodejs');
+        const json = JSON.parse(generateWorkflowEditFeature(cfg));
+        expect(json.then.prompt).toContain('[x]');
+        expect(json.then.prompt).toContain('<!-- NEW -->');
+        expect(json.then.prompt).toContain('CHANGED');
+    });
+
+    test('workflow-edit-feature: contains 3 gates', () => {
+        const cfg = makeConfig('nodejs');
+        const json = JSON.parse(generateWorkflowEditFeature(cfg));
+        expect(json.then.prompt).toContain('GATE 1');
+        expect(json.then.prompt).toContain('GATE 2');
+        expect(json.then.prompt).toContain('GATE 3');
+    });
+
+    test('workflow-edit-feature: new-session note present', () => {
+        const cfg = makeConfig('nodejs');
+        const json = JSON.parse(generateWorkflowEditFeature(cfg));
+        expect(json.then.prompt).toContain('new session');
+        expect(json.then.prompt).toContain('no conversation history');
+    });
+
+    test('workflow-edit-feature (flutter): references flutter test and layer flow', () => {
+        const cfg = makeConfig('flutter');
+        const json = JSON.parse(generateWorkflowEditFeature(cfg));
+        expect(json.then.prompt).toContain('flutter test');
+        expect(json.then.prompt).toContain(cfg.profile.layerFlow);
+    });
+
+    test('workflow-edit-feature (python): references pytest', () => {
+        const cfg = makeConfig('python');
+        const json = JSON.parse(generateWorkflowEditFeature(cfg));
+        expect(json.then.prompt).toContain('pytest');
+    });
+
     // ── Explore ──────────────────────────────────────────────────────────────
     test('workflow-explore (react): references source dir and layer flow', () => {
         const cfg = makeConfig('react');
@@ -465,6 +593,7 @@ describe('Workflow hooks cross-stack — all 8 stacks produce valid hooks', () =
         { name: 'refactor', generate: generateWorkflowRefactor },
         { name: 'hotfix', generate: generateWorkflowHotfix },
         { name: 'explore', generate: generateWorkflowExplore },
+        { name: 'edit-feature', generate: generateWorkflowEditFeature },
     ];
 
     for (const stack of stacks) {

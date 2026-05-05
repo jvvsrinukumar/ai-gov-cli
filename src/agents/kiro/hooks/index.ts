@@ -21,6 +21,7 @@ import { generateWorkflowFix } from './workflow-fix.js';
 import { generateWorkflowRefactor } from './workflow-refactor.js';
 import { generateWorkflowHotfix } from './workflow-hotfix.js';
 import { generateWorkflowExplore } from './workflow-explore.js';
+import { generateWorkflowEditFeature } from './workflow-edit-feature.js';
 
 export function generateAllKiroHooks(config: GovernanceConfig, opts: WriteOptions): void {
     const hooksDir = join(config.projectDir, '.kiro', 'hooks');
@@ -32,35 +33,36 @@ export function generateAllKiroHooks(config: GovernanceConfig, opts: WriteOption
     };
 
     // preToolUse hooks
-    w('block-dangerous-commands.hook', generateBlockDangerous(config));
-    w('protect-files.hook', generateProtectFiles(config));
-    w('pre-write-secrets-gate.hook', generatePreWriteSecretsGate(config));
-    w('spec-first-gate.hook', generateSpecFirstGate(config));  // null if specFirstEnabled=false
+    w('block-dangerous-commands.kiro.hook', generateBlockDangerous(config));
+    w('protect-files.kiro.hook', generateProtectFiles(config));
+    w('pre-write-secrets-gate.kiro.hook', generatePreWriteSecretsGate(config));
+    w('spec-first-gate.kiro.hook', generateSpecFirstGate(config));  // null if specFirstEnabled=false
 
     // postToolUse hooks
-    w('format-code.hook', generateFormatCode(config));          // null if no formatter
-    w('analyze-code.hook', generateAnalyzeCode(config));        // null if no linter
-    w('check-file-size.hook', generateCheckFileSize(config));
-    w('check-feature-readme.hook', generateCheckFeatureReadme(config));
-    w('check-consistency.hook', generateCheckConsistency(config));
+    w('format-code.kiro.hook', generateFormatCode(config));          // null if no formatter
+    w('analyze-code.kiro.hook', generateAnalyzeCode(config));        // null if no linter
+    w('check-file-size.kiro.hook', generateCheckFileSize(config));
+    w('check-feature-readme.kiro.hook', generateCheckFeatureReadme(config));
+    w('check-consistency.kiro.hook', generateCheckConsistency(config));
 
     // fileEdited hooks
-    w('check-secrets.hook', generateCheckSecrets(config));
+    w('check-secrets.kiro.hook', generateCheckSecrets(config));
 
     // promptSubmit hooks
-    w('session-continuity.hook', generateSessionContinuity(config));
-    w('require-task-type.hook', generateRequireTaskType(config));
+    w('session-continuity.kiro.hook', generateSessionContinuity(config));
+    w('require-task-type.kiro.hook', generateRequireTaskType(config));
 
     // postTaskExecution hooks
-    w('post-task-checklist.hook', generatePostTaskChecklist(config));
+    w('post-task-checklist.kiro.hook', generatePostTaskChecklist(config));
 
     // userTriggered workflow hooks
-    w('workflow-audit.hook', generateWorkflowAudit(config));
-    w('workflow-new-feature.hook', generateWorkflowNewFeature(config));
-    w('workflow-fix.hook', generateWorkflowFix(config));
-    w('workflow-refactor.hook', generateWorkflowRefactor(config));
-    w('workflow-hotfix.hook', generateWorkflowHotfix(config));
-    w('workflow-explore.hook', generateWorkflowExplore(config));
+    w('workflow-audit.kiro.hook', generateWorkflowAudit(config));
+    w('workflow-new-feature.kiro.hook', generateWorkflowNewFeature(config));
+    w('workflow-fix.kiro.hook', generateWorkflowFix(config));
+    w('workflow-refactor.kiro.hook', generateWorkflowRefactor(config));
+    w('workflow-hotfix.kiro.hook', generateWorkflowHotfix(config));
+    w('workflow-explore.kiro.hook', generateWorkflowExplore(config));
+    w('workflow-edit-feature.kiro.hook', generateWorkflowEditFeature(config));
 
     // README
     w('README.md', generateHooksReadme(config));

@@ -114,6 +114,41 @@ describe('Kiro steering files have front-matter + matching content', () => {
     }
 });
 
+// ─── Agent-conditional content — Kiro must NOT contain Claude Code references ──
+
+describe('Kiro steering files: agent-conditional content', () => {
+    test('constitution: priority chain omits CLAUDE.md for Kiro', () => {
+        const out = generateConstitution(makeConfig());
+        expect(out).not.toContain('CLAUDE.md');
+        expect(out).toContain('constitution.md > steering files > specs');
+    });
+
+    test('ai-usage-policy: PR checklist says Kiro, not Claude Code', () => {
+        const out = generateAIUsagePolicy(makeConfig());
+        expect(out).toContain('- [ ] Kiro was used');
+        expect(out).not.toContain('Claude Code was used');
+    });
+
+    test('ai-usage-policy: spec folder references .kiro/specs/ for Kiro', () => {
+        const out = generateAIUsagePolicy(makeConfig());
+        expect(out).toContain('.kiro/specs/<feature>/');
+        expect(out).not.toMatch(/spec folder `specs\/<feature>\/`/);
+    });
+
+    test('spec-first-workflow: references spec-first-gate.kiro.hook not .sh', () => {
+        const out = generateSpecFirstWorkflow(makeConfig('nodejs', {}, ));
+        expect(out).toContain('spec-first-gate.kiro.hook');
+        expect(out).not.toContain('check-spec-exists.sh');
+        expect(out).not.toContain('settings.json');
+    });
+
+    test('spec-first-workflow: spec path uses .kiro/specs/ for Kiro', () => {
+        const out = generateSpecFirstWorkflow(makeConfig());
+        expect(out).toContain('.kiro/specs/<n>/');
+        expect(out).not.toMatch(/Check: specs\/<n>\//);
+    });
+});
+
 // ─── Kiro orchestrator output structure ───────────────────────────────────────
 
 describe('Kiro orchestrator output', () => {

@@ -5,6 +5,11 @@ import { backendProjects, frontendProjects } from './commands/helpers.js';
 
 export function generateWorkspaceSpecTemplates(config: WorkspaceConfig, opts: WriteOptions): void {
     const { workspaceDir, projects } = config;
+    const agent = config.agent ?? 'claude-code';
+    const specsRoot = agent === 'kiro' ? '.kiro/specs' : 'specs';
+    const crossProjectRulesPath = agent === 'kiro'
+        ? '.kiro/steering/cross-project-rules.md'
+        : '.claude/steering/cross-project-rules.md';
 
     const backends = backendProjects(projects);
     const frontends = frontendProjects(projects);
@@ -12,7 +17,7 @@ export function generateWorkspaceSpecTemplates(config: WorkspaceConfig, opts: Wr
     const backendList = backends.map(p => p.relativePath).join(', ') || '_none_';
     const frontendList = frontends.map(p => p.relativePath).join(', ') || '_none_';
 
-    const templateDir = join(workspaceDir, 'specs', '_cross-project-template');
+    const templateDir = join(workspaceDir, specsRoot, '_cross-project-template');
 
     safeWrite(join(templateDir, 'requirements.md'), `# Requirements — [Feature Name] (Cross-Project)
 
@@ -129,7 +134,7 @@ _How frontend handles each backend error response from the contract_
 - [ ] **[S]** Define request/response schemas
 - [ ] **[S]** Document endpoint paths, methods, auth requirements
 - [ ] **[S]** Define error response shapes
-- [ ] **[S]** Write contract to \`.claude/steering/cross-project-rules.md\`
+- [ ] **[S]** Write contract to \`${crossProjectRulesPath}\`
 
 ## Phase 2 — Backend Implementation (\`_backend project_\`)
 - [ ] **[M]** Create domain model / entity
@@ -155,7 +160,7 @@ _How frontend handles each backend error response from the contract_
 - [ ] **[M]** Backend endpoints match the API contract exactly
 - [ ] **[M]** Frontend API calls match the API contract exactly
 - [ ] **[S]** Error responses handled correctly on both sides
-- [ ] **[S]** Update \`.claude/steering/cross-project-rules.md\` with final contract
+- [ ] **[S]** Update \`${crossProjectRulesPath}\` with final contract
 - [ ] **[S]** Feature README in both projects
 
 ---
