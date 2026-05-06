@@ -490,6 +490,113 @@ describe('generateWorkspaceFiles (Kiro) — agent-conditional content', () => {
     });
 });
 
+// ─── Group 3c: Kiro workspace — workspace-level hooks ────────────────────────
+
+describe('generateWorkspaceFiles (Kiro) — workspace-root .kiro/hooks/', () => {
+    let root: string;
+
+    beforeEach(() => { root = mkTmp(); });
+    afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+    function runKiroWorkspace(): void {
+        generateWorkspaceFiles(makeWsConfig(root, { agent: 'kiro' }), { ...WS_OPTS, projectDir: root });
+    }
+
+    test('creates workspace-root .kiro/hooks/ directory with hooks', () => {
+        runKiroWorkspace();
+        expect(existsSync(join(root, '.kiro', 'hooks'))).toBe(true);
+    });
+
+    test('writes workspace workflow hooks visible in Kiro tab', () => {
+        runKiroWorkspace();
+        const hooksDir = join(root, '.kiro', 'hooks');
+        expect(existsSync(join(hooksDir, 'workspace-new-feature.kiro.hook'))).toBe(true);
+        expect(existsSync(join(hooksDir, 'workspace-fix.kiro.hook'))).toBe(true);
+        expect(existsSync(join(hooksDir, 'workspace-audit.kiro.hook'))).toBe(true);
+        expect(existsSync(join(hooksDir, 'workspace-refactor.kiro.hook'))).toBe(true);
+        expect(existsSync(join(hooksDir, 'workspace-hotfix.kiro.hook'))).toBe(true);
+        expect(existsSync(join(hooksDir, 'workspace-explore.kiro.hook'))).toBe(true);
+        expect(existsSync(join(hooksDir, 'workspace-edit-feature.kiro.hook'))).toBe(true);
+    });
+
+    test('writes workspace-wide safety hooks', () => {
+        runKiroWorkspace();
+        const hooksDir = join(root, '.kiro', 'hooks');
+        expect(existsSync(join(hooksDir, 'block-dangerous-commands.kiro.hook'))).toBe(true);
+        expect(existsSync(join(hooksDir, 'pre-write-secrets-gate.kiro.hook'))).toBe(true);
+        expect(existsSync(join(hooksDir, 'check-secrets.kiro.hook'))).toBe(true);
+        expect(existsSync(join(hooksDir, 'require-task-type.kiro.hook'))).toBe(true);
+        expect(existsSync(join(hooksDir, 'session-continuity.kiro.hook'))).toBe(true);
+    });
+
+    test('workflow hooks are valid JSON', () => {
+        runKiroWorkspace();
+        const hooksDir = join(root, '.kiro', 'hooks');
+        for (const name of [
+            'workspace-new-feature.kiro.hook',
+            'workspace-fix.kiro.hook',
+            'workspace-audit.kiro.hook',
+            'workspace-refactor.kiro.hook',
+            'workspace-hotfix.kiro.hook',
+            'workspace-explore.kiro.hook',
+            'workspace-edit-feature.kiro.hook',
+            'block-dangerous-commands.kiro.hook',
+            'pre-write-secrets-gate.kiro.hook',
+            'session-continuity.kiro.hook',
+        ]) {
+            const raw = readFileSync(join(hooksDir, name), 'utf-8');
+            expect(() => JSON.parse(raw)).not.toThrow();
+        }
+    });
+
+    test('workflow hooks are userTriggered', () => {
+        runKiroWorkspace();
+        const hooksDir = join(root, '.kiro', 'hooks');
+        for (const name of [
+            'workspace-new-feature.kiro.hook',
+            'workspace-fix.kiro.hook',
+            'workspace-audit.kiro.hook',
+            'workspace-refactor.kiro.hook',
+            'workspace-hotfix.kiro.hook',
+            'workspace-explore.kiro.hook',
+            'workspace-edit-feature.kiro.hook',
+        ]) {
+            const hook = JSON.parse(readFileSync(join(hooksDir, name), 'utf-8'));
+            expect(hook.when.type).toBe('userTriggered');
+        }
+    });
+
+    test('workflow hooks list all workspace projects', () => {
+        runKiroWorkspace();
+        const hook = JSON.parse(
+            readFileSync(join(root, '.kiro', 'hooks', 'workspace-new-feature.kiro.hook'), 'utf-8'),
+        );
+        // makeWsConfig produces projects — at least one project path should appear in the prompt
+        expect(hook.then.prompt).toContain('backend/');
+    });
+
+    test('session-continuity hook references each project kiro/specs path', () => {
+        runKiroWorkspace();
+        const hook = JSON.parse(
+            readFileSync(join(root, '.kiro', 'hooks', 'session-continuity.kiro.hook'), 'utf-8'),
+        );
+        expect(hook.then.prompt).toContain('.kiro/specs/');
+    });
+
+    test('hook names include [Workspace] label for visibility in Kiro tab', () => {
+        runKiroWorkspace();
+        const hook = JSON.parse(
+            readFileSync(join(root, '.kiro', 'hooks', 'workspace-new-feature.kiro.hook'), 'utf-8'),
+        );
+        expect(hook.name).toContain('Workspace');
+    });
+
+    test('does NOT write Claude Code workspace hooks (.claude/hooks/) for Kiro', () => {
+        runKiroWorkspace();
+        expect(existsSync(join(root, '.claude', 'hooks'))).toBe(false);
+    });
+});
+
 // ─── Group 4: Integration / --only filtering ──────────────────────────────────
 
 describe('discoverProjects — --only filter simulation', () => {

@@ -7,6 +7,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.1.0] — 2026-05-06
+
+### Fixed
+- **Kiro workspace hooks missing from Kiro tab** — `ai-gov workspace --agent kiro` previously created hooks only in per-project subdirectories (e.g. `backend/accushield-kiosk-apis/.kiro/hooks/`), which Kiro IDE cannot see. Kiro reads hooks from the workspace root `.kiro/hooks/` only. The workspace root `.kiro/hooks/` was never created, so the Hooks tab was always empty in multi-repo workspaces.
+
+### Added
+- **`src/generators/workspace/hooks/kiro-workspace-hooks.ts`** — generates 12 workspace-root `.kiro/hooks/` files for Kiro workspaces:
+  - **5 automated hooks** (`preToolUse` / `fileEdited` / `promptSubmit`): `block-dangerous-commands`, `pre-write-secrets-gate`, `check-secrets`, `require-task-type`, `session-continuity` — all workspace-wide, covering all projects simultaneously.
+  - **7 `userTriggered` workflow hooks** visible in the Kiro Agent Hooks tab: `workspace-new-feature`, `workspace-fix`, `workspace-edit-feature`, `workspace-refactor`, `workspace-hotfix`, `workspace-explore`, `workspace-audit`. Each hook presents the full project list and asks which project to target before running the workflow.
+- **`session-continuity` workspace hook** checks in-progress specs across ALL project `.kiro/specs/` directories and the workspace root `.kiro/specs/` in a single session start.
+- **`workspace-audit` hook** supports single-project or full workspace sweep mode, writing per-project audit records and a workspace-level summary at `.kiro/audit-report.md`.
+
+---
+
 ## [17.0.0] — 2026-05-02
 
 ### Added

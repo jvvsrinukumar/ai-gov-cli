@@ -14,6 +14,7 @@ import { generateWorkspaceRefactorCommand } from './workspace/commands/refactor.
 import { generateWorkspaceHotfixCommand } from './workspace/commands/hotfix.js';
 import { generateWorkspaceEditFeatureCommand } from './workspace/commands/edit-feature.js';
 import { generateCrossProjectSpecCheck, generateWorkspaceOverview } from './workspace/hooks/cross-project-spec-check.js';
+import { generateWorkspaceKiroHooks } from './workspace/hooks/kiro-workspace-hooks.js';
 import { generateWorkspaceSpecTemplates } from './workspace/spec-templates.js';
 
 import type { WorkspaceConfig } from './workspace/types.js';
@@ -49,6 +50,9 @@ export function generateWorkspaceFiles(config: WorkspaceConfig, opts: WriteOptio
             generateWorkspaceOverview(config),
             opts,
         );
+
+        log.section('Workspace hooks:');
+        generateWorkspaceKiroHooks(config, opts);
 
         log.section('Workspace spec templates:');
         generateWorkspaceSpecTemplates(config, opts);
