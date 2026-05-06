@@ -1,12 +1,12 @@
 # docs/ — Documentation Index
 
-**Current version:** 17.0.0 · **Updated:** 2026-05-03
+**Current version:** 17.1.0 · **Updated:** 2026-05-06
 
 All documentation files in this directory, with status and description.
 
 ---
 
-## Current (v17.0.0)
+## Current (v17.1.0)
 
 | File | Audience | Description |
 |------|----------|-------------|
@@ -37,7 +37,7 @@ All documentation files in this directory, with status and description.
 **I am setting up a multi-project workspace:**
 → [`workspace_setup_guide.md`](./workspace_setup_guide.md)
 
-**I need to upgrade an existing project to v17.0.0:**
+**I need to upgrade an existing project to v17.1.0:**
 → [`upgrade_guide.md`](./upgrade_guide.md)
 
 **My CI pipeline is failing on runtime checks:**
