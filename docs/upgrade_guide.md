@@ -1,6 +1,6 @@
 # AI Governance Upgrade Guide
 
-**Version:** 17.1.0
+**Version:** 17.1.1
 **Command:** `ai-gov upgrade`
 
 This guide covers how to upgrade an existing project from an older ai-gov version to the latest hooks, commands, and steering files — without losing your team's customised content.
