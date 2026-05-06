@@ -7,6 +7,13 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.1.2] — 2026-05-06
+
+### Fixed
+- **Kiro audit hook stops before writing persist files** — `workflow-audit.kiro.hook` completed Steps 1–11 (analysis, gap fixes, scorecard) but Kiro stopped before writing `.kiro/audit-report.md`, `.kiro/dead-code.md`, and `.kiro/developer-actions.md`. Added Rule 8 to EXECUTION RULES making persist a mandatory, non-skippable step. Strengthened the persist instruction block to announce each file write and explicitly state the audit is incomplete until all three files exist.
+
+---
+
 ## [17.1.0] — 2026-05-06
 
 ### Fixed

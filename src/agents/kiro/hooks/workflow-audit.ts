@@ -68,6 +68,7 @@ export function generateWorkflowAudit(c: GovernanceConfig): string {
 > 5. **The goal is: when this audit finishes, Kiro has correct information about this project.** That is the only measure of success.
 > 6. **Do not judge patterns as legacy or modern.** Observe and record what is actually there.
 > 7. **IMPORTANT: Persist records go to \`.kiro/\` — NOT \`.claude/\`.** This project uses Kiro governance.
+> 8. **⚠️ THE AUDIT IS NOT COMPLETE UNTIL ALL THREE FILES ARE WRITTEN.** Printing the scorecard is NOT the end. You MUST write \`.kiro/audit-report.md\`, \`.kiro/dead-code.md\`, and \`.kiro/developer-actions.md\` before this audit is considered done. If you are running low on context, skip detail in earlier steps — do NOT skip the persist step.
 
 ---
 
@@ -423,10 +424,12 @@ Based on Step 5 observations (actual patterns in use, not assumed):
     ai-gov upgrade --agent kiro  (only if hooks were STALE)
 \`\`\`
 
-> **After printing the scorecard above, write the three persistent audit records below.**
+> **⚠️ MANDATORY FINAL STEP — DO NOT SKIP.**
+> **After printing the scorecard above, you MUST write all three persistent audit records below.**
 > **Do not ask permission — these are audit records, not governance files.**
-> **⚠️ Write to \`.kiro/\` — NOT \`.claude/\`. This project uses Kiro governance. If a \`.claude/\` folder exists in this project, IGNORE IT — it belongs to a different agent.**
-> **Announce each write: "Writing .kiro/audit-report.md...", "Writing .kiro/dead-code.md...", "Writing .kiro/developer-actions.md..."**
+> **Write to \`.kiro/\` — NOT \`.claude/\`. This project uses Kiro governance. If a \`.claude/\` folder exists in this project, IGNORE IT — it belongs to a different agent.**
+> **Announce each write before doing it: say "Writing .kiro/audit-report.md..." then write the file. Say "Writing .kiro/dead-code.md..." then write the file. Say "Writing .kiro/developer-actions.md..." then write the file.**
+> **If you have not written all three files, the audit is incomplete. Write them now.**
 
 ---
 
