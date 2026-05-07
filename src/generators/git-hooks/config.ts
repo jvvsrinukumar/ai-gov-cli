@@ -29,6 +29,10 @@ export function generateGitHooksConfig(): string {
             },
             "lint-check": {
                 "enabled": false
+            },
+            "architecture": {
+                "enabled": true,
+                "exclude-patterns": []
             }
         },
         "commit-msg": {

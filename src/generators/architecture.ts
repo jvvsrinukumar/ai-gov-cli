@@ -1,5 +1,171 @@
 import type { GovernanceConfig } from '../types.js';
 
+function generateArchLayersBlock(c: GovernanceConfig): string {
+    const s = c.scan;
+
+    if (c.isBackend) {
+        if (s.detectedSubtype === 'nestjs') {
+            return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: controller | paths: *.controller.ts, controller/
+arch-layer: service | paths: *.service.ts, service/
+arch-layer: data | paths: *.repository.ts, repository/, db/
+
+arch-rule: controller | cannot-import | data | Route through service layer
+arch-rule: data | cannot-import | controller | Circular dependency
+`;
+        }
+        if (c.stack === 'python') {
+            return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: router | paths: routers/, api/, routes/, views/
+arch-layer: service | paths: services/
+arch-layer: data | paths: models/, db/, repository/, crud/
+
+arch-rule: router | cannot-import | data | Route through service layer
+arch-rule: data | cannot-import | router | Circular dependency
+`;
+        }
+        if (c.stack === 'java' && !s.detectedOSGi) {
+            return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: controller | paths: controller/
+arch-layer: service | paths: service/
+arch-layer: data | paths: repository/, dao/, model/
+
+arch-rule: controller | cannot-import | data | Route through service layer
+arch-rule: data | cannot-import | controller | Circular dependency
+`;
+        }
+        if (c.stack === 'nodejs') {
+            const arch = s.detectedArchPattern || '';
+            if (arch === 'routes-only') {
+                return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: router | paths: routes/, controllers/, api/
+
+`;
+            }
+            return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: router | paths: routes/, controllers/, api/
+arch-layer: service | paths: services/, handlers/
+arch-layer: data | paths: models/, repository/, dao/, db/
+
+arch-rule: router | cannot-import | data | Route through service layer
+arch-rule: data | cannot-import | router | Circular dependency
+`;
+        }
+        // Generic backend fallback
+        return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: router | paths: routes/, controllers/, api/
+arch-layer: service | paths: services/
+arch-layer: data | paths: models/, repository/, db/
+
+arch-rule: router | cannot-import | data | Route through service layer
+arch-rule: data | cannot-import | router | Circular dependency
+`;
+    }
+
+    // Frontend / mobile stacks
+    if (c.stack === 'react') {
+        return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: ui | paths: components/, pages/, app/, views/, screens/
+arch-layer: state | paths: store/, redux/, slices/, hooks/, context/
+arch-layer: data | paths: services/, api/, repositories/
+
+arch-rule: ui | cannot-import | data | Route through hooks/services
+arch-rule: data | cannot-import | ui | Circular dependency
+arch-rule: ui | no-network | Use service/API layer
+`;
+    }
+    if (c.stack === 'angular') {
+        return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: ui | paths: components/, pages/, views/
+arch-layer: state | paths: store/, effects/, reducers/, facades/
+arch-layer: data | paths: services/, api/, repositories/
+
+arch-rule: ui | cannot-import | data | Route through services/facades
+arch-rule: data | cannot-import | ui | Circular dependency
+arch-rule: ui | no-network | Use service layer
+`;
+    }
+    if (c.stack === 'kotlin') {
+        return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: ui | paths: ui/, presentation/, fragment/, activity/, screens/
+arch-layer: domain | paths: domain/, usecase/, interactor/
+arch-layer: data | paths: data/, repository/, datasource/, remote/
+
+arch-rule: ui | cannot-import | data | Route through ViewModel/UseCase
+arch-rule: data | cannot-import | ui | Circular dependency
+arch-rule: ui | no-network | Use repository/service layer
+arch-rule: domain | no-framework | Domain must remain framework-agnostic
+`;
+    }
+    if (c.stack === 'swiftui') {
+        return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: ui | paths: Views/, Screens/
+arch-layer: domain | paths: ViewModels/, Domain/, UseCases/
+arch-layer: data | paths: Repositories/, Services/, Data/
+
+arch-rule: ui | cannot-import | data | Route through ViewModel
+arch-rule: data | cannot-import | ui | Circular dependency
+arch-rule: ui | no-network | Use repository/service layer
+arch-rule: domain | no-framework | Domain must remain framework-agnostic
+`;
+    }
+    // Flutter and generic mobile/frontend
+    return `
+---
+
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: ui | paths: presentation/, screens/, widgets/, components/, pages/, views/
+arch-layer: domain | paths: domain/, usecase/, interactor/
+arch-layer: data | paths: data/, repository/, datasource/, remote/, local/
+
+arch-rule: ui | cannot-import | data | Route through UseCase/ViewModel/BLoC
+arch-rule: data | cannot-import | ui | Circular dependency
+arch-rule: ui | no-network | Use repository/service layer
+arch-rule: domain | no-framework | Domain must remain framework-agnostic
+`;
+}
+
 export function generateArchitecture(c: GovernanceConfig): string {
     const p = c.profile, s = c.scan, b = c.blocks;
     const scaffoldSection = s.scaffoldTool ? `---\n\n## Scaffold — ${s.scaffoldTool}\n\`\`\`bash\n${s.scaffoldCmdFeature}\n\`\`\`\n` : '';
@@ -86,6 +252,5 @@ ${p.statePattern}
 - Never skip a layer
 - Never expose raw DTOs to ${p.layerNames[0]} layer
 - Dependencies flow inward: ${p.layerFlow}
-${apiDocsSection}${legacyZoneSection}
-`;
+${apiDocsSection}${legacyZoneSection}${generateArchLayersBlock(c)}`;
 }

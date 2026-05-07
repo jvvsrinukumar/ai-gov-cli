@@ -329,6 +329,29 @@ This project has two rendering zones. Match the zone's existing approach.
 
 For any stack: describe each zone's tools, state approach, and data flow — not just the directory name.
 
+**Hook Data section (architecture.md only):**
+After correcting layer flow or directory paths in architecture.md, also update (or add) the \`## Hook Data — Architecture Layers\` section at the bottom of that file. This section is parsed by the pre-commit architecture hook at commit time — if it's stale, the hook enforces wrong layers.
+
+Format:
+\`\`\`markdown
+## Hook Data — Architecture Layers
+<!-- parsed by git-hooks/checks/architecture.sh — do not rename this section -->
+arch-layer: <name> | paths: <dir1>/, <dir2>/
+arch-layer: <name> | paths: <dir1>/
+
+arch-rule: <layerA> | cannot-import | <layerB> | <hint>
+arch-rule: <layer>  | no-network    | <hint>
+arch-rule: <layer>  | no-framework  | <hint>
+\`\`\`
+
+Rules:
+- Use the actual directory paths discovered in Step 4 — not assumed names.
+- \`cannot-import\` — the hook checks if a file in layerA's paths imports from layerB's paths.
+- \`no-network\` — the hook checks if a file in the named layer makes direct HTTP client calls.
+- \`no-framework\` — the hook checks if a file in the named layer imports framework packages (android, react, angular, etc.).
+- If a layer was renamed or paths changed, update both the human-readable Layer Flow section AND the Hook Data section in the same edit.
+- If the project has no layered architecture (e.g. flat scripts), omit the Hook Data section entirely.
+
 **After each file update, record:**
 \`\`\`
 UPDATED: .claude/steering/architecture.md

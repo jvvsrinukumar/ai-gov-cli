@@ -58,8 +58,8 @@ while IFS= read -r file; do
     # Count lines of staged version
     lines=$(git show ":0:$file" 2>/dev/null | wc -l | tr -d ' ')
     if [[ "$lines" -gt "$MAX" ]]; then
-        echo "  ❌ FILE SIZE: $file has $lines lines (max $MAX)"
-        echo "     → Split into smaller components before committing"
+        echo "  ⚠️  FILE SIZE: $file has $lines lines (max $MAX)"
+        echo "     → Consider splitting into smaller components"
         FOUND=$((FOUND + 1))
     fi
 done

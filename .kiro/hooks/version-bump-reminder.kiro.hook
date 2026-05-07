@@ -1,0 +1,13 @@
+{
+  "enabled": true,
+  "name": "Version Bump Reminder",
+  "description": "Reminds you to bump the version in package.json when source files under src/ are modified. Triggers when you submit a prompt, so you get the reminder before committing.",
+  "version": "1",
+  "when": {
+    "type": "promptSubmit"
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Before completing this task, check if any files under src/ were modified. If so, remind the user to bump the version in package.json if they haven't already. Suggest the next patch version. Keep it brief — one line reminder is enough."
+  }
+}

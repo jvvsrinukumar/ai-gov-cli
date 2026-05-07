@@ -12,6 +12,7 @@ import { generateNoTodosCheck } from './checks/no-todos.js';
 import { generateNoDebug } from './checks/no-debug.js';
 import { generateFormatCheck } from './checks/format-check.js';
 import { generateLintCheck } from './checks/lint-check.js';
+import { generateArchitectureCheck } from './checks/architecture.js';
 
 export function generateGitHooks(config: GovernanceConfig, projectDir: string): void {
     const agentDir = config.agent === 'kiro' ? '.kiro' : '.claude';
@@ -40,6 +41,7 @@ export function generateGitHooks(config: GovernanceConfig, projectDir: string): 
     safeWrite(join(checksDir, 'no-debug.sh'), generateNoDebug(config), opts);
     safeWrite(join(checksDir, 'format-check.sh'), generateFormatCheck(config), opts);
     safeWrite(join(checksDir, 'lint-check.sh'), generateLintCheck(config), opts);
+    safeWrite(join(checksDir, 'architecture.sh'), generateArchitectureCheck(), opts);
 
     if (!config.dryRun) {
         const shFiles = [
@@ -51,6 +53,7 @@ export function generateGitHooks(config: GovernanceConfig, projectDir: string): 
             join(checksDir, 'no-debug.sh'),
             join(checksDir, 'format-check.sh'),
             join(checksDir, 'lint-check.sh'),
+            join(checksDir, 'architecture.sh'),
         ];
         for (const f of shFiles) {
             try { chmodSync(f, 0o755); } catch { /* ignore on Windows */ }

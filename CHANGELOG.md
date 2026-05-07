@@ -7,6 +7,30 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.1.4] — 2026-05-07
+
+### Changed
+- **Architecture check now enabled by default** — safe because the hook exits silently (exit 0) when no `arch-layer:` lines exist in `architecture.md`. Projects without architecture docs see zero false positives.
+- **Architecture hook fully data-driven** — rewrote `checks/architecture.ts` to parse `arch-layer:` and `arch-rule:` lines from steering dynamically. Zero hardcoded layer names or path patterns. Supports three rule types: `cannot-import`, `no-network`, `no-framework`.
+
+### Added
+- **`generateArchLayersBlock()` helper** in `architecture.ts` — emits a machine-readable `## Hook Data — Architecture Layers` section appended to every generated `architecture.md`. Stack-specific layers and rules for Flutter, Kotlin, SwiftUI, React, Angular, NestJS, Node.js, Python, and Java.
+- **Audit Step 7 Hook Data sync** — `/audit` now explicitly instructs Claude to update the Hook Data section whenever layer paths are corrected, keeping the pre-commit hook in sync as the project evolves.
+
+---
+
+## [17.1.3] — 2026-05-06
+
+### Changed
+- **file-size git hook downgraded to warning** — large files no longer block commits; team lead reviews in PR instead.
+
+### Added
+- **Architecture compliance git hook** — new `architecture.sh` check that validates layer boundaries (UI→data, data→presentation, UI→network, domain→framework). Ships as `enabled: false` (opt-in), blocks when enabled. Supports `exclude-patterns` in config and respects `legacy:` markers in steering docs.
+- Architecture check uses colon-suffixed markers (`architecture:`, `arch-flow:`) to avoid false positives from prose mentions.
+- Architecture check supports multiple flows per project — each path validated against its documented pattern.
+
+---
+
 ## [17.1.2] — 2026-05-06
 
 ### Fixed
