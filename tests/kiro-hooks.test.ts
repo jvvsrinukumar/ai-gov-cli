@@ -312,6 +312,9 @@ import { generateWorkflowRefactor } from '../src/agents/kiro/hooks/workflow-refa
 import { generateWorkflowHotfix } from '../src/agents/kiro/hooks/workflow-hotfix.js';
 import { generateWorkflowExplore } from '../src/agents/kiro/hooks/workflow-explore.js';
 import { generateWorkflowEditFeature } from '../src/agents/kiro/hooks/workflow-edit-feature.js';
+import { generateWorkflowTechKnowledge } from '../src/agents/kiro/hooks/workflow-tech-knowledge.js';
+import { generateWorkflowProductKnowledge } from '../src/agents/kiro/hooks/workflow-product-knowledge.js';
+import { generateWorkflowDetectConflicts } from '../src/agents/kiro/hooks/workflow-detect-conflicts.js';
 import { generatePreWriteSecretsGate } from '../src/agents/kiro/hooks/pre-write-secrets-gate.js';
 
 describe('Workflow hook schema validation', () => {
@@ -323,6 +326,9 @@ describe('Workflow hook schema validation', () => {
         { name: 'workflow-hotfix', generate: generateWorkflowHotfix },
         { name: 'workflow-explore', generate: generateWorkflowExplore },
         { name: 'workflow-edit-feature', generate: generateWorkflowEditFeature },
+        { name: 'workflow-tech-knowledge', generate: generateWorkflowTechKnowledge },
+        { name: 'workflow-product-knowledge', generate: generateWorkflowProductKnowledge },
+        { name: 'workflow-detect-conflicts', generate: generateWorkflowDetectConflicts },
     ];
 
     for (const { name, generate } of workflowGenerators) {

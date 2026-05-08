@@ -1,54 +1,55 @@
 import type { GovernanceConfig } from '../../../types.js';
 import {
-    getObservationQuestions,
-    getDeadCodeSignals,
-    getTestCoverageInstructions,
+  getObservationQuestions,
+  getDeadCodeSignals,
+  getTestCoverageInstructions,
 } from '../../../generators/audit-content.js';
+import { generateKnowledgeHealthCheck } from '../../../utils/knowledge-health-check.js';
 
 export function generateWorkflowAudit(c: GovernanceConfig): string {
-    const { profile, scan, project } = c;
-    const hookVer = c.hookVersion;
-    const featuresDir = profile.featuresDir || profile.sourceDir || 'src/features/';
-    const layerFlow = profile.layerFlow;
+  const { profile, scan, project } = c;
+  const hookVer = c.hookVersion;
+  const featuresDir = profile.featuresDir || profile.sourceDir || 'src/features/';
+  const layerFlow = profile.layerFlow;
 
-    const expectedHooks = [
-        'protect-files.kiro.hook',
-        'block-dangerous-commands.kiro.hook',
-        'pre-write-secrets-gate.kiro.hook',
-        'check-secrets.kiro.hook',
-        'session-continuity.kiro.hook',
-        'require-task-type.kiro.hook',
-        'check-feature-readme.kiro.hook',
-        'check-consistency.kiro.hook',
-        'check-file-size.kiro.hook',
-        'post-task-checklist.kiro.hook',
-    ].join(', ');
+  const expectedHooks = [
+    'protect-files.kiro.hook',
+    'block-dangerous-commands.kiro.hook',
+    'pre-write-secrets-gate.kiro.hook',
+    'check-secrets.kiro.hook',
+    'session-continuity.kiro.hook',
+    'require-task-type.kiro.hook',
+    'check-feature-readme.kiro.hook',
+    'check-consistency.kiro.hook',
+    'check-file-size.kiro.hook',
+    'post-task-checklist.kiro.hook',
+  ].join(', ');
 
-    const highRisk = scan.highRiskFiles.length
-        ? scan.highRiskFiles.slice(0, 8).join(', ')
-        : 'none detected';
+  const highRisk = scan.highRiskFiles.length
+    ? scan.highRiskFiles.slice(0, 8).join(', ')
+    : 'none detected';
 
-    const detectedAtInit = [
-        profile.stateFramework && `state: ${profile.stateFramework}`,
-        profile.diFramework && profile.diFramework !== 'N/A' && `DI: ${profile.diFramework}`,
-        scan.detectedORM && `ORM: ${scan.detectedORM}`,
-        scan.detectedTestFramework && `tests: ${scan.detectedTestFramework}`,
-        scan.detectedLinter && `linter: ${scan.detectedLinter}`,
-        scan.detectedFormatter && `formatter: ${scan.detectedFormatter}`,
-        scan.detectedRouter && `router: ${scan.detectedRouter}`,
-    ].filter(Boolean).join(' · ') || 'standard';
+  const detectedAtInit = [
+    profile.stateFramework && `state: ${profile.stateFramework}`,
+    profile.diFramework && profile.diFramework !== 'N/A' && `DI: ${profile.diFramework}`,
+    scan.detectedORM && `ORM: ${scan.detectedORM}`,
+    scan.detectedTestFramework && `tests: ${scan.detectedTestFramework}`,
+    scan.detectedLinter && `linter: ${scan.detectedLinter}`,
+    scan.detectedFormatter && `formatter: ${scan.detectedFormatter}`,
+    scan.detectedRouter && `router: ${scan.detectedRouter}`,
+  ].filter(Boolean).join(' · ') || 'standard';
 
-    const layerNames = profile.layerNames?.length
-        ? profile.layerNames : layerFlow.split('→').map(s => s.trim());
-    const logicLayer = profile.layerLogic || layerNames[Math.floor(layerNames.length / 2)] || 'Service';
-    const dataLayer = profile.layerData || layerNames[layerNames.length - 1] || 'DataSource';
-    const uiLayer = profile.layerUI || layerNames[0] || 'Component';
+  const layerNames = profile.layerNames?.length
+    ? profile.layerNames : layerFlow.split('→').map(s => s.trim());
+  const logicLayer = profile.layerLogic || layerNames[Math.floor(layerNames.length / 2)] || 'Service';
+  const dataLayer = profile.layerData || layerNames[layerNames.length - 1] || 'DataSource';
+  const uiLayer = profile.layerUI || layerNames[0] || 'Component';
 
-    const observationQuestions = getObservationQuestions(c);
-    const deadCodeSignals = getDeadCodeSignals(c);
-    const testCoverage = getTestCoverageInstructions(c);
+  const observationQuestions = getObservationQuestions(c);
+  const deadCodeSignals = getDeadCodeSignals(c);
+  const testCoverage = getTestCoverageInstructions(c);
 
-    const prompt = `# workflow-audit — Project Truth Check
+  const prompt = `# workflow-audit — Project Truth Check
 
 > **Project:** ${project.appName}
 > **Stack:** ${profile.stackDisplay}
@@ -316,7 +317,7 @@ DEAD CODE CANDIDATE: <path>
 \`\`\`
 
 ---
-
+${generateKnowledgeHealthCheck()}
 ## PHASE 6 — REPORT
 *(What was wrong, what's fixed, what Kiro will now do correctly)*
 
@@ -541,16 +542,16 @@ Populate \`.kiro/specs/<feature-name>/\` with requirements.md, design.md, tasks.
 Once a feature spec exists, \`spec-first-gate.kiro.hook\` will block edits to that feature's code until the spec is reviewed.
 `;
 
-    return JSON.stringify({
-        name: 'Audit',
-        version: c.hookVersion,
-        description: 'Full governance audit: 6 phases / 12 steps — observe codebase, compare to .kiro/steering/, fix drift, write .kiro/audit-report.md',
-        when: {
-            type: 'userTriggered',
-        },
-        then: {
-            type: 'askAgent',
-            prompt,
-        },
-    }, null, 2) + '\n';
+  return JSON.stringify({
+    name: 'Audit',
+    version: c.hookVersion,
+    description: 'Full governance audit: 6 phases / 12 steps — observe codebase, compare to .kiro/steering/, fix drift, write .kiro/audit-report.md',
+    when: {
+      type: 'userTriggered',
+    },
+    then: {
+      type: 'askAgent',
+      prompt,
+    },
+  }, null, 2) + '\n';
 }

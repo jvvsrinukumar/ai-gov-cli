@@ -1,10 +1,12 @@
+
 # AI Product Intelligence Layer (Knowledge Hub)
 
 ## Proposal & Design Document
 
-> **Status:** Proposal (Brainstorming Complete)
+> **Status:** Shipped — all 5 phases implemented in v17.2.0
 > **Audience:** Framework maintainers, team leads, contributors
 > **Scope:** New capability for the ai-gov governance framework
+> **See:** [`knowledge_hub_guide.md`](./knowledge_hub_guide.md) for the shipped documentation with examples
 
 ---
 

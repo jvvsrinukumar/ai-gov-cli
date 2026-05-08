@@ -1,21 +1,20 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleCommand } from '../../../utils/knowledge-preamble.js';
 
 export function generateRefactorCommand(c: GovernanceConfig): string {
-    const { profile } = c;
-    const testCmd = profile.testCmd || 'run tests';
-    const stackDisplay = profile.stackDisplay;
-    const layerFlow = profile.layerFlow;
+  const { profile } = c;
+  const testCmd = profile.testCmd || 'run tests';
+  const stackDisplay = profile.stackDisplay;
+  const layerFlow = profile.layerFlow;
 
-    return `# /refactor — Refactor (Plan Mode · 1 Gate · Tests After Gate)
+  return `# /refactor — Refactor (Plan Mode · 1 Gate · Tests After Gate)
 
 **Stack:** ${stackDisplay}
 **Layer flow:** ${layerFlow}
 
 > Read and map impact in plan mode. One gate before any file is written or command is run.
 > Tests run immediately after the gate — before refactoring begins.
-
----
-
+${generateKnowledgePreambleCommand()}
 ## STEP 1 — Enter Plan Mode
 
 Call \`EnterPlanMode\` immediately. No files written, no bash commands run until the gate is passed.

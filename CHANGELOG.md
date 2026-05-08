@@ -7,6 +7,21 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.2.0] — 2026-05-07
+
+### Added — Knowledge Hub (5 phases)
+
+- **Phase 1 — Extract:** `/tech-knowledge` and `/product-knowledge` slash commands (Claude Code) + `workflow-tech-knowledge` and `workflow-product-knowledge` hooks (Kiro). On-demand codebase extraction to `knowledge/tech-[scope].md` and `knowledge/product-[scope].md`. Stack-adaptive reading strategies for Angular, React, Flutter, Kotlin, SwiftUI, Python, Java, NestJS, and Node.js. All entries tagged `[INFERRED]` until human-promoted.
+- **Phase 2 — Context Builder:** Knowledge preamble injected into `/new-feature`, `/edit-feature`, `/fix`, `/explore`, `/refactor`, `/assess` (Claude Code) and equivalent Kiro workflow hooks. AI reads `knowledge/` before acting — slug-matched from `$ARGUMENTS` with overview fallback.
+- **Phase 3 — Silent Capture:** After Gate 1 approval in `/new-feature` and `/edit-feature`, AI silently extracts `[CONFIRMED]` entries from approved requirements and merges them into `knowledge/product-[slug].md`. Merge rules: `[CONFIRMED]` entries never overwritten; `[INFERRED]` entries upgraded when confirmed; new entries appended.
+- **Phase 4 — Drift Detection:** `/audit` and `workflow-audit` include a Knowledge Health Check section. Classifies each entry as Current / `[STALE]` / `[UNVERIFIABLE]`. Read-only — reports only, never modifies knowledge files.
+- **Phase 5 — Conflict Detection:** `/detect-conflicts` (Claude Code) and `workflow-detect-conflicts` (Kiro). Cross-feature conflict detection across all `knowledge/product-*.md` files. Writes decision inbox to `knowledge/conflicts/[slug-a]-vs-[slug-b].md`. Four conflict types: permission, domain object, business state, flow assumption. Conservative threshold — only flags clear contradictions. Resolution tracking with `[x] Resolved` markers.
+
+### Added — Documentation
+- `docs/knowledge_hub_guide.md` — shipped guide with full examples for Claude Code and Kiro, confidence model reference, team workflow patterns, stack-specific examples.
+
+---
+
 ## [17.1.4] — 2026-05-07
 
 ### Changed

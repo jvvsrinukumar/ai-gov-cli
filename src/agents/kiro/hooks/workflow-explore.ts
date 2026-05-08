@@ -1,20 +1,21 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleHook } from '../../../utils/knowledge-preamble.js';
 
 export function generateWorkflowExplore(c: GovernanceConfig): string {
-    const stackDisplay = c.profile.stackDisplay;
-    const sourceDir = c.profile.sourceDir || 'src/';
-    const layerFlow = c.profile.layerFlow;
+  const stackDisplay = c.profile.stackDisplay;
+  const sourceDir = c.profile.sourceDir || 'src/';
+  const layerFlow = c.profile.layerFlow;
 
-    return JSON.stringify({
-        name: 'Explore',
-        version: c.hookVersion,
-        description: 'Read-only codebase exploration — understand structure without changing anything',
-        when: {
-            type: 'userTriggered',
-        },
-        then: {
-            type: 'askAgent',
-            prompt: `EXPLORE — Read-only codebase exploration for ${stackDisplay}.
+  return JSON.stringify({
+    name: 'Explore',
+    version: c.hookVersion,
+    description: 'Read-only codebase exploration — understand structure without changing anything',
+    when: {
+      type: 'userTriggered',
+    },
+    then: {
+      type: 'askAgent',
+      prompt: `EXPLORE — Read-only codebase exploration for ${stackDisplay}.
 
 Stack: ${stackDisplay}
 Layer flow: ${layerFlow}
@@ -35,8 +36,7 @@ Do not read any files yet. Ask:
  — A dependency (e.g. 'what uses the payment service')"
 
 Use the user's answer to scope exactly what to read. Do not read files unrelated to the question.
-
----
+${generateKnowledgePreambleHook()}
 
 ## STEP 1 — READ RELEVANT FILES
 
@@ -89,6 +89,6 @@ Potential concerns:
 \`\`\`
 
 Keep the report factual. Do not recommend changes — that is a Refactor or Fix workflow.`,
-        },
-    }, null, 2) + '\n';
+    },
+  }, null, 2) + '\n';
 }

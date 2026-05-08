@@ -1,4 +1,5 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleHook } from '../../../utils/knowledge-preamble.js';
 
 export function generateWorkflowFix(c: GovernanceConfig): string {
     const stackDisplay = c.profile.stackDisplay;
@@ -41,8 +42,7 @@ If nothing found:
    — File or feature area (if known)"
 
 Do not ask follow-up questions. Use whatever the user gives you to proceed.
-
----
+${generateKnowledgePreambleHook()}
 
 ## STEP 1 — REPRODUCE
 

@@ -1,20 +1,19 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleCommand } from '../../../utils/knowledge-preamble.js';
 
 export function generateFixCommand(c: GovernanceConfig): string {
-    const { profile } = c;
-    const testCmd = profile.testCmd || 'run tests';
-    const stackDisplay = profile.stackDisplay;
+  const { profile } = c;
+  const testCmd = profile.testCmd || 'run tests';
+  const stackDisplay = profile.stackDisplay;
 
-    return `# /fix — Bug Fix (Plan Mode · 1 Gate)
+  return `# /fix — Bug Fix (Plan Mode · 1 Gate)
 
 **Stack:** ${stackDisplay}
 
 > Read and diagnose in plan mode. One gate before any file is written.
 > "The app doesn't have X" is not a bug — use \`/new-feature\` instead.
 > "This code is messy" is not a bug — use \`/refactor\` instead.
-
----
-
+${generateKnowledgePreambleCommand()}
 ## STEP 1 — Enter Plan Mode
 
 Call \`EnterPlanMode\` immediately. No files written until the developer approves the proposed fix.

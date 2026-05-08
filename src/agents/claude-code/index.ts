@@ -31,6 +31,9 @@ import { generateRefactorCommand } from './commands/refactor.js';
 import { generateHotfixCommand } from './commands/hotfix.js';
 import { generateExploreCommand } from './commands/explore.js';
 import { generateAssessCommand } from './commands/assess.js';
+import { generateTechKnowledgeCommand } from './commands/tech-knowledge.js';
+import { generateProductKnowledgeCommand } from './commands/product-knowledge.js';
+import { generateDetectConflictsCommand } from './commands/detect-conflicts.js';
 
 export function generateClaudeCode(config: GovernanceConfig): void {
     console.log('');
@@ -130,6 +133,9 @@ export function generateClaudeCode(config: GovernanceConfig): void {
     safeWrite(join(dir, '.claude', 'commands', 'hotfix.md'), generateHotfixCommand(config), opts);
     safeWrite(join(dir, '.claude', 'commands', 'explore.md'), generateExploreCommand(config), opts);
     safeWrite(join(dir, '.claude', 'commands', 'assess.md'), generateAssessCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'tech-knowledge.md'), generateTechKnowledgeCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'product-knowledge.md'), generateProductKnowledgeCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'detect-conflicts.md'), generateDetectConflictsCommand(config), opts);
 
     log.section('Spec templates:');
     generateSpecTemplates(config, opts);
@@ -184,6 +190,9 @@ export function upgradeClaudeCode(config: GovernanceConfig, opts: WriteOptions, 
     safeWrite(join(cmdDir, 'hotfix.md'), generateHotfixCommand(config), opts);
     safeWrite(join(cmdDir, 'explore.md'), generateExploreCommand(config), opts);
     safeWrite(join(cmdDir, 'assess.md'), generateAssessCommand(config), opts);
+    safeWrite(join(cmdDir, 'tech-knowledge.md'), generateTechKnowledgeCommand(config), opts);
+    safeWrite(join(cmdDir, 'product-knowledge.md'), generateProductKnowledgeCommand(config), opts);
+    safeWrite(join(cmdDir, 'detect-conflicts.md'), generateDetectConflictsCommand(config), opts);
 
     log.section('Upgrading .claude/CLAUDE.md:');
     safeWrite(join(dir, '.claude', 'CLAUDE.md'), generateMasterClaudeMd(config), opts);

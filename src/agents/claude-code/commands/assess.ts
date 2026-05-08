@@ -1,72 +1,73 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleCommand } from '../../../utils/knowledge-preamble.js';
 
 function getAssessObservationGuide(c: GovernanceConfig): string {
-    const { profile } = c;
-    const sourceDir = profile.sourceDir || 'src/';
+  const { profile } = c;
+  const sourceDir = profile.sourceDir || 'src/';
 
-    const stackSpecific: Record<string, string> = {
-        flutter: `- Check \`pubspec.yaml\` for dependency versions and SDK constraints
+  const stackSpecific: Record<string, string> = {
+    flutter: `- Check \`pubspec.yaml\` for dependency versions and SDK constraints
 - Count \`.dart\` files per directory under \`lib/\`
 - Check for dual-zone patterns: \`lib/screens/\` (legacy) vs \`lib/features/\` (clean arch)
 - Look for generated files: \`.g.dart\`, \`.freezed.dart\`, \`.chopper.dart\` — are source files still present?
 - Check \`test/\` structure: mirrors \`lib/\` or flat?`,
 
-        react: `- Check \`package.json\` for dependency versions — note any pinned to major versions 2+ behind current
+    react: `- Check \`package.json\` for dependency versions — note any pinned to major versions 2+ behind current
 - Is this Next.js? Check for \`next.config.js/ts\`. If yes: App Router (\`app/\`) or Pages Router (\`pages/\`) or both?
 - Count components per directory under \`${sourceDir}\`
 - Check for barrel files (\`index.ts\`) that re-export — are all re-exported symbols still used?
 - Look for \`__tests__/\` or \`.test.tsx\` files — ratio to source files`,
 
-        angular: `- Check \`package.json\` for Angular version — is it current LTS?
+    angular: `- Check \`package.json\` for Angular version — is it current LTS?
 - Is this an Nx workspace? Check for \`nx.json\` or \`libs/\` directory
 - Count components: standalone (\`standalone: true\`) vs NgModule-declared
 - Check for lazy-loaded routes vs eagerly loaded modules
 - Look for \`.spec.ts\` files — ratio to \`.component.ts\` and \`.service.ts\` files`,
 
-        nodejs: `- Check \`package.json\` for dependency versions — note any with "don't upgrade" comments
+    nodejs: `- Check \`package.json\` for dependency versions — note any with "don't upgrade" comments
 - Is this a monorepo? Check for \`workspaces\`, \`turbo.json\`, \`nx.json\`
 - Check \`tsconfig.json\` for module system (ESM vs CJS) and target version
 - Count route/controller files vs service files vs test files
 - Look for middleware chain in \`app.ts\`/\`server.ts\` — how many middleware registered?
 - Check for \`.env.example\` or config files — how is configuration managed?`,
 
-        python: `- Check \`pyproject.toml\` or \`requirements.txt\` for dependency versions
+    python: `- Check \`pyproject.toml\` or \`requirements.txt\` for dependency versions
 - Is this FastAPI, Django, or Flask? Check imports in main entry file
 - Count router/view files vs service files vs test files
 - Check for \`alembic/\` — are migrations up to date?
 - Look for \`Dockerfile\` — what Python version is pinned?
 - Check for type hints: are function signatures annotated?`,
 
-        kotlin: `- Check \`build.gradle.kts\` for dependency versions and Kotlin version
+    kotlin: `- Check \`build.gradle.kts\` for dependency versions and Kotlin version
 - Is this Jetpack Compose, XML layouts, or both?
 - Is this KMP (Kotlin Multiplatform)? Check for \`commonMain/\`
 - Count feature packages and their internal structure
 - Check for \`src/test/\` — ratio of test files to source files`,
 
-        swiftui: `- Check \`Package.swift\` or Xcode project for dependency versions
+    swiftui: `- Check \`Package.swift\` or Xcode project for dependency versions
 - Count View files vs ViewModel files vs Service files
 - Check for test targets — are they populated?
 - Look for \`@Observable\` (modern) vs \`ObservableObject\` (legacy) usage`,
 
-        java: `- Check \`pom.xml\` or \`build.gradle\` for dependency versions and Java version
+    java: `- Check \`pom.xml\` or \`build.gradle\` for dependency versions and Java version
 - Is this Spring Boot? What starters are used?
 - Is this multi-module? Count modules and their dependencies
 - Check for \`src/test/java/\` — ratio of test files to source files
 - Look for Lombok usage, MapStruct, or other annotation processors
 - Check for \`Dockerfile\` — what JDK version is pinned?`,
-    };
+  };
 
-    return stackSpecific[c.stack] || `- Read manifest files for dependency versions
+  return stackSpecific[c.stack] || `- Read manifest files for dependency versions
 - Count source files per directory under \`${sourceDir}\`
 - Check for test files — ratio to source files
 - Look for configuration and build files`;
 }
 
 function getDebtPatterns(c: GovernanceConfig): string {
-    const { profile } = c;
-    const sourceDir = profile.sourceDir || 'src/';
+  const { profile } = c;
+  const sourceDir = profile.sourceDir || 'src/';
 
-    return `**Pattern detection — check for each:**
+  return `**Pattern detection — check for each:**
 
 1. **Working Spaghetti** — Core modules with high file sizes (>500 lines), low test coverage, and last-modified dates >6 months ago. Nobody touches them because they work.
    Signal: \`git log --oneline -5 -- ${sourceDir}<core-dir>\` shows no recent commits.
@@ -85,16 +86,16 @@ function getDebtPatterns(c: GovernanceConfig): string {
 }
 
 export function generateAssessCommand(c: GovernanceConfig): string {
-    const { profile, project } = c;
-    const stackDisplay = profile.stackDisplay;
-    const sourceDir = profile.sourceDir || 'src/';
-    const _featuresDir = profile.featuresDir || sourceDir;
-    const layerFlow = profile.layerFlow;
+  const { profile, project } = c;
+  const stackDisplay = profile.stackDisplay;
+  const sourceDir = profile.sourceDir || 'src/';
+  const _featuresDir = profile.featuresDir || sourceDir;
+  const layerFlow = profile.layerFlow;
 
-    const observationGuide = getAssessObservationGuide(c);
-    const debtPatterns = getDebtPatterns(c);
+  const observationGuide = getAssessObservationGuide(c);
+  const debtPatterns = getDebtPatterns(c);
 
-    return `# /assess — Refactor vs Rewrite Decision Framework
+  return `# /assess — Refactor vs Rewrite Decision Framework
 
 > **Project:** ${project.appName}
 > **Stack:** ${stackDisplay}
@@ -120,9 +121,7 @@ Someone asked: "Should we rewrite this?" or "Should we refactor?" or "Why is eve
 This assessment answers that question with evidence. It reads the actual codebase, measures what is there, identifies which debt patterns apply, and recommends one of four options with a scoring matrix.
 
 By the end, the team has 11 documents that replace opinion with measurement.
-
----
-
+${generateKnowledgePreambleCommand()}
 ## PHASE 1 — MEASURE THE CODEBASE
 
 ### Step 1 — Directory map and file metrics

@@ -1,12 +1,12 @@
 # docs/ — Documentation Index
 
-**Current version:** 17.1.4 · **Updated:** 2026-05-07
+**Current version:** 17.2.0 · **Updated:** 2026-05-07
 
 All documentation files in this directory, with status and description.
 
 ---
 
-## Current (v17.1.4)
+## Current (v17.2.0)
 
 | File | Audience | Description |
 |------|----------|-------------|
@@ -20,7 +20,8 @@ All documentation files in this directory, with status and description.
 | [`runtime_requirements.md`](./runtime_requirements.md) | DevOps / CI | python3 and jq requirements per OS, Docker best practices, fallback logic, doctor output |
 | [`branching_and_ci_setup_guide.md`](./branching_and_ci_setup_guide.md) | Team leads | Git branching strategy, CI/CD pipeline setup, multi-platform PR checks, team announcement templates |
 | [`workspace_governance_guide.md`](./workspace_governance_guide.md) | Team leads | Governance across multiple repos and stacks, cross-team enforcement patterns |
-| [`knowledge_hub_proposal.md`](./knowledge_hub_proposal.md) | Product | Proposal for centralised knowledge hub feature (not yet implemented) |
+| [`knowledge_hub_guide.md`](./knowledge_hub_guide.md) | Developers, team leads | **Knowledge Hub — shipped guide.** All 5 phases with examples for Claude Code + Kiro. Confidence model, merge rules, conflict detection, team workflow. |
+| [`knowledge_hub_proposal.md`](./knowledge_hub_proposal.md) | Product | Original design proposal — superseded by knowledge_hub_guide.md (all phases shipped) |
 
 ---
 
@@ -37,7 +38,7 @@ All documentation files in this directory, with status and description.
 **I am setting up a multi-project workspace:**
 → [`workspace_setup_guide.md`](./workspace_setup_guide.md)
 
-**I need to upgrade an existing project to v17.1.4:**
+**I need to upgrade an existing project to v17.2.0:**
 → [`upgrade_guide.md`](./upgrade_guide.md)
 
 **My CI pipeline is failing on runtime checks:**
@@ -45,3 +46,6 @@ All documentation files in this directory, with status and description.
 
 **I want to understand what changed in this version:**
 → Root [`CHANGELOG.md`](../CHANGELOG.md)
+
+**I want to use the Knowledge Hub (extract, drift detection, conflict detection):**
+→ [`knowledge_hub_guide.md`](./knowledge_hub_guide.md)

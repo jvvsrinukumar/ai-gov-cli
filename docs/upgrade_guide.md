@@ -1,6 +1,6 @@
 # AI Governance Upgrade Guide
 
-**Version:** 17.1.4
+**Version:** 17.2.0
 **Command:** `ai-gov upgrade`
 
 This guide covers how to upgrade an existing project from an older ai-gov version to the latest hooks, commands, and steering files — without losing your team's customised content.
@@ -72,7 +72,7 @@ The regenerated `.claude/CLAUDE.md` contains your app name (extracted from the o
 
 ```bash
 git add .claude/   # or .kiro/ if using Kiro
-git commit -m "chore: upgrade ai-gov hooks to v17.1.4"
+git commit -m "chore: upgrade ai-gov hooks to v17.2.0"
 git push
 ```
 

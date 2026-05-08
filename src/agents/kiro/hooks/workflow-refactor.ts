@@ -1,20 +1,21 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleHook } from '../../../utils/knowledge-preamble.js';
 
 export function generateWorkflowRefactor(c: GovernanceConfig): string {
-    const stackDisplay = c.profile.stackDisplay;
-    const layerFlow = c.profile.layerFlow;
-    const testCmd = c.profile.testCmd || 'run tests';
+  const stackDisplay = c.profile.stackDisplay;
+  const layerFlow = c.profile.layerFlow;
+  const testCmd = c.profile.testCmd || 'run tests';
 
-    return JSON.stringify({
-        name: 'Refactor',
-        version: c.hookVersion,
-        description: 'Plan and execute a structural refactor with impact analysis gate',
-        when: {
-            type: 'userTriggered',
-        },
-        then: {
-            type: 'askAgent',
-            prompt: `REFACTOR — Plan-first refactor workflow for ${stackDisplay}.
+  return JSON.stringify({
+    name: 'Refactor',
+    version: c.hookVersion,
+    description: 'Plan and execute a structural refactor with impact analysis gate',
+    when: {
+      type: 'userTriggered',
+    },
+    then: {
+      type: 'askAgent',
+      prompt: `REFACTOR — Plan-first refactor workflow for ${stackDisplay}.
 
 Stack: ${stackDisplay}
 Layer flow: ${layerFlow}
@@ -40,8 +41,7 @@ If nothing found:
    — Goal: what the code should look like after"
 
 Do not ask follow-up questions. Use the user's answer to proceed directly to Step 1.
-
----
+${generateKnowledgePreambleHook()}
 
 ## STEP 1 — READ ALL FILES IN SCOPE
 
@@ -102,6 +102,6 @@ Rules:
 Run: ${testCmd}
 If pass: "Refactor complete. Tests pass. N files changed."
 If fail: diagnose which test broke and why before closing. Fix test failures caused by the refactor.`,
-        },
-    }, null, 2) + '\n';
+    },
+  }, null, 2) + '\n';
 }

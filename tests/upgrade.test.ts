@@ -99,7 +99,8 @@ describe('upgrade — hook regeneration', () => {
 
     test('regenerates slash commands', () => {
         const commands = ['audit.md', 'new-feature.md', 'edit-feature.md', 'fix.md',
-            'refactor.md', 'hotfix.md', 'explore.md'];
+            'refactor.md', 'hotfix.md', 'explore.md',
+            'tech-knowledge.md', 'product-knowledge.md', 'detect-conflicts.md'];
         for (const c of commands) {
             expect(existsSync(join(projectDir, '.claude', 'commands', c))).toBe(true);
         }
