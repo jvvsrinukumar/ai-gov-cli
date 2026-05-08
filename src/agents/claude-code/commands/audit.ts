@@ -10,7 +10,7 @@ export function generateAuditCommand(c: GovernanceConfig): string {
 
   const expectedHooks = [
     'protect-files.sh', 'block-dangerous-commands.sh', 'check-secrets.sh',
-    'session-continuity.sh', 'format-code.sh', 'analyze-code.sh',
+    'session-continuity.sh', 'require-task-type.sh', 'format-code.sh', 'analyze-code.sh',
     'check-feature-readme.sh', 'check-consistency.sh', 'check-file-size.sh',
     'post-task-checklist.sh',
   ].join(', ');

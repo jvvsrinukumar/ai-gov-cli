@@ -6,3 +6,4 @@ dist/
 
 # AI governance CLI
 ai_governance_v14*.sh
+onboard.sh

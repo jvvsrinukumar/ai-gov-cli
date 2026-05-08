@@ -1,12 +1,12 @@
 # docs/ — Documentation Index
 
-**Current version:** 17.1.4 · **Updated:** 2026-05-07
+**Current version:** 17.1.5 · **Updated:** 2026-05-08
 
 All documentation files in this directory, with status and description.
 
 ---
 
-## Current (v17.1.4)
+## Current (v17.1.5)
 
 | File | Audience | Description |
 |------|----------|-------------|
@@ -21,6 +21,7 @@ All documentation files in this directory, with status and description.
 | [`branching_and_ci_setup_guide.md`](./branching_and_ci_setup_guide.md) | Team leads | Git branching strategy, CI/CD pipeline setup, multi-platform PR checks, team announcement templates |
 | [`workspace_governance_guide.md`](./workspace_governance_guide.md) | Team leads | Governance across multiple repos and stacks, cross-team enforcement patterns |
 | [`knowledge_hub_proposal.md`](./knowledge_hub_proposal.md) | Product | Proposal for centralised knowledge hub feature (not yet implemented) |
+| [`governance-dashboard-plan.md`](./governance-dashboard-plan.md) | CEO / Engineering Leads | **Dashboard plan** — resources needed, architecture, implementation phases, cost, timeline, developer impact |
 
 ---
 
@@ -37,7 +38,7 @@ All documentation files in this directory, with status and description.
 **I am setting up a multi-project workspace:**
 → [`workspace_setup_guide.md`](./workspace_setup_guide.md)
 
-**I need to upgrade an existing project to v17.1.4:**
+**I need to upgrade an existing project to v17.1.5:**
 → [`upgrade_guide.md`](./upgrade_guide.md)
 
 **My CI pipeline is failing on runtime checks:**

@@ -172,6 +172,9 @@ function removeCIPlatform(projectDir: string, platform: string, dryRun: boolean)
             break;
         }
         case 'bitbucket': {
+            // v1: deletes the entire file. Safe when ai-gov generated it wholesale,
+            // but teams that added their own deploy steps to the same file will lose
+            // those steps. Surgical step-stripping can be added in v2 if reported.
             const path = join(projectDir, 'bitbucket-pipelines.yml');
             if (!existsSync(path)) {
                 log.warn('bitbucket-pipelines.yml — not found, skipping');

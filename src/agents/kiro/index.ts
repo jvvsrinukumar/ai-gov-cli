@@ -20,6 +20,7 @@ import { generateSpecFirstWorkflow } from '../../generators/spec-first-workflow.
 import { generateFeatureReadme } from '../../generators/feature-readme.js';
 import { generatePromptTemplates } from '../../generators/prompt-templates.js';
 import { generateMonorepoGovernance } from '../../generators/monorepo.js';
+import { generateNamingConventions } from '../../generators/naming-conventions.js';
 
 export function generateKiro(config: GovernanceConfig): void {
     console.log('');
@@ -64,6 +65,8 @@ export function generateKiro(config: GovernanceConfig): void {
         wrapWithFrontMatter(generateFeatureReadme(config)), opts);
     safeWrite(join(steeringDir, 'prompt-templates.md'),
         wrapWithFrontMatter(generatePromptTemplates(config)), opts);
+    safeWrite(join(steeringDir, 'naming-conventions.md'),
+        wrapWithFrontMatter(generateNamingConventions(config)), opts);
 
     // ── Hooks (JSON files) ───────────────────────────────────────────────
     log.section('Hooks:');
@@ -239,6 +242,7 @@ export function upgradeKiro(config: GovernanceConfig, opts: WriteOptions, force:
         safeWrite(join(steeringDir, 'coding-standards.md'), wrapWithFrontMatter(generateCodingStandards(config)), opts);
         safeWrite(join(steeringDir, 'workflow.md'), wrapWithFrontMatter(generateWorkflow(config)), opts);
         safeWrite(join(steeringDir, 'constitution.md'), wrapWithFrontMatter(generateConstitution(config)), opts);
+        safeWrite(join(steeringDir, 'naming-conventions.md'), wrapWithFrontMatter(generateNamingConventions(config)), opts);
     } else {
         log.info('Steering files kept (use --force to also upgrade them)');
     }

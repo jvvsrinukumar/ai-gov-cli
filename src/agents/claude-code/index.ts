@@ -19,6 +19,7 @@ import { generateWorkflow } from '../../generators/workflow.js';
 import { generateSpecFirstWorkflow } from '../../generators/spec-first-workflow.js';
 import { generateFeatureReadme } from '../../generators/feature-readme.js';
 import { generatePromptTemplates } from '../../generators/prompt-templates.js';
+import { generateNamingConventions } from '../../generators/naming-conventions.js';
 import { generateSpecTemplates } from '../../generators/spec-templates.js';
 import { generateExtensions } from './extensions.js';
 import { generateMonorepoGovernance } from '../../generators/monorepo.js';
@@ -114,6 +115,7 @@ export function generateClaudeCode(config: GovernanceConfig): void {
     safeWrite(join(dir, '.claude', 'steering', 'spec-first-workflow.md'), generateSpecFirstWorkflow(config), opts);
     safeWrite(join(dir, '.claude', 'steering', 'feature-readme.md'), generateFeatureReadme(config), opts);
     safeWrite(join(dir, '.claude', 'steering', 'prompt-templates.md'), generatePromptTemplates(config), opts);
+    safeWrite(join(dir, '.claude', 'steering', 'naming-conventions.md'), generateNamingConventions(config), opts);
 
     log.section('Hooks:');
     generateAllHooks(config, opts);
@@ -195,6 +197,7 @@ export function upgradeClaudeCode(config: GovernanceConfig, opts: WriteOptions, 
         safeWrite(join(steeringDir, 'coding-standards.md'), generateCodingStandards(config), opts);
         safeWrite(join(steeringDir, 'workflow.md'), generateWorkflow(config), opts);
         safeWrite(join(steeringDir, 'constitution.md'), generateConstitution(config), opts);
+        safeWrite(join(steeringDir, 'naming-conventions.md'), generateNamingConventions(config), opts);
     } else {
         log.info('Steering files kept (use --force to also upgrade them)');
     }

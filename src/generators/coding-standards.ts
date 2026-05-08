@@ -31,6 +31,8 @@ export function generateCodingStandards(c: GovernanceConfig): string {
 - **Constants:** ${p.namingConstants}
 - **Files:** ${p.namingFiles}
 
+> See \`naming-conventions.md\` for full file naming patterns by layer and directory conventions.
+
 ## Type Naming
 ${b.typeNaming}
 

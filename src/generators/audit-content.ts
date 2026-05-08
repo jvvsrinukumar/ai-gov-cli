@@ -382,12 +382,18 @@ export function getDeadCodeSignals(c: GovernanceConfig): string {
 
     case 'python':
       return `- Files with \`_old\`, \`_backup\`, \`_deprecated\`, \`_unused\`, \`_v1\`, \`_copy\` in filename
-- Router files (\`APIRouter\`) not included via \`include_router()\` in \`main.py\`, \`app.py\`, or a parent router
-- If Django: \`urls.py\` files not included via \`include()\` from the root \`urls.py\`
-- Service or repository files with no \`import\` from any router, view, task, or other service
+- Router files (\`APIRouter\`) not referenced by \`include_router()\` **anywhere in the codebase** —
+  check ALL .py files, not just \`main.py\`/\`app.py\` (nested router chains are valid:
+  a router included by any other router at any level is considered active)
+- If Django: \`urls.py\` files not referenced by \`include()\` **anywhere in the codebase** —
+  check ALL \`urls.py\` files at all nesting levels, not only from the root \`urls.py\`
+- Service or repository files with no reference anywhere in the codebase —
+  check all .py files including \`dependencies.py\`, \`deps.py\`, any DI container file,
+  Celery/background task files, AND function signatures using \`Depends()\` — these all count as active use
 - Empty directories under \`${sourceDir}\`
 - \`test_\` files whose corresponding source module file no longer exists
-- Pydantic schema files not referenced by any router, service, or other schema`;
+- Pydantic schema files not referenced as: import statement, \`response_model=\`,
+  type annotation, or base class in any .py file`;
 
     case 'kotlin':
       return `- Classes with \`Old\`, \`Backup\`, \`Deprecated\`, \`Unused\`, \`V1\`, \`Legacy\` in class name or filename
@@ -505,14 +511,18 @@ Note which approach is used — both are valid, but note if tests hit real DB in
     case 'python': return `
 **First — determine which scenario applies:**
 
-**SCENARIO A — No test files:**
-If \`tests/\` directory is absent and no \`test_*.py\` files exist:
-- Score: 0/100
+**SCENARIO A — No test files anywhere:**
+Apply SCENARIO A ONLY if ALL of the following are absent:
+- No \`tests/\` directory at the project root containing test files
+- No \`test_*.py\` files at the project root
+- If Django: no \`tests.py\` or \`tests/\` directory inside ANY app directory (check each app under \`apps/\` or project root apps)
+- No \`conftest.py\` at any level
+→ Only then: Score 0/100. Note: "No test infrastructure detected."
 
 **SCENARIO B — Some tests exist:**
 - FastAPI/Flask: for each router/blueprint file, check if a corresponding \`tests/test_<resource>.py\` exists.
-- Django: for each app in \`apps/\`, check if \`tests/\` or \`<app>/tests.py\` exists with test classes.
-Score: (modules with tests / total modules) × 100.
+- Django: for each app, check EITHER \`<app>/tests.py\` with at least one TestCase class OR \`<app>/tests/test_*.py\` files.
+Score: (modules/apps with tests / total modules/apps) × 100. PARTIAL = 50%.
 
 **SCENARIO C — Tests exist for everything:**
 Spot-check 3-5 test files:

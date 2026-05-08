@@ -94,6 +94,7 @@ Read and confirm each file exists and is non-empty:
 - \`.kiro/steering/coding-standards.md\`
 - \`.kiro/steering/workflow.md\`
 - \`.kiro/steering/ai-usage-policy.md\`
+- \`.kiro/steering/naming-conventions.md\`
 - \`.kiro/steering/spec-first-workflow.md\`
 - \`.kiro/steering/feature-readme.md\`
 - \`.kiro/steering/prompt-templates.md\`
@@ -113,7 +114,8 @@ Conditional hooks (may be absent by design):
 
 Workflow hooks — also check:
 \`workflow-audit.kiro.hook\`, \`workflow-new-feature.kiro.hook\`, \`workflow-fix.kiro.hook\`,
-\`workflow-refactor.kiro.hook\`, \`workflow-hotfix.kiro.hook\`, \`workflow-explore.kiro.hook\`
+\`workflow-refactor.kiro.hook\`, \`workflow-hotfix.kiro.hook\`, \`workflow-explore.kiro.hook\`,
+\`workflow-edit-feature.kiro.hook\`
 
 For each hook: file exists? ✓ · version matches \`${hookVer}\`? ✓ or STALE [found: X.Y.Z] · valid JSON? ✓
 
@@ -229,6 +231,11 @@ Read each \`.kiro/steering/\` file and compare every factual claim to the PROJEC
 **ai-usage-policy.md — check:**
 - Do the "New Feature Rules" or layer flow rules match the actual architecture observed in Step 5?
 - Does the high-risk files list reference files that actually exist?
+
+**naming-conventions.md — check:**
+- Do the naming rules match what files are actually named in the project?
+- Are class/function naming conventions consistent with what Step 5 observed?
+- Are any naming patterns described that don't exist in the actual codebase?
 
 **spec-first-workflow.md, feature-readme.md, prompt-templates.md — check:**
 - Are any file paths, directory names, or patterns referenced that don't exist in this project?
