@@ -18,6 +18,7 @@ import { runPRCheck } from './pr-check/index.js';
 import { runWorkspaceInit, discoverProjects } from './commands/workspace-init.js';
 import { runUpgrade } from './commands/upgrade.js';
 import { runOnboard } from './commands/onboard.js';
+import { runUninstall } from './commands/uninstall.js';
 import { detectAgent } from './agents/detect-agent.js';
 import { VERSION, HOOK_VERSION } from './constants.js';
 
@@ -391,6 +392,34 @@ program
             dryRun: options.dryRun,
             stack: options.stack,
             agent: options.agent,
+        });
+    });
+
+program
+    .command('uninstall')
+    .description('Remove ai-gov git hooks, CI workflow, or pr-check integration')
+    .option('--git-hooks', 'Remove .git/hooks/pre-commit and .git/hooks/commit-msg wrappers', false)
+    .option('--ci [platform]', 'Remove CI governance workflow (github|gitlab|bitbucket; auto-detects if omitted)')
+    .option('--pr-check', 'Remove pr-check job from CI (auto-detects platform)', false)
+    .option('--all', 'Remove git-hooks wrappers + all CI governance files', false)
+    .option('--dry-run', 'Preview what would be removed without making changes', false)
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .option('-a, --agent <agent>', 'Target agent (claude-code|kiro)')
+    .action((options) => {
+        const projectDir = resolve(options.dir);
+        if (!existsSync(projectDir)) {
+            log.error(`Directory not found: ${projectDir}`);
+            process.exit(1);
+        }
+        const agent = detectAgent(projectDir, options.agent);
+        runUninstall({
+            projectDir,
+            gitHooks: options.gitHooks,
+            ci: options.ci,
+            prCheck: options.prCheck,
+            all: options.all,
+            dryRun: options.dryRun,
+            agent,
         });
     });
 
