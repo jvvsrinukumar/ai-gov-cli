@@ -7,6 +7,23 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.1.6] — 2026-05-11
+
+### Fixed
+- **Audit now enforces mandatory gap fixes** — Previously, the audit would detect steering-vs-reality gaps but the AI agent would list them as "recommendations" without actually editing the files. The same gaps would reappear on every subsequent audit run. Step 7 now uses explicit mandatory language ("THIS STEP IS NOT A RECOMMENDATION. IT IS AN ACTION") and includes a verification step to confirm fixes were applied.
+
+### Added
+- **Execution rule 7** — "GAPS MUST BE FIXED, NOT JUST REPORTED. A gap that appears on two consecutive audit runs is a failure of the audit process itself."
+- **Execution rule 8** — Clear categorization: steering mismatches are fixed immediately; code-level issues go to developer-actions.md.
+- **Gap categorization guide** in Step 7 — Explicit rules for what gets fixed in steering (immediately) vs. what goes to developer-actions.md (security issues, architecture violations, missing infrastructure).
+- **Post-fix verification** — After writing fixes, the audit re-reads each modified file to confirm the gap is actually closed.
+
+### Changed
+- Phase 4 renamed from "FIX GOVERNANCE" to "FIX GOVERNANCE (MANDATORY — NOT OPTIONAL)" in both Claude Code and Kiro audit commands.
+- Step 6 → Step 7 transition strengthened: "Do NOT output a summary and stop. Do NOT say 'these need to be fixed' — FIX THEM NOW."
+
+---
+
 ## [17.1.4] — 2026-05-07
 
 ### Changed

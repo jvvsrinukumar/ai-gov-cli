@@ -7,7 +7,7 @@
 
 > The scaffolding layer for AI agent team adoption. When multiple developers use Claude Code or Kiro on the same codebase without shared rules, you get inconsistency at machine speed. This CLI fixes that.
 
-**Version:** 17.1.5 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
+**Version:** 17.1.6 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
 
 ---
 
