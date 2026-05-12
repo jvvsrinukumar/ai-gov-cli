@@ -24,7 +24,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install governance CLI
-        run: npm install -g ai-gov@17.1.6
+        run: npm install -g ai-gov@17.2.0
 
       - name: Run governance check
         run: ai-gov pr-check --base \${{ github.event.pull_request.base.ref }} --format github > /tmp/governance-report.md

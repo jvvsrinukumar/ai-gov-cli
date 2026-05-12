@@ -89,6 +89,36 @@ export function scanFlutter(
         scan.detectedI18N = scan.detectedI18N || 'flutter_localizations';
     }
 
+    // Test framework — flutter_test is always present in any Flutter project
+    if (pubspecHas(projectDir, 'flutter_test')) {
+        scan.detectedTestFramework = 'flutter_test';
+        log.detected('Tests: flutter_test');
+    }
+    // Has tests — test/ directory with actual test files
+    if (existsSync(join(projectDir, 'test'))) {
+        scan.detectedHasTests = true;
+        log.detected('Test dir detected');
+    }
+
+    // Linter — check common Flutter lint packages, fall back to analysis_options.yaml presence
+    if (pubspecHas(projectDir, 'very_good_analysis')) {
+        scan.detectedLinter = 'very_good_analysis';
+        scan.detectedHasLinterConfig = fileExists(projectDir, 'analysis_options.yaml');
+        log.detected('Linter: very_good_analysis');
+    } else if (pubspecHas(projectDir, 'custom_lint')) {
+        scan.detectedLinter = 'custom_lint';
+        scan.detectedHasLinterConfig = fileExists(projectDir, 'analysis_options.yaml');
+        log.detected('Linter: custom_lint');
+    } else if (pubspecHas(projectDir, 'flutter_lints') || fileExists(projectDir, 'analysis_options.yaml')) {
+        scan.detectedLinter = 'flutter_lints';
+        scan.detectedHasLinterConfig = fileExists(projectDir, 'analysis_options.yaml');
+        log.detected('Linter: flutter_lints');
+    }
+
+    // Formatter — dart format is the built-in Dart formatter, always available
+    scan.detectedFormatter = 'dart format';
+    scan.detectedHasFormatterConfig = true;
+
     // Mason
     if (fileExists(projectDir, 'mason.yaml')) {
         scan.detectedMason = true; scan.scaffoldTool = 'Mason';

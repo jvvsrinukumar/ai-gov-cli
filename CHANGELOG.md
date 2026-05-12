@@ -7,6 +7,30 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.2.0] — 2026-05-12
+
+### Added
+- **`ai-gov project init` command** — New CLI subcommand that scaffolds complete projects with governance applied from day one. Supports Flutter and Next.js via an extensible adapter pattern with self-registration.
+- **Adapter Registry** — Stack-specific adapters self-register on import; adding a new stack requires only creating an adapter file.
+- **Flutter Adapter** — Scaffolds clean-architecture Flutter projects with BLoC/Cubit, Dio, GetIt, GoRouter, FVM, Mason bricks, multi-service API config, and architecture tests.
+- **Next.js Adapter** — Scaffolds Next.js projects (frontend-only or full-stack) with configurable package manager, router, styling, state management, auth, database, and API style.
+- **`buildGovernanceConfig` pure function** — Exported, unit-testable function for governance config construction without I/O.
+- **`validateName` on `StackAdapter`** — Each adapter now exposes a `validateName(name): string | true` method used by the interactive prompt to reject invalid names before scaffolding begins.
+- **Property-based tests** — 18 correctness properties validated via fast-check (100 iterations each) covering registry invariants, naming validation, scaffold completeness, dependency inclusion, and config mapping.
+- **`'next'` Stack type** — Added as a distinct value in the Stack union, with its own profile inheriting from React with Next.js-specific overrides.
+- **Workspace safety** — All projects created via `project init` use `conflictMode: 'keep'` to prevent accidental governance overwrites.
+
+### Fixed
+- **`displayName` with apostrophe breaks generated code** — `displayName` was interpolated raw into single-quoted string literals in generated TypeScript (`layout.tsx` metadata) and Dart (`MaterialApp title`). A display name like "McDonald's" produced a syntax error in the scaffolded project. Added `escSQ` helper in both template modules that escapes backslashes and single quotes before injection.
+- **Interactive name validation was bypassed** — `collectCommonAnswers` was called with `() => true` in all three branches of `runProjectInit`, including the fully-interactive branch where the entered name is actually used. Invalid names (e.g. `MyBadName` for Flutter) were accepted and then caused a confusing `flutter create` failure. The fully-interactive branch now passes `adapter.validateName` to enforce stack-specific naming rules at prompt time.
+- **Double-prompt bug** — Flutter and Next.js adapters no longer re-call `collectCommonAnswers()` inside `runPrompts()`, preventing duplicate interactive prompts.
+- **27 lint errors** — Removed unnecessary `\$` escapes in Dart template strings and fixed unused variable in orchestrator.
+
+### Changed
+- DummyAdapter excluded from production build via `tsconfig.json` exclude (test-only, never shipped).
+
+---
+
 ## [17.1.6] — 2026-05-11
 
 ### Fixed
