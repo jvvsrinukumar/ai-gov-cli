@@ -21,6 +21,7 @@ export function loadBaseProfile(stack: Stack): BaseProfile {
         case 'kotlin': return { ...base, ...kotlinProfile() };
         case 'nodejs': return { ...base, ...nodejsProfile() };
         case 'react': return { ...base, ...reactProfile() };
+        case 'next': return { ...base, ...reactProfile(), ...nextProfileOverrides() };
         case 'angular': return { ...base, ...angularProfile() };
         case 'swiftui': return { ...base, ...swiftuiProfile() };
         case 'python': return { ...base, ...pythonProfile() };
@@ -251,5 +252,13 @@ function javaProfile(): Partial<BaseProfile> {
         rmBlockDirs: 'src/',
         generatedExts: '.java',
         generatedPatterns: '*.generated.java *_.java',
+    };
+}
+
+function nextProfileOverrides(): Partial<BaseProfile> {
+    return {
+        stackDisplay: 'Next.js',
+        buildCmd: 'npm run build',
+        runCmd: 'npm run dev',
     };
 }

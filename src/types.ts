@@ -1,4 +1,4 @@
-export type Stack = 'flutter' | 'kotlin' | 'nodejs' | 'react' | 'angular' | 'swiftui' | 'python' | 'java';
+export type Stack = 'flutter' | 'kotlin' | 'nodejs' | 'react' | 'next' | 'angular' | 'swiftui' | 'python' | 'java';
 
 export type Agent = 'claude-code' | 'kiro';
 

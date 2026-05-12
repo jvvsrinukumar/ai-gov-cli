@@ -7,7 +7,7 @@
 
 > The scaffolding layer for AI agent team adoption. When multiple developers use Claude Code or Kiro on the same codebase without shared rules, you get inconsistency at machine speed. This CLI fixes that.
 
-**Version:** 17.1.6 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
+**Version:** 17.2.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
 
 ---
 
@@ -34,6 +34,7 @@ npx ai-gov doctor
 | **Claude Code** | [Step 1 — Claude Code setup](#step-1--set-up-the-governance-framework) · [Full Claude Code guide](docs/claude_code_setup_guide.md) |
 | **Kiro** | [Kiro Setup](#kiro-setup-alternative-to-step-1) · [Full Kiro guide](docs/kiro_setup_guide.md) |
 | **Both** | Run `init` once per agent — they don't conflict |
+| **Starting a new project** | [`ai-gov project init`](#ai-gov-project-init) — scaffolds from scratch with governance built-in |
 | **Multi-project workspace** | [Workspace setup](#ai-gov-workspace) · [Full workspace guide](docs/workspace_setup_guide.md) |
 
 ---
@@ -57,6 +58,7 @@ When one developer uses Claude Code, the output is fast and often good. When fiv
 | **Layer 1 — AI Steering** | `npx ai-gov init` | Generates Claude Code steering files, hooks, and spec templates in `.claude/`. Claude reads these automatically and follows your architecture rules. |
 | **Layer 2 — Git Hooks** | `npx ai-gov init --git-hooks` | Generates pre-commit and commit-msg bash scripts. Runs when any developer does `git commit`. Checks file size, secrets, TODOs, debug statements, and commit message format. |
 | **Layer 3 — CI + PR Check** | `npx ai-gov init --ci github` | Generates a CI pipeline that runs governance on every PR and posts results as a comment. Also available standalone: `npx ai-gov pr-check`. |
+| **New Project** | `npx ai-gov project init` | Scaffolds a brand-new project from scratch with governance applied from day one. Currently supports Flutter and Next.js — more stacks coming. |
 | **Workspace** | `npx ai-gov workspace` | Scans a workspace root, auto-discovers all sub-projects, runs per-project governance for each detected stack, and generates shared workspace-level steering files. Auto-detects monorepo vs multi-repo and installs git hooks accordingly. |
 | **Upgrade** | `npx ai-gov upgrade` | Re-generates hooks, commands, and CLAUDE.md for an existing project. Preserves team-specific steering files by default. Use `--force` to also upgrade steering files. |
 
@@ -804,6 +806,75 @@ ai-gov init --update-hooks
 ai-gov init --overwrite
 ```
 
+### `ai-gov project init`
+
+```bash
+ai-gov project init [options]
+```
+
+Scaffold a brand-new project with governance applied from day one. Unlike `ai-gov init` (which adds governance to an existing project), `project init` creates the entire project from scratch — directory structure, config files, dependencies, and governance — in one command.
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-t, --type <stack>` | Stack identifier (skip interactive selection) | interactive |
+| `-n, --name <name>` | App name (max 214 chars, must match stack naming convention) | interactive |
+| `-y, --yes` | Skip confirmation summary | false |
+| `--dry-run` | Scaffold without applying governance | false |
+| `-d, --dir <path>` | Parent directory for the new project | `process.cwd()` |
+
+**Currently supported stacks:**
+
+| Stack | Naming | What gets scaffolded |
+|-------|--------|---------------------|
+| `flutter` | snake_case (`my_app`) | Clean architecture with BLoC/Cubit, Dio, GetIt, GoRouter, FVM, Mason bricks, multi-service API config, architecture tests |
+| `next` | kebab-case (`my-app`) | Next.js with configurable router, styling, state management, auth, database, API style (frontend-only or full-stack) |
+
+More stacks coming soon — the adapter pattern means adding a new stack requires only creating an adapter file. No orchestrator changes needed.
+
+```bash
+# Interactive — guided wizard
+ai-gov project init
+
+# Non-interactive — specify everything
+ai-gov project init --type flutter --name my_app --yes
+
+# Next.js project in a specific directory
+ai-gov project init --type next --name my-dashboard --dir ~/projects --yes
+
+# Preview scaffold without governance
+ai-gov project init --type next --name my-app --dry-run --yes
+```
+
+**What happens:**
+
+1. Select stack (or provide `--type`)
+2. Collect common inputs: app name, display name, output directory, AI agent, git hooks, CI platform
+3. Collect stack-specific inputs (Flutter: services, endpoints, FVM version; Next.js: project type, package manager, styling, state, auth, database)
+4. Confirmation summary (skip with `--yes`)
+5. Scaffold project files (no shell commands)
+6. Post-setup: `git init`, dependency install, initial commit
+7. Apply governance (`runGovernance` with `conflictMode: 'keep'`)
+8. Install git hooks + CI config (if selected)
+
+**Workspace safety:** All projects created via `project init` use `conflictMode: 'keep'` — workspace-level commands (`ai-gov workspace`) will never overwrite governance files in these projects.
+
+**Adding to an existing workspace:**
+
+If you run `project init` inside a workspace that already has workspace-level governance (`.claude/steering/project-registry.md`), the new project gets its own per-project governance but the workspace layer doesn't know about it yet. After creating the project, re-run workspace to register it:
+
+```bash
+# 1. Create the new project inside your workspace
+ai-gov project init --type next --name my-dashboard --dir ./frontend
+
+# 2. Re-run workspace to pick up the new project
+ai-gov workspace --dir .
+
+# 3. (Optional) Update cross-project-rules.md if the new project
+#    has API contracts with existing projects
+```
+
+`ai-gov workspace` re-discovers all projects, updates `project-registry.md`, regenerates the workspace pre-commit hook, and appends workspace references to the new project's governance files.
+
 ### `ai-gov pr-check`
 
 ```bash
@@ -1536,11 +1607,18 @@ ai-governance/
 │   │   ├── git-hooks/                     <- git hook generators (agent-agnostic)
 │   │   └── ci/                            <- CI config generators (github/gitlab/bitbucket)
 │   ├── commands/
+│   │   ├── project-init.ts               <- orchestrator for `project init` (adapter pattern)
 │   │   ├── init-git-hooks.ts              <- hook detection + wrapper installation
 │   │   ├── init-ci.ts                     <- CI file writing
 │   │   ├── workspace-init.ts              <- workspace discovery + mono/multi-repo detection
 │   │   ├── upgrade.ts                     <- re-generate hooks/commands, preserve steering
 │   │   └── onboard.ts                     <- new developer setup (installs wrappers, verifies runtime)
+│   ├── stacks/                            <- project-init adapter system
+│   │   ├── adapter.ts                     <- StackAdapter interface + ScaffoldContext type
+│   │   ├── registry.ts                    <- adapter registry (self-registration pattern)
+│   │   ├── common-prompts.ts              <- shared wizard prompts (@inquirer/prompts)
+│   │   ├── flutter/                       <- Flutter adapter (scaffold, prompts, templates)
+│   │   └── next/                          <- Next.js adapter (scaffold, prompts, templates)
 │   ├── pr-check/
 │   │   ├── index.ts                       <- orchestrator
 │   │   ├── types.ts                       <- CheckResult, CheckItem
@@ -1552,7 +1630,7 @@ ai-governance/
 │       ├── file-helpers.ts                <- pkgHas, pubspecHas, gradleHas, pomHas
 │       ├── logger.ts                      <- colored console output
 │       └── tty.ts                         <- TTY detection + line reading
-├── tests/                                 <- 14 test files, 487 tests
+├── tests/                                 <- 24 test suites, 837 tests
 │   ├── agent-detection.test.ts
 │   ├── backward-compat.test.ts
 │   ├── cli-integration.test.ts
@@ -1564,9 +1642,20 @@ ai-governance/
 │   ├── kiro-integration.test.ts
 │   ├── kiro-steering.test.ts
 │   ├── pr-check.test.ts
+│   ├── project-init.test.ts              <- orchestrator + buildGovernanceConfig + CLI flags
+│   ├── project-init.property.test.ts     <- Property 18 (pure function correctness)
 │   ├── scanners.test.ts
+│   ├── uninstall.test.ts
 │   ├── upgrade.test.ts
 │   ├── workspace.test.ts
+│   ├── stacks/                            <- adapter property + unit tests
+│   │   ├── registry.test.ts
+│   │   ├── registry.property.test.ts
+│   │   ├── common-prompts.property.test.ts
+│   │   ├── flutter-adapter.test.ts
+│   │   ├── flutter-adapter.property.test.ts
+│   │   ├── next-adapter.test.ts
+│   │   └── next-adapter.property.test.ts
 │   └── fixtures/                          <- 10 minimal project fixtures per stack
 ├── docs/
 │   ├── INDEX.md                           <- docs navigation
@@ -1584,7 +1673,7 @@ ai-governance/
 └── jest.config.cjs
 ```
 
-**134 source files · ~14,700 lines of TypeScript · 487 tests across 14 suites**
+**134 source files · ~14,700 lines of TypeScript · 837 tests across 24 suites**
 
 ---
 

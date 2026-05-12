@@ -1,0 +1,1 @@
+# Excluded via tsconfig — dummy adapter is compiled out of dist/ at build time
