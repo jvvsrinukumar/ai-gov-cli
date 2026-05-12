@@ -1,6 +1,6 @@
 {
   "name": "ai-gov",
-  "version": "17.2.0",
+  "version": "17.3.0",
   "description": "AI Governance Framework for Claude Code & Kiro — scan-adaptive steering, hooks, and spec templates",
   "type": "module",
   "bin": {

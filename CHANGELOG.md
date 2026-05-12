@@ -7,6 +7,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.3.0] — 2026-05-12
+
+### Fixed
+- **Redundant prompts when `--name` provided** — Branches 1 and 2 of `runProjectInit` no longer show app name/display name/output directory prompts when those values are already supplied via CLI flags. Extracted `collectGovernanceAnswers()` for governance-only prompts (agent, git hooks, CI).
+
+### Changed
+- Version bump across all CI templates, docs, and constants.
+
+---
+
 ## [17.2.0] — 2026-05-12
 
 ### Added
