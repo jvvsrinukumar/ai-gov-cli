@@ -7,6 +7,21 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.4.0] — 2026-05-13
+
+### Added
+- **`/backlog` slash command** — Rewrite backlog generator that mines `docs/assessment/` for rebuild-able units, orders them by technical dependency, and formats them as `/new-feature`-ready story prompts. Marks where human input is required (priority, skip/keep decisions) but does not fill those in.
+  - **Project-level** (`src/agents/claude-code/commands/backlog.ts`): generates 5 output files in `docs/backlog/` — index, stories, combined-backlog, skip-list, phases. Uses BACK-/FRONT- story ID prefixes based on stack.
+  - **Workspace-level** (`src/generators/workspace/commands/backlog.ts`): generates 6 output files at workspace root `docs/backlog/` — adds backend-stories.md and frontend-stories.md with cross-project dependency mapping. Enforces Phase 0 (API Contract) → Phase 2 (Backend) → Phase 3 (Frontend) ordering. Supports mobile projects with dynamic phase numbering.
+- **`/backlog` written by both `generateClaudeCode` and `upgradeClaudeCode`** — existing projects get the command on upgrade without `--force`.
+- **`/backlog` in workspace generation** — `generateWorkspaceFiles` writes `backlog.md` for Claude Code workspaces (not Kiro — Claude Code only).
+- **87 tests** covering all stacks, assessment discovery, feature inventory, story format, output files, explicit boundaries, phase ordering, mobile edge cases, single-project workspaces, Kiro exclusion, and integration with `generateClaudeCode`/`generateWorkspaceFiles`.
+
+### Changed
+- Version bump across all CI templates, docs, and constants.
+
+---
+
 ## [17.3.1] — 2026-05-13
 
 ### Fixed

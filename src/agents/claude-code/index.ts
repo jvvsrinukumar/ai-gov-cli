@@ -32,6 +32,7 @@ import { generateRefactorCommand } from './commands/refactor.js';
 import { generateHotfixCommand } from './commands/hotfix.js';
 import { generateExploreCommand } from './commands/explore.js';
 import { generateAssessCommand } from './commands/assess.js';
+import { generateBacklogCommand } from './commands/backlog.js';
 
 export function generateClaudeCode(config: GovernanceConfig): void {
     console.log('');
@@ -132,6 +133,7 @@ export function generateClaudeCode(config: GovernanceConfig): void {
     safeWrite(join(dir, '.claude', 'commands', 'hotfix.md'), generateHotfixCommand(config), opts);
     safeWrite(join(dir, '.claude', 'commands', 'explore.md'), generateExploreCommand(config), opts);
     safeWrite(join(dir, '.claude', 'commands', 'assess.md'), generateAssessCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'backlog.md'), generateBacklogCommand(config), opts);
 
     log.section('Spec templates:');
     generateSpecTemplates(config, opts);
@@ -186,6 +188,7 @@ export function upgradeClaudeCode(config: GovernanceConfig, opts: WriteOptions, 
     safeWrite(join(cmdDir, 'hotfix.md'), generateHotfixCommand(config), opts);
     safeWrite(join(cmdDir, 'explore.md'), generateExploreCommand(config), opts);
     safeWrite(join(cmdDir, 'assess.md'), generateAssessCommand(config), opts);
+    safeWrite(join(cmdDir, 'backlog.md'), generateBacklogCommand(config), opts);
 
     log.section('Upgrading .claude/CLAUDE.md:');
     safeWrite(join(dir, '.claude', 'CLAUDE.md'), generateMasterClaudeMd(config), opts);

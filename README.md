@@ -7,7 +7,7 @@
 
 > The scaffolding layer for AI agent team adoption. When multiple developers use Claude Code or Kiro on the same codebase without shared rules, you get inconsistency at machine speed. This CLI fixes that.
 
-**Version:** 17.3.1 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
+**Version:** 17.4.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
 
 ---
 
@@ -154,7 +154,9 @@ your-project/
 │   │   ├── refactor.md                    <- /refactor — read spec, propose, then change
 │   │   ├── hotfix.md                      <- /hotfix — minimal urgent fix
 │   │   ├── explore.md                     <- /explore — read-only codebase questions
-│   │   └── audit.md                       <- /audit — full governance audit to docs/
+│   │   ├── audit.md                       <- /audit — full governance audit to docs/
+│   │   ├── assess.md                      <- /assess — rewrite assessment (11 docs)
+│   │   └── backlog.md                     <- /backlog — rewrite backlog from assessment
 │   └── extensions/
 │       ├── manifest.json
 │       ├── jira-sync/run.sh
@@ -1050,7 +1052,7 @@ git push
 **What always gets upgraded:**
 - `.claude/hooks/` — all 11 Claude Code hook scripts
 - `.claude/git-hooks/` — pre-commit.sh + 6 check scripts
-- `.claude/commands/` — all 7 slash commands
+- `.claude/commands/` — all 9 slash commands
 - `.claude/CLAUDE.md` — embedded rules (always must be current)
 
 **What is kept by default (use `--force` to overwrite):**
@@ -1391,6 +1393,61 @@ Writes the full report to `docs/governance-audit-YYYY-MM-DD.md`. This file is co
 
 ---
 
+### `/assess` — rewrite evaluation, 11 assessment docs
+
+**Trigger:** evaluating whether a legacy app should be rewritten, refactored, or left alone
+
+```
+/assess
+```
+
+Claude runs a full current-state analysis of the project — architecture, dependencies, technical debt, dead code, migration compatibility — and writes 11 structured assessment documents to `docs/assessment/`. The final output is a recommendation: Rewrite, Refactor, or Leave It.
+
+This is the prerequisite for `/backlog`. You must run `/assess` before generating rebuild stories.
+
+---
+
+### `/backlog` — rewrite backlog generator from assessment
+
+**Trigger:** after `/assess` completes, generate rebuild stories ordered by technical dependency
+
+```
+/backlog
+```
+
+Claude reads `docs/assessment/` (never source files directly), extracts feature units, maps API contracts from `cross-project-rules.md`, and generates dependency-ordered rebuild stories formatted as `/new-feature`-ready prompts.
+
+**What it produces** (project-level — 5 files in `docs/backlog/`):
+- `00_index.md` — summary, story counts, human review checklist
+- `stories.md` — all stories in dependency order
+- `combined-backlog.md` — table view with Priority and Status columns
+- `skip-list.md` — modules excluded (dead code from Doc 09)
+- `phases.md` — implementation phases with parallel-safe markers
+
+**What it produces** (workspace-level — 6 files in `docs/backlog/`):
+- `00_index.md` — per-project status table
+- `backend-stories.md` — backend stories in dependency order
+- `frontend-stories.md` — frontend stories with backend dependency notes
+- `combined-backlog.md` — cross-project table with Phase and Cross-project columns
+- `skip-list.md` — combined skip list from all projects
+- `phases.md` — workspace phases (Phase 0 API Contract → Phase 2 Backend → Phase 3 Frontend)
+
+**Key constraints:**
+- Read-only — does not modify source code or assessment docs
+- Does not assign business priority — marks as ⚠️ TBD for human to fill
+- Does not add new features — only extracts what exists today
+- Does not create specs — stories are prompts for `/new-feature`, which creates specs
+- Overwrites on re-run — regenerated from current assessments
+
+**Workflow:**
+```
+/assess → docs/assessment/ (11 docs)
+/backlog → docs/backlog/ (5-6 files)
+Pick a story → copy /new-feature prompt block → /new-feature
+```
+
+---
+
 ### Command routing — which command to use
 
 ```
@@ -1401,6 +1458,8 @@ Changing or extending something existing       →  /edit-feature
 Improving code structure (behaviour unchanged) →  /refactor
 Understanding the codebase                     →  /explore
 Periodic health check / governance review      →  /audit
+Evaluating a legacy app for rewrite            →  /assess
+Generating rebuild stories from assessment     →  /backlog
 ```
 
 **If in doubt between `/fix` and `/new-feature`:**
