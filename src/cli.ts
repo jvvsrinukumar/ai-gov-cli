@@ -25,9 +25,10 @@ import { getSupportedStackIds, getAdapter } from './stacks/registry.js';
 import { runProjectInit } from './commands/project-init.js';
 
 // Import adapter modules to trigger self-registration (Req 17.3, 17.4)
-// Order is deterministic: Flutter first, then Next.js
+// Order is deterministic: Flutter, React (Vite SPA), Next.js
 for (const mod of [
     './stacks/flutter/adapter.js',
+    './stacks/react/adapter.js',
     './stacks/next/adapter.js',
 ] as const) {
     try {

@@ -1,12 +1,12 @@
 # docs/ — Documentation Index
 
-**Current version:** 17.3.0 · **Updated:** 2026-05-12
+**Current version:** 17.3.1 · **Updated:** 2026-05-13
 
 All documentation files in this directory, with status and description.
 
 ---
 
-## Current (v17.3.0)
+## Current (v17.3.1)
 
 | File | Audience | Description |
 |------|----------|-------------|
@@ -22,6 +22,7 @@ All documentation files in this directory, with status and description.
 | [`workspace_governance_guide.md`](./workspace_governance_guide.md) | Team leads | Governance across multiple repos and stacks, cross-team enforcement patterns |
 | [`knowledge_hub_proposal.md`](./knowledge_hub_proposal.md) | Product | Proposal for centralised knowledge hub feature (not yet implemented) |
 | [`governance-dashboard-plan.md`](./governance-dashboard-plan.md) | CEO / Engineering Leads | **Dashboard plan** — resources needed, architecture, implementation phases, cost, timeline, developer impact |
+| [`developer-commands-token-guide.md`](./developer-commands-token-guide.md) | ai-gov maintainers | **Token consumption guide** — 3 input cases (Jira/ChatGPT/manual) × `/new-feature` + `/fix` + daily commands, problems identified, solution roadmap |
 
 ---
 
@@ -38,7 +39,7 @@ All documentation files in this directory, with status and description.
 **I am setting up a multi-project workspace:**
 → [`workspace_setup_guide.md`](./workspace_setup_guide.md)
 
-**I need to upgrade an existing project to v17.3.0:**
+**I need to upgrade an existing project to v17.3.1:**
 → [`upgrade_guide.md`](./upgrade_guide.md)
 
 **My CI pipeline is failing on runtime checks:**

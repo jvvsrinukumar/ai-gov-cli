@@ -59,27 +59,27 @@ afterAll(() => { jest.restoreAllMocks(); });
 // ─── Registry Tests ─────────────────────────────────────────────────────────
 
 describe('Registry (via DummyAdapter import)', () => {
-    // DummyAdapter self-registers with id 'react' on import
+    // DummyAdapter self-registers with id 'nodejs' on import
 
-    it('getAdapter returns the DummyAdapter for "react"', () => {
+    it('getAdapter returns the DummyAdapter for "nodejs"', () => {
         const { getAdapter } = require('../src/stacks/registry.js');
-        const adapter = getAdapter('react');
+        const adapter = getAdapter('nodejs');
         expect(adapter).toBeInstanceOf(DummyAdapter);
-        expect(adapter.id).toBe('react');
+        expect(adapter.id).toBe('nodejs');
     });
 
     it('getAllAdapters includes the DummyAdapter', () => {
         const { getAllAdapters } = require('../src/stacks/registry.js');
         const all = getAllAdapters();
-        const dummyFound = all.find((a: StackAdapter) => a.id === 'react');
+        const dummyFound = all.find((a: StackAdapter) => a.id === 'nodejs');
         expect(dummyFound).toBeDefined();
         expect(dummyFound).toBeInstanceOf(DummyAdapter);
     });
 
-    it('getSupportedStackIds includes "react"', () => {
+    it('getSupportedStackIds includes "nodejs"', () => {
         const { getSupportedStackIds } = require('../src/stacks/registry.js');
         const ids = getSupportedStackIds();
-        expect(ids).toContain('react');
+        expect(ids).toContain('nodejs');
     });
 
     it('getAdapter throws for unregistered stack with correct message', () => {
@@ -91,9 +91,9 @@ describe('Registry (via DummyAdapter import)', () => {
 
     it('registerAdapter throws on duplicate id with correct message', () => {
         const { registerAdapter } = require('../src/stacks/registry.js');
-        const duplicate = createMockAdapter('react');
+        const duplicate = createMockAdapter('nodejs');
         expect(() => registerAdapter(duplicate)).toThrow(
-            'Adapter already registered for stack: react'
+            'Adapter already registered for stack: nodejs'
         );
     });
 });
@@ -108,7 +108,7 @@ describe('buildGovernanceConfig', () => {
             const ctx = createTestContext();
             const config = buildGovernanceConfig(ctx, dummyAdapter, {});
             expect(config.stack).toBe(dummyAdapter.id);
-            expect(config.stack).toBe('react');
+            expect(config.stack).toBe('nodejs');
         });
 
         it('sets config.stack correctly for different adapters', () => {
@@ -271,7 +271,7 @@ describe('buildGovernanceConfig', () => {
         it('sets config.profile from loadBaseProfile(adapter.id)', () => {
             const ctx = createTestContext();
             const config = buildGovernanceConfig(ctx, dummyAdapter, {});
-            // DummyAdapter uses 'react' stack
+            // DummyAdapter uses 'nodejs' stack
             expect(config.profile).toBeDefined();
             expect(config.profile.stackDisplay).toBeTruthy();
         });
@@ -306,8 +306,8 @@ describe('DummyAdapter', () => {
     });
 
     it('has correct id, displayName, and nameHint', () => {
-        expect(adapter.id).toBe('react');
-        expect(adapter.displayName).toBe('React (Dummy)');
+        expect(adapter.id).toBe('nodejs');
+        expect(adapter.displayName).toBe('Node.js (Dummy)');
         expect(adapter.nameHint).toBe('kebab-case (e.g. my-app)');
     });
 
@@ -409,11 +409,11 @@ describe('Directory-already-exists guard (Req 13.4)', () => {
 
         const { runProjectInit } = require('../src/commands/project-init.js');
 
-        // The DummyAdapter is already registered (id: 'react')
+        // The DummyAdapter is already registered (id: 'nodejs')
         // Provide --type, --name, --yes, --dir to skip all prompts
         await expect(
             runProjectInit({
-                type: 'react',
+                type: 'nodejs',
                 name: 'existing-project',
                 yes: true,
                 dir: tmpDir,

@@ -6,11 +6,11 @@ import { registerAdapter } from '../registry.js';
 
 /**
  * Test-only DummyAdapter used for orchestrator integration testing.
- * Uses 'react' as its stack id since it's an existing valid Stack value.
+ * Uses 'nodejs' as its stack id — a valid Stack value with no production adapter.
  */
 export class DummyAdapter implements StackAdapter {
-    readonly id = 'react' as const;
-    readonly displayName = 'React (Dummy)';
+    readonly id = 'nodejs' as const;
+    readonly displayName = 'Node.js (Dummy)';
     readonly nameHint = 'kebab-case (e.g. my-app)';
 
     validateName(_name: string): string | true {

@@ -242,7 +242,7 @@ export async function runProjectInit(options: ProjectInitOptions): Promise<void>
     console.log(`    cd ${ctx.appName}`);
     if (adapter.id === 'flutter') {
         console.log('    fvm flutter run');
-    } else if (adapter.id === 'next') {
+    } else if (adapter.id === 'react' || adapter.id === 'next') {
         console.log('    npm run dev');
     } else {
         console.log(`    ${loadBaseProfile(adapter.id).runCmd || 'npm start'}`);

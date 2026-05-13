@@ -7,6 +7,17 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.3.1] — 2026-05-13
+
+### Fixed
+- **DummyAdapter registry collision** — Changed test-only DummyAdapter id from `'react'` to `'nodejs'` to avoid blocking the real ReactAdapter registration.
+- **Unused variable cleanup** — Removed unused `title` variable in `source-files.ts`; prefixed unused `ctx` parameter with `_ctx` in `vite-config.ts`.
+
+### Changed
+- Version bump across all CI templates, docs, and constants.
+
+---
+
 ## [17.3.0] — 2026-05-12
 
 ### Fixed
