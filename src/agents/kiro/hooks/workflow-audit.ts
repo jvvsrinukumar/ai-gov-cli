@@ -1,54 +1,54 @@
 import type { GovernanceConfig } from '../../../types.js';
 import {
-    getObservationQuestions,
-    getDeadCodeSignals,
-    getTestCoverageInstructions,
+  getObservationQuestions,
+  getDeadCodeSignals,
+  getTestCoverageInstructions,
 } from '../../../generators/audit-content.js';
 
 export function generateWorkflowAudit(c: GovernanceConfig): string {
-    const { profile, scan, project } = c;
-    const hookVer = c.hookVersion;
-    const featuresDir = profile.featuresDir || profile.sourceDir || 'src/features/';
-    const layerFlow = profile.layerFlow;
+  const { profile, scan, project } = c;
+  const hookVer = c.hookVersion;
+  const featuresDir = profile.featuresDir || profile.sourceDir || 'src/features/';
+  const layerFlow = profile.layerFlow;
 
-    const expectedHooks = [
-        'protect-files.kiro.hook',
-        'block-dangerous-commands.kiro.hook',
-        'pre-write-secrets-gate.kiro.hook',
-        'check-secrets.kiro.hook',
-        'session-continuity.kiro.hook',
-        'require-task-type.kiro.hook',
-        'check-feature-readme.kiro.hook',
-        'check-consistency.kiro.hook',
-        'check-file-size.kiro.hook',
-        'post-task-checklist.kiro.hook',
-    ].join(', ');
+  const expectedHooks = [
+    'protect-files.kiro.hook',
+    'block-dangerous-commands.kiro.hook',
+    'pre-write-secrets-gate.kiro.hook',
+    'check-secrets.kiro.hook',
+    'session-continuity.kiro.hook',
+    'require-task-type.kiro.hook',
+    'check-feature-readme.kiro.hook',
+    'check-consistency.kiro.hook',
+    'check-file-size.kiro.hook',
+    'post-task-checklist.kiro.hook',
+  ].join(', ');
 
-    const highRisk = scan.highRiskFiles.length
-        ? scan.highRiskFiles.slice(0, 8).join(', ')
-        : 'none detected';
+  const highRisk = scan.highRiskFiles.length
+    ? scan.highRiskFiles.slice(0, 8).join(', ')
+    : 'none detected';
 
-    const detectedAtInit = [
-        profile.stateFramework && `state: ${profile.stateFramework}`,
-        profile.diFramework && profile.diFramework !== 'N/A' && `DI: ${profile.diFramework}`,
-        scan.detectedORM && `ORM: ${scan.detectedORM}`,
-        scan.detectedTestFramework && `tests: ${scan.detectedTestFramework}`,
-        scan.detectedLinter && `linter: ${scan.detectedLinter}`,
-        scan.detectedFormatter && `formatter: ${scan.detectedFormatter}`,
-        scan.detectedRouter && `router: ${scan.detectedRouter}`,
-    ].filter(Boolean).join(' · ') || 'standard';
+  const detectedAtInit = [
+    profile.stateFramework && `state: ${profile.stateFramework}`,
+    profile.diFramework && profile.diFramework !== 'N/A' && `DI: ${profile.diFramework}`,
+    scan.detectedORM && `ORM: ${scan.detectedORM}`,
+    scan.detectedTestFramework && `tests: ${scan.detectedTestFramework}`,
+    scan.detectedLinter && `linter: ${scan.detectedLinter}`,
+    scan.detectedFormatter && `formatter: ${scan.detectedFormatter}`,
+    scan.detectedRouter && `router: ${scan.detectedRouter}`,
+  ].filter(Boolean).join(' · ') || 'standard';
 
-    const layerNames = profile.layerNames?.length
-        ? profile.layerNames : layerFlow.split('→').map(s => s.trim());
-    const logicLayer = profile.layerLogic || layerNames[Math.floor(layerNames.length / 2)] || 'Service';
-    const dataLayer = profile.layerData || layerNames[layerNames.length - 1] || 'DataSource';
-    const uiLayer = profile.layerUI || layerNames[0] || 'Component';
+  const layerNames = profile.layerNames?.length
+    ? profile.layerNames : layerFlow.split('→').map(s => s.trim());
+  const logicLayer = profile.layerLogic || layerNames[Math.floor(layerNames.length / 2)] || 'Service';
+  const dataLayer = profile.layerData || layerNames[layerNames.length - 1] || 'DataSource';
+  const uiLayer = profile.layerUI || layerNames[0] || 'Component';
 
-    const observationQuestions = getObservationQuestions(c);
-    const deadCodeSignals = getDeadCodeSignals(c);
-    const testCoverage = getTestCoverageInstructions(c);
+  const observationQuestions = getObservationQuestions(c);
+  const deadCodeSignals = getDeadCodeSignals(c);
+  const testCoverage = getTestCoverageInstructions(c);
 
-    const prompt = `# workflow-audit — Project Truth Check
+  const prompt = `# workflow-audit — Project Truth Check
 
 > **Project:** ${project.appName}
 > **Stack:** ${profile.stackDisplay}
@@ -69,6 +69,8 @@ export function generateWorkflowAudit(c: GovernanceConfig): string {
 > 6. **Do not judge patterns as legacy or modern.** Observe and record what is actually there.
 > 7. **IMPORTANT: Persist records go to \`.kiro/\` — NOT \`.claude/\`.** This project uses Kiro governance.
 > 8. **⚠️ THE AUDIT IS NOT COMPLETE UNTIL ALL THREE FILES ARE WRITTEN.** Printing the scorecard is NOT the end. You MUST write \`.kiro/audit-report.md\`, \`.kiro/dead-code.md\`, and \`.kiro/developer-actions.md\` before this audit is considered done. If you are running low on context, skip detail in earlier steps — do NOT skip the persist step.
+> 9. **GAPS MUST BE FIXED, NOT JUST REPORTED.** If Step 6 finds gaps, Step 7 MUST edit the steering files to close them. A gap that appears on two consecutive audit runs is a failure of the audit process itself. The audit's job is to leave the project with ZERO steering gaps when it finishes.
+> 10. **Code-level issues (security, architecture violations) that CANNOT be fixed by editing steering files go to developer-actions.md.** Everything else is fixed immediately in Step 7.
 
 ---
 
@@ -250,14 +252,23 @@ GAP: <steering file> says "<what it claims>"
      Impact: If Kiro reads this and then writes code, it will <specific wrong behaviour>
 \`\`\`
 
-> **After Step 6:** If NO gaps were found → say "Governance accurately describes this project. Proceeding to spec and dead code checks." If gaps found → proceed to Step 7 to fix them.
+> **After Step 6:** If NO gaps were found → say "Governance accurately describes this project. Proceeding to spec and dead code checks (Step 8)." and skip to Phase 5.
+> If gaps WERE found → proceed IMMEDIATELY to Step 7. Do NOT output a summary and stop. Do NOT say "these need to be fixed" — FIX THEM NOW in Step 7.
 
 ---
 
-## PHASE 4 — FIX GOVERNANCE
+## PHASE 4 — FIX GOVERNANCE (MANDATORY — NOT OPTIONAL)
 *(Update .kiro/steering/ to match reality — no approval needed)*
 
 ### Step 7 — Update steering files
+
+> ⚠️ **THIS STEP IS NOT A RECOMMENDATION. IT IS AN ACTION.**
+> You MUST open each steering file that has a gap and write the corrected content NOW.
+> Do NOT list fixes as "needed" or "recommended" — APPLY THEM IMMEDIATELY.
+> Do NOT ask for permission. Do NOT defer to a "developer-actions" list.
+> If a gap was found in Step 6, the corresponding steering file MUST be edited in this step.
+> **If you skip this step, the same gaps will appear on every future audit run — that is a bug, not a feature.**
+> **Steering fixes are ALWAYS safe** — they only change documentation to match what the code already does.
 
 Fix every gap identified in Step 6. Update directly — do not ask for permission.
 
@@ -267,6 +278,16 @@ Fix every gap identified in Step 6. Update directly — do not ask for permissio
 - If the project has multiple zones, add a Zone Rules section to both architecture.md and coding-standards.md
 - Use language that tells Kiro what to DO in each zone, not just that the zone exists
 - Do not judge one zone as better than another — describe what to do in each
+
+**Verification after Step 7:**
+After writing all fixes, re-read each modified file to confirm the gap text no longer appears.
+If a gap from Step 6 still exists after Step 7, you have a bug — fix it before proceeding.
+
+**Categorizing gaps — what goes WHERE:**
+- **Steering mismatch** (docs say X, code does Y) → FIX THE STEERING FILE in Step 7. Done.
+- **Code-level security issue** (hardcoded secrets, exposed credentials) → Add to developer-actions.md as \`auto\` type with CRITICAL priority. Also add a note to the relevant steering file (e.g., constitution.md: "Never hardcode API keys — use environment variables via config").
+- **Code-level architecture violation** (one module bypasses the pattern all others follow) → Add to developer-actions.md as \`decision\` type. The developer decides whether to refactor or accept the inconsistency.
+- **Missing infrastructure** (no tests, no CI, no specs) → Add to developer-actions.md as \`auto\` type. Kiro will auto-close when infrastructure appears.
 
 **Zone Rules format (if multi-zone project):**
 \`\`\`markdown
@@ -548,16 +569,16 @@ Populate \`.kiro/specs/<feature-name>/\` with requirements.md, design.md, tasks.
 Once a feature spec exists, \`spec-first-gate.kiro.hook\` will block edits to that feature's code until the spec is reviewed.
 `;
 
-    return JSON.stringify({
-        name: 'Audit',
-        version: c.hookVersion,
-        description: 'Full governance audit: 6 phases / 12 steps — observe codebase, compare to .kiro/steering/, fix drift, write .kiro/audit-report.md',
-        when: {
-            type: 'userTriggered',
-        },
-        then: {
-            type: 'askAgent',
-            prompt,
-        },
-    }, null, 2) + '\n';
+  return JSON.stringify({
+    name: 'Audit',
+    version: c.hookVersion,
+    description: 'Full governance audit: 6 phases / 12 steps — observe codebase, compare to .kiro/steering/, fix drift, write .kiro/audit-report.md',
+    when: {
+      type: 'userTriggered',
+    },
+    then: {
+      type: 'askAgent',
+      prompt,
+    },
+  }, null, 2) + '\n';
 }

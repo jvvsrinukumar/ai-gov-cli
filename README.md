@@ -7,7 +7,7 @@
 
 > The scaffolding layer for AI agent team adoption. When multiple developers use Claude Code or Kiro on the same codebase without shared rules, you get inconsistency at machine speed. This CLI fixes that.
 
-**Version:** 17.2.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
+**Version:** 17.6.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
 
 ---
 
@@ -34,6 +34,7 @@ npx ai-gov doctor
 | **Claude Code** | [Step 1 — Claude Code setup](#step-1--set-up-the-governance-framework) · [Full Claude Code guide](docs/claude_code_setup_guide.md) |
 | **Kiro** | [Kiro Setup](#kiro-setup-alternative-to-step-1) · [Full Kiro guide](docs/kiro_setup_guide.md) |
 | **Both** | Run `init` once per agent — they don't conflict |
+| **Starting a new project** | [`ai-gov project init`](#ai-gov-project-init) — scaffolds from scratch with governance built-in |
 | **Multi-project workspace** | [Workspace setup](#ai-gov-workspace) · [Full workspace guide](docs/workspace_setup_guide.md) |
 
 ---
@@ -57,6 +58,7 @@ When one developer uses Claude Code, the output is fast and often good. When fiv
 | **Layer 1 — AI Steering** | `npx ai-gov init` | Generates Claude Code steering files, hooks, and spec templates in `.claude/`. Claude reads these automatically and follows your architecture rules. |
 | **Layer 2 — Git Hooks** | `npx ai-gov init --git-hooks` | Generates pre-commit and commit-msg bash scripts. Runs when any developer does `git commit`. Checks file size, secrets, TODOs, debug statements, and commit message format. |
 | **Layer 3 — CI + PR Check** | `npx ai-gov init --ci github` | Generates a CI pipeline that runs governance on every PR and posts results as a comment. Also available standalone: `npx ai-gov pr-check`. |
+| **New Project** | `npx ai-gov project init` | Scaffolds a brand-new project from scratch with governance applied from day one. Currently supports Flutter and Next.js — more stacks coming. |
 | **Workspace** | `npx ai-gov workspace` | Scans a workspace root, auto-discovers all sub-projects, runs per-project governance for each detected stack, and generates shared workspace-level steering files. Auto-detects monorepo vs multi-repo and installs git hooks accordingly. |
 | **Upgrade** | `npx ai-gov upgrade` | Re-generates hooks, commands, and CLAUDE.md for an existing project. Preserves team-specific steering files by default. Use `--force` to also upgrade steering files. |
 
@@ -152,7 +154,9 @@ your-project/
 │   │   ├── refactor.md                    <- /refactor — read spec, propose, then change
 │   │   ├── hotfix.md                      <- /hotfix — minimal urgent fix
 │   │   ├── explore.md                     <- /explore — read-only codebase questions
-│   │   └── audit.md                       <- /audit — full governance audit to docs/
+│   │   ├── audit.md                       <- /audit — full governance audit to docs/
+│   │   ├── assess.md                      <- /assess — rewrite assessment (11 docs)
+│   │   └── backlog.md                     <- /backlog — rewrite backlog from assessment
 │   └── extensions/
 │       ├── manifest.json
 │       ├── jira-sync/run.sh
@@ -804,6 +808,75 @@ ai-gov init --update-hooks
 ai-gov init --overwrite
 ```
 
+### `ai-gov project init`
+
+```bash
+ai-gov project init [options]
+```
+
+Scaffold a brand-new project with governance applied from day one. Unlike `ai-gov init` (which adds governance to an existing project), `project init` creates the entire project from scratch — directory structure, config files, dependencies, and governance — in one command.
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `-t, --type <stack>` | Stack identifier (skip interactive selection) | interactive |
+| `-n, --name <name>` | App name (max 214 chars, must match stack naming convention) | interactive |
+| `-y, --yes` | Skip confirmation summary | false |
+| `--dry-run` | Scaffold without applying governance | false |
+| `-d, --dir <path>` | Parent directory for the new project | `process.cwd()` |
+
+**Currently supported stacks:**
+
+| Stack | Naming | What gets scaffolded |
+|-------|--------|---------------------|
+| `flutter` | snake_case (`my_app`) | Clean architecture with BLoC/Cubit, Dio, GetIt, GoRouter, FVM, Mason bricks, multi-service API config, architecture tests |
+| `next` | kebab-case (`my-app`) | Next.js with configurable router, styling, state management, auth, database, API style (frontend-only or full-stack) |
+
+More stacks coming soon — the adapter pattern means adding a new stack requires only creating an adapter file. No orchestrator changes needed.
+
+```bash
+# Interactive — guided wizard
+ai-gov project init
+
+# Non-interactive — specify everything
+ai-gov project init --type flutter --name my_app --yes
+
+# Next.js project in a specific directory
+ai-gov project init --type next --name my-dashboard --dir ~/projects --yes
+
+# Preview scaffold without governance
+ai-gov project init --type next --name my-app --dry-run --yes
+```
+
+**What happens:**
+
+1. Select stack (or provide `--type`)
+2. Collect common inputs: app name, display name, output directory, AI agent, git hooks, CI platform
+3. Collect stack-specific inputs (Flutter: services, endpoints, FVM version; Next.js: project type, package manager, styling, state, auth, database)
+4. Confirmation summary (skip with `--yes`)
+5. Scaffold project files (no shell commands)
+6. Post-setup: `git init`, dependency install, initial commit
+7. Apply governance (`runGovernance` with `conflictMode: 'keep'`)
+8. Install git hooks + CI config (if selected)
+
+**Workspace safety:** All projects created via `project init` use `conflictMode: 'keep'` — workspace-level commands (`ai-gov workspace`) will never overwrite governance files in these projects.
+
+**Adding to an existing workspace:**
+
+If you run `project init` inside a workspace that already has workspace-level governance (`.claude/steering/project-registry.md`), the new project gets its own per-project governance but the workspace layer doesn't know about it yet. After creating the project, re-run workspace to register it:
+
+```bash
+# 1. Create the new project inside your workspace
+ai-gov project init --type next --name my-dashboard --dir ./frontend
+
+# 2. Re-run workspace to pick up the new project
+ai-gov workspace --dir .
+
+# 3. (Optional) Update cross-project-rules.md if the new project
+#    has API contracts with existing projects
+```
+
+`ai-gov workspace` re-discovers all projects, updates `project-registry.md`, regenerates the workspace pre-commit hook, and appends workspace references to the new project's governance files.
+
 ### `ai-gov pr-check`
 
 ```bash
@@ -979,7 +1052,7 @@ git push
 **What always gets upgraded:**
 - `.claude/hooks/` — all 11 Claude Code hook scripts
 - `.claude/git-hooks/` — pre-commit.sh + 6 check scripts
-- `.claude/commands/` — all 7 slash commands
+- `.claude/commands/` — all 9 slash commands
 - `.claude/CLAUDE.md` — embedded rules (always must be current)
 
 **What is kept by default (use `--force` to overwrite):**
@@ -1011,6 +1084,53 @@ ai-gov doctor [-d <path>]
 ```
 
 Checks: CLAUDE.md exists, settings.json valid, all 11 hooks present, python3 or jq installed, git hooks wired, config.json schema valid. Exits with code 1 if neither python3 nor jq is available (hooks are unenforced).
+
+### `ai-gov mcp`
+
+MCP server governance — configure team tools (Jira, Figma, Zeplin, PostgreSQL, GitHub, Linear, Notion, Slack, Sentry) without committing tokens to git. Uses two-level token storage: global tokens (`~/.config/ai-gov/.env.mcp.global`) are set once per developer and shared across all projects; project tokens (`.env.mcp`) are per-repo.
+
+```bash
+ai-gov mcp init [options]
+ai-gov mcp onboard [options]
+ai-gov mcp validate [options]
+ai-gov mcp update-token --tool <id> [options]
+```
+
+| Subcommand | Who runs it | What it does |
+|------------|-------------|--------------|
+| `mcp init` | Team lead (once) | Interactive tool selection → writes `.mcp.json`, `.env.mcp.example`, `.envrc`, updates `.gitignore` |
+| `mcp onboard` | Each developer | Scope-aware token prompts → global tokens to `~/.config/ai-gov/.env.mcp.global`, project tokens to `.env.mcp` |
+| `mcp validate` | Developer or CI | Checks all required env vars are set (merges global + project), exits 0 or 1 |
+| `mcp update-token` | Developer | Re-prompts for one tool's tokens, writes to correct scope file |
+
+| Flag | Applies to | Description | Default |
+|------|-----------|-------------|---------|
+| `-d, --dir <path>` | All | Project directory | `process.cwd()` |
+| `--overwrite` | `init` | Re-init existing config without confirmation | false |
+| `--tool <id>` | `update-token` | Tool ID from catalog (e.g. `jira`, `figma`, `postgres`) | required |
+
+```bash
+# Team lead: set up MCP governance for the project
+npx ai-gov mcp init
+
+# Developer: set personal tokens (global tokens only prompted once across all projects)
+npx ai-gov mcp onboard
+
+# Verify all tokens are set
+npx ai-gov mcp validate
+
+# Rotate a single tool's token
+npx ai-gov mcp update-token --tool jira
+```
+
+**Key behaviors:**
+- Global-scoped tokens (Jira, Figma, GitHub, etc.) are set once and reused across all projects — no re-prompting
+- Project-scoped tokens (DATABASE_URL) are prompted per-project
+- OAuth tools (Notion, Slack, Sentry) require no tokens — authenticate via browser
+- Re-running `onboard` shows ✓ for already-set tokens and only prompts for missing ones
+- Custom entries manually added to `.mcp.json` are never touched by `onboard`
+
+See [MCP Governance Guide](docs/mcp-governance-guide.md) for the full walkthrough.
 
 ---
 
@@ -1320,6 +1440,61 @@ Writes the full report to `docs/governance-audit-YYYY-MM-DD.md`. This file is co
 
 ---
 
+### `/assess` — rewrite evaluation, 11 assessment docs
+
+**Trigger:** evaluating whether a legacy app should be rewritten, refactored, or left alone
+
+```
+/assess
+```
+
+Claude runs a full current-state analysis of the project — architecture, dependencies, technical debt, dead code, migration compatibility — and writes 11 structured assessment documents to `docs/assessment/`. The final output is a recommendation: Rewrite, Refactor, or Leave It.
+
+This is the prerequisite for `/backlog`. You must run `/assess` before generating rebuild stories.
+
+---
+
+### `/backlog` — rewrite backlog generator from assessment
+
+**Trigger:** after `/assess` completes, generate rebuild stories ordered by technical dependency
+
+```
+/backlog
+```
+
+Claude reads `docs/assessment/` (never source files directly), extracts feature units, maps API contracts from `cross-project-rules.md`, and generates dependency-ordered rebuild stories formatted as `/new-feature`-ready prompts.
+
+**What it produces** (project-level — 5 files in `docs/backlog/`):
+- `00_index.md` — summary, story counts, human review checklist
+- `stories.md` — all stories in dependency order
+- `combined-backlog.md` — table view with Priority and Status columns
+- `skip-list.md` — modules excluded (dead code from Doc 09)
+- `phases.md` — implementation phases with parallel-safe markers
+
+**What it produces** (workspace-level — 6 files in `docs/backlog/`):
+- `00_index.md` — per-project status table
+- `backend-stories.md` — backend stories in dependency order
+- `frontend-stories.md` — frontend stories with backend dependency notes
+- `combined-backlog.md` — cross-project table with Phase and Cross-project columns
+- `skip-list.md` — combined skip list from all projects
+- `phases.md` — workspace phases (Phase 0 API Contract → Phase 2 Backend → Phase 3 Frontend)
+
+**Key constraints:**
+- Read-only — does not modify source code or assessment docs
+- Does not assign business priority — marks as ⚠️ TBD for human to fill
+- Does not add new features — only extracts what exists today
+- Does not create specs — stories are prompts for `/new-feature`, which creates specs
+- Overwrites on re-run — regenerated from current assessments
+
+**Workflow:**
+```
+/assess → docs/assessment/ (11 docs)
+/backlog → docs/backlog/ (5-6 files)
+Pick a story → copy /new-feature prompt block → /new-feature
+```
+
+---
+
 ### Command routing — which command to use
 
 ```
@@ -1330,6 +1505,8 @@ Changing or extending something existing       →  /edit-feature
 Improving code structure (behaviour unchanged) →  /refactor
 Understanding the codebase                     →  /explore
 Periodic health check / governance review      →  /audit
+Evaluating a legacy app for rewrite            →  /assess
+Generating rebuild stories from assessment     →  /backlog
 ```
 
 **If in doubt between `/fix` and `/new-feature`:**
@@ -1536,11 +1713,18 @@ ai-governance/
 │   │   ├── git-hooks/                     <- git hook generators (agent-agnostic)
 │   │   └── ci/                            <- CI config generators (github/gitlab/bitbucket)
 │   ├── commands/
+│   │   ├── project-init.ts               <- orchestrator for `project init` (adapter pattern)
 │   │   ├── init-git-hooks.ts              <- hook detection + wrapper installation
 │   │   ├── init-ci.ts                     <- CI file writing
 │   │   ├── workspace-init.ts              <- workspace discovery + mono/multi-repo detection
 │   │   ├── upgrade.ts                     <- re-generate hooks/commands, preserve steering
 │   │   └── onboard.ts                     <- new developer setup (installs wrappers, verifies runtime)
+│   ├── stacks/                            <- project-init adapter system
+│   │   ├── adapter.ts                     <- StackAdapter interface + ScaffoldContext type
+│   │   ├── registry.ts                    <- adapter registry (self-registration pattern)
+│   │   ├── common-prompts.ts              <- shared wizard prompts (@inquirer/prompts)
+│   │   ├── flutter/                       <- Flutter adapter (scaffold, prompts, templates)
+│   │   └── next/                          <- Next.js adapter (scaffold, prompts, templates)
 │   ├── pr-check/
 │   │   ├── index.ts                       <- orchestrator
 │   │   ├── types.ts                       <- CheckResult, CheckItem
@@ -1552,7 +1736,7 @@ ai-governance/
 │       ├── file-helpers.ts                <- pkgHas, pubspecHas, gradleHas, pomHas
 │       ├── logger.ts                      <- colored console output
 │       └── tty.ts                         <- TTY detection + line reading
-├── tests/                                 <- 14 test files, 487 tests
+├── tests/                                 <- 24 test suites, 837 tests
 │   ├── agent-detection.test.ts
 │   ├── backward-compat.test.ts
 │   ├── cli-integration.test.ts
@@ -1564,9 +1748,20 @@ ai-governance/
 │   ├── kiro-integration.test.ts
 │   ├── kiro-steering.test.ts
 │   ├── pr-check.test.ts
+│   ├── project-init.test.ts              <- orchestrator + buildGovernanceConfig + CLI flags
+│   ├── project-init.property.test.ts     <- Property 18 (pure function correctness)
 │   ├── scanners.test.ts
+│   ├── uninstall.test.ts
 │   ├── upgrade.test.ts
 │   ├── workspace.test.ts
+│   ├── stacks/                            <- adapter property + unit tests
+│   │   ├── registry.test.ts
+│   │   ├── registry.property.test.ts
+│   │   ├── common-prompts.property.test.ts
+│   │   ├── flutter-adapter.test.ts
+│   │   ├── flutter-adapter.property.test.ts
+│   │   ├── next-adapter.test.ts
+│   │   └── next-adapter.property.test.ts
 │   └── fixtures/                          <- 10 minimal project fixtures per stack
 ├── docs/
 │   ├── INDEX.md                           <- docs navigation
@@ -1584,7 +1779,7 @@ ai-governance/
 └── jest.config.cjs
 ```
 
-**134 source files · ~14,700 lines of TypeScript · 487 tests across 14 suites**
+**134 source files · ~14,700 lines of TypeScript · 837 tests across 24 suites**
 
 ---
 

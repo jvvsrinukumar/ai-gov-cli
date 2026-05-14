@@ -99,7 +99,7 @@ describe('upgrade — hook regeneration', () => {
 
     test('regenerates slash commands', () => {
         const commands = ['audit.md', 'new-feature.md', 'edit-feature.md', 'fix.md',
-            'refactor.md', 'hotfix.md', 'explore.md'];
+            'refactor.md', 'hotfix.md', 'explore.md', 'jira.md', 'backlog.md'];
         for (const c of commands) {
             expect(existsSync(join(projectDir, '.claude', 'commands', c))).toBe(true);
         }
@@ -109,6 +109,13 @@ describe('upgrade — hook regeneration', () => {
         const content = readFileSync(join(projectDir, '.claude', 'CLAUDE.md'), 'utf-8');
         expect(content.length).toBeGreaterThan(100);
         expect(content).toContain('##'); // has sections
+    });
+
+    test('jira.md command generated on upgrade', () => {
+        expect(existsSync(join(projectDir, '.claude', 'commands', 'jira.md'))).toBe(true);
+        const content = readFileSync(join(projectDir, '.claude', 'commands', 'jira.md'), 'utf-8');
+        expect(content.startsWith('# /jira')).toBe(true);
+        expect(content).toContain('jira_get');
     });
 
     test('generated hooks use python3/jq dual runtime (no jq-only guard)', () => {
@@ -187,6 +194,13 @@ describe('upgrade --force — steering overwrite', () => {
             join(projectDir, '.claude', 'steering', 'coding-standards.md'), 'utf-8',
         );
         expect(content).not.toContain('DO NOT OVERWRITE');
+    });
+
+    test('generates task-estimates.md in steering under --force', () => {
+        expect(existsSync(join(projectDir, '.claude', 'steering', 'task-estimates.md'))).toBe(true);
+        const content = readFileSync(join(projectDir, '.claude', 'steering', 'task-estimates.md'), 'utf-8');
+        expect(content).toContain('[~');
+        expect(content).toContain('[S]');
     });
 });
 

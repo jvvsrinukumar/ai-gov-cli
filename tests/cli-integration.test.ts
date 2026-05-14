@@ -137,4 +137,41 @@ describe('CLI --agent routing', () => {
         runGovernance(config);
         expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'spec-first-gate.kiro.hook'))).toBe(false);
     });
+
+    test('claude-code init generates jira.md command and task-estimates.md steering', () => {
+        const config = makeConfig('claude-code', 'nodejs', {}, { projectDir: tmpDir });
+        runGovernance(config);
+        expect(existsSync(join(tmpDir, '.claude', 'commands', 'jira.md'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.claude', 'steering', 'task-estimates.md'))).toBe(true);
+        const jira = readFileSync(join(tmpDir, '.claude', 'commands', 'jira.md'), 'utf-8');
+        expect(jira.startsWith('# /jira')).toBe(true);
+        expect(jira).toContain('jira_get');
+    });
+
+    test('kiro init generates workflow-jira-sync hook and task-estimates.md steering', () => {
+        const config = makeConfig('kiro', 'nodejs', {}, { projectDir: tmpDir });
+        runGovernance(config);
+        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'workflow-jira-sync.kiro.hook'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.kiro', 'steering', 'task-estimates.md'))).toBe(true);
+        const hook = JSON.parse(readFileSync(join(tmpDir, '.kiro', 'hooks', 'workflow-jira-sync.kiro.hook'), 'utf-8'));
+        expect(hook.when.type).toBe('userTriggered');
+        expect(hook.name).toBe('Jira Sync');
+    });
+
+    test('jira command prompt is identical content in both agents', () => {
+        const ccConfig = makeConfig('claude-code', 'nodejs', {}, { projectDir: tmpDir });
+        runGovernance(ccConfig);
+        const ccContent = readFileSync(join(tmpDir, '.claude', 'commands', 'jira.md'), 'utf-8');
+
+        const kiroDir = mkdtempSync(join(tmpdir(), 'ai-gov-kiro-parity-'));
+        try {
+            const kiroConfig = makeConfig('kiro', 'nodejs', {}, { projectDir: kiroDir });
+            runGovernance(kiroConfig);
+            const kiroHook = JSON.parse(readFileSync(join(kiroDir, '.kiro', 'hooks', 'workflow-jira-sync.kiro.hook'), 'utf-8'));
+            // The core prompt text should be identical — the claude-code version is "# /jira\n\n" + prompt
+            expect(ccContent).toContain(kiroHook.then.prompt);
+        } finally {
+            rmSync(kiroDir, { recursive: true, force: true });
+        }
+    });
 });

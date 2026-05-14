@@ -64,9 +64,31 @@ describe('Kiro init integration', () => {
         expect(existsSync(join(tmpDir, '.kiro', 'steering', 'constitution.md'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'steering', 'coding-standards.md'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'steering', 'workflow.md'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.kiro', 'steering', 'task-estimates.md'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'block-dangerous-commands.kiro.hook'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'protect-files.kiro.hook'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'check-secrets.kiro.hook'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'workflow-jira-sync.kiro.hook'))).toBe(true);
+    });
+
+    test('kiro init generates valid workflow-jira-sync.kiro.hook', () => {
+        const config = makeKiroConfig('react', {}, { projectDir: tmpDir });
+        runGovernance(config);
+        const hookPath = join(tmpDir, '.kiro', 'hooks', 'workflow-jira-sync.kiro.hook');
+        const hook = JSON.parse(readFileSync(hookPath, 'utf-8'));
+        expect(hook.name).toBe('Jira Sync');
+        expect(hook.when.type).toBe('userTriggered');
+        expect(hook.then.type).toBe('askAgent');
+        expect(hook.then.prompt).toContain('jira_get');
+    });
+
+    test('kiro init generates task-estimates.md with front-matter', () => {
+        const config = makeKiroConfig('react', {}, { projectDir: tmpDir });
+        runGovernance(config);
+        const content = readFileSync(join(tmpDir, '.kiro', 'steering', 'task-estimates.md'), 'utf-8');
+        expect(content.startsWith('---')).toBe(true);
+        expect(content).toContain('[~');
+        expect(content).toContain('[S]');
     });
 
     test('fresh kiro init on Flutter project: steering contains Flutter content', () => {
@@ -232,6 +254,19 @@ describe('Kiro upgrade integration', () => {
         const after = readFileSync(steeringPath, 'utf-8');
         expect(after).toContain('inclusion: always');
         expect(after).toContain('## Layer Flow');
+    });
+
+    test('kiro upgrade regenerates workflow-jira-sync.kiro.hook', () => {
+        const hookPath = join(tmpDir, '.kiro', 'hooks', 'workflow-jira-sync.kiro.hook');
+        writeFileSync(hookPath, '{"modified": true}');
+
+        const config = makeKiroConfig('react', {}, { projectDir: tmpDir });
+        const opts = { overwrite: true, dryRun: false, updateHooks: false, hookVersion: '17.0.0', projectDir: tmpDir, conflictMode: 'overwrite' as const };
+        generateAllKiroHooks(config, opts);
+
+        const hook = JSON.parse(readFileSync(hookPath, 'utf-8'));
+        expect(hook.name).toBe('Jira Sync');
+        expect(hook.modified).toBeUndefined();
     });
 
     test('kiro upgrade preserves .kiro/specs/', () => {

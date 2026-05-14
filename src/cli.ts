@@ -1,6 +1,6 @@
 import './check-node-version.js';
 import { Command } from 'commander';
-import { existsSync, readFileSync, appendFileSync } from 'fs';
+import { existsSync, readFileSync, appendFileSync, statSync } from 'fs';
 import { join, resolve, basename } from 'path';
 import type { Stack, GovernanceConfig, ConflictMode } from './types.js';
 import { createDefaultScanResult } from './types.js';
@@ -22,6 +22,24 @@ import { runUninstall } from './commands/uninstall.js';
 import { detectAgent } from './agents/detect-agent.js';
 import { readHubConfig } from './utils/hub-config.js';
 import { VERSION, HOOK_VERSION } from './constants.js';
+import { getSupportedStackIds, getAdapter } from './stacks/registry.js';
+import { runProjectInit } from './commands/project-init.js';
+import { runMcpInit, runMcpOnboard, runMcpValidate, runMcpUpdateToken } from './commands/mcp.js';
+
+// Import adapter modules to trigger self-registration (Req 17.3, 17.4)
+// Order is deterministic: Flutter, React (Vite SPA), Next.js
+for (const mod of [
+    './stacks/flutter/adapter.js',
+    './stacks/react/adapter.js',
+    './stacks/next/adapter.js',
+] as const) {
+    try {
+        await import(mod);
+    } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        log.warn(`Failed to load adapter module ${mod}: ${msg}`);
+    }
+}
 
 const program = new Command();
 
@@ -428,6 +446,124 @@ program
             dryRun: options.dryRun,
             agent,
         });
+    });
+
+// ─── project command group ───────────────────────────────────────────────────
+const projectCmd = program
+    .command('project')
+    .description('Project scaffolding commands');
+
+projectCmd
+    .command('init')
+    .description('Scaffold a new project with governance built-in')
+    .option('-t, --type <stack>', 'Stack identifier (skip stack selection prompt)')
+    .option('-n, --name <name>', 'App name (skip app name prompt, max 214 chars)')
+    .option('-y, --yes', 'Skip confirmation summary', false)
+    .option('--dry-run', 'Scaffold without applying governance', false)
+    .option('-d, --dir <path>', 'Parent directory for the new project', process.cwd())
+    .action(async (options) => {
+        // Validate --type against registered stack identifiers (Req 15.7)
+        if (options.type) {
+            const supportedIds = getSupportedStackIds();
+            if (!supportedIds.includes(options.type as Stack)) {
+                log.error(`Invalid stack: "${options.type}". Valid stacks: ${supportedIds.join(', ')}`);
+                process.exit(1);
+            }
+        }
+
+        // Validate --name max length and naming convention (Req 15.3, 15.8)
+        if (options.name) {
+            if (options.name.length > 214) {
+                log.error('--name must be 214 characters or fewer.');
+                process.exit(1);
+            }
+
+            // If --type is provided, validate name against adapter's naming convention
+            if (options.type) {
+                const adapter = getAdapter(options.type as Stack);
+                // Determine naming regex based on adapter id
+                let nameRegex: RegExp;
+                if (adapter.id === 'flutter') {
+                    nameRegex = /^[a-z][a-z0-9_]*$/;
+                } else {
+                    // react, next, and default: kebab-case
+                    nameRegex = /^[a-z][a-z0-9-]*$/;
+                }
+                if (!nameRegex.test(options.name.trim())) {
+                    log.error(`Invalid name "${options.name}" for stack "${adapter.id}". Expected: ${adapter.nameHint}`);
+                    process.exit(1);
+                }
+            }
+        }
+
+        // Validate --dir exists and is a directory (Req 15.9)
+        if (options.dir) {
+            const dirPath = resolve(options.dir);
+            if (!existsSync(dirPath)) {
+                log.error(`Directory does not exist: ${dirPath}`);
+                process.exit(1);
+            }
+            if (!statSync(dirPath).isDirectory()) {
+                log.error(`Path is not a directory: ${dirPath}`);
+                process.exit(1);
+            }
+        }
+
+        try {
+            await runProjectInit({
+                type: options.type,
+                name: options.name,
+                yes: options.yes,
+                dryRun: options.dryRun,
+                dir: options.dir,
+            });
+        } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            log.error(msg);
+            process.exit(1);
+        }
+    });
+
+// ---------------------------------------------------------------------------
+// mcp command group
+// ---------------------------------------------------------------------------
+
+const mcp = program
+    .command('mcp')
+    .description('MCP server governance — configure team tools without committing tokens');
+
+mcp
+    .command('init')
+    .description('Team lead: select tools, set org vars, write .mcp.json + .env.mcp.example + .envrc')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .option('--overwrite', 'Overwrite existing .mcp.json', false)
+    .action(async (options) => {
+        await runMcpInit({ dir: options.dir, overwrite: options.overwrite });
+    });
+
+mcp
+    .command('onboard')
+    .description('Developer: set personal tokens in global and project env files')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .action(async (options) => {
+        await runMcpOnboard({ dir: options.dir });
+    });
+
+mcp
+    .command('validate')
+    .description('CI: verify all required tokens are present in the merged environment')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .action(async (options) => {
+        await runMcpValidate({ dir: options.dir });
+    });
+
+mcp
+    .command('update-token')
+    .description('Rotate a single tool\'s personal token(s)')
+    .requiredOption('--tool <id>', 'Tool identifier (e.g. jira, figma, postgres)')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .action(async (options) => {
+        await runMcpUpdateToken({ dir: options.dir, tool: options.tool });
     });
 
 program.parse();

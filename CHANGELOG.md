@@ -7,6 +7,109 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.6.0] — 2026-05-14
+
+### Fixed
+- **`/audit` command** — Phase continuity enforcement (rules 9–11: "DO NOT STOP between phases" + single-run completion mandate). Added inter-step transition markers at every boundary (Steps 3→12). Rewrote Step 7 as "FILE-WRITING STEP — NOT A LISTING STEP" with explicit failure modes. Replaced vague scoring with exact Start/deduct/Floor formulas for all 5 categories. Run number now counts existing `## Run` headings + 1. Java OSGi/non-OSGi multi-module test coverage: per-module MODULE TEST INVENTORY instead of root-only check. OSGi-specific observation questions added.
+- **`/assess` command** — Phase continuity enforcement (rules 7–9). Scope completeness check gate after TOTALS block. Phase 1→2 and 2→3 transition markers. Business Pressure default (score 2, CONFIDENCE=Low) when not provided.
+- **`/backlog` command** — Phase continuity enforcement (rule 6). Feature inventory now outputs visible markdown table with "OUTPUT THIS TABLE NOW" directive instead of silently merging into story generation. Phase transition markers at all boundaries (1→2, 2→3, 3→4, 4→5, 5→6).
+- **`audit-content.ts`** — Kotlin multi-module guard in SCENARIO A/B (was hardcoded to `app/src/test/`).
+- **`file-helpers.ts`** — Added `.next/`, `.nuxt/`, `target/`, `out/`, `.gradle/`, `.flutter-plugins` to recursive scan exclusion list.
+
+### Changed
+- Version bump across all CI templates, docs, and constants.
+
+---
+
+## [17.5.0] — 2026-05-14
+
+### Added
+- **MCP governance (`ai-gov mcp`)** — New command group for managing MCP server tokens securely across a team: `mcp init`, `mcp onboard`, `mcp validate`, `mcp update-token`.
+- **Jira Sync command (`/jira`)** — Reads spec `tasks.md` time estimates and creates Jira stories + sub-tasks via the Jira MCP server. Stores `.jira` metadata per spec to prevent duplicate sub-tasks on re-runs.
+- **Task estimates steering** — `task-estimates.md` generated in both `.claude/steering/` and `.kiro/steering/`.
+
+### Changed
+- Version bump across all CI templates, docs, and constants.
+
+---
+
+## [17.4.0] — 2026-05-13
+
+### Added
+- **`/backlog` slash command** — Rewrite backlog generator that mines `docs/assessment/` for rebuild-able units, orders them by technical dependency, and formats them as `/new-feature`-ready story prompts. Marks where human input is required (priority, skip/keep decisions) but does not fill those in.
+  - **Project-level** (`src/agents/claude-code/commands/backlog.ts`): generates 5 output files in `docs/backlog/` — index, stories, combined-backlog, skip-list, phases. Uses BACK-/FRONT- story ID prefixes based on stack.
+  - **Workspace-level** (`src/generators/workspace/commands/backlog.ts`): generates 6 output files at workspace root `docs/backlog/` — adds backend-stories.md and frontend-stories.md with cross-project dependency mapping. Enforces Phase 0 (API Contract) → Phase 2 (Backend) → Phase 3 (Frontend) ordering. Supports mobile projects with dynamic phase numbering.
+- **`/backlog` written by both `generateClaudeCode` and `upgradeClaudeCode`** — existing projects get the command on upgrade without `--force`.
+- **`/backlog` in workspace generation** — `generateWorkspaceFiles` writes `backlog.md` for Claude Code workspaces (not Kiro — Claude Code only).
+- **87 tests** covering all stacks, assessment discovery, feature inventory, story format, output files, explicit boundaries, phase ordering, mobile edge cases, single-project workspaces, Kiro exclusion, and integration with `generateClaudeCode`/`generateWorkspaceFiles`.
+
+### Changed
+- Version bump across all CI templates, docs, and constants.
+
+---
+
+## [17.3.1] — 2026-05-13
+
+### Fixed
+- **DummyAdapter registry collision** — Changed test-only DummyAdapter id from `'react'` to `'nodejs'` to avoid blocking the real ReactAdapter registration.
+- **Unused variable cleanup** — Removed unused `title` variable in `source-files.ts`; prefixed unused `ctx` parameter with `_ctx` in `vite-config.ts`.
+
+### Changed
+- Version bump across all CI templates, docs, and constants.
+
+---
+
+## [17.3.0] — 2026-05-12
+
+### Fixed
+- **Redundant prompts when `--name` provided** — Branches 1 and 2 of `runProjectInit` no longer show app name/display name/output directory prompts when those values are already supplied via CLI flags. Extracted `collectGovernanceAnswers()` for governance-only prompts (agent, git hooks, CI).
+
+### Changed
+- Version bump across all CI templates, docs, and constants.
+
+---
+
+## [17.2.0] — 2026-05-12
+
+### Added
+- **`ai-gov project init` command** — New CLI subcommand that scaffolds complete projects with governance applied from day one. Supports Flutter and Next.js via an extensible adapter pattern with self-registration.
+- **Adapter Registry** — Stack-specific adapters self-register on import; adding a new stack requires only creating an adapter file.
+- **Flutter Adapter** — Scaffolds clean-architecture Flutter projects with BLoC/Cubit, Dio, GetIt, GoRouter, FVM, Mason bricks, multi-service API config, and architecture tests.
+- **Next.js Adapter** — Scaffolds Next.js projects (frontend-only or full-stack) with configurable package manager, router, styling, state management, auth, database, and API style.
+- **`buildGovernanceConfig` pure function** — Exported, unit-testable function for governance config construction without I/O.
+- **`validateName` on `StackAdapter`** — Each adapter now exposes a `validateName(name): string | true` method used by the interactive prompt to reject invalid names before scaffolding begins.
+- **Property-based tests** — 18 correctness properties validated via fast-check (100 iterations each) covering registry invariants, naming validation, scaffold completeness, dependency inclusion, and config mapping.
+- **`'next'` Stack type** — Added as a distinct value in the Stack union, with its own profile inheriting from React with Next.js-specific overrides.
+- **Workspace safety** — All projects created via `project init` use `conflictMode: 'keep'` to prevent accidental governance overwrites.
+
+### Fixed
+- **`displayName` with apostrophe breaks generated code** — `displayName` was interpolated raw into single-quoted string literals in generated TypeScript (`layout.tsx` metadata) and Dart (`MaterialApp title`). A display name like "McDonald's" produced a syntax error in the scaffolded project. Added `escSQ` helper in both template modules that escapes backslashes and single quotes before injection.
+- **Interactive name validation was bypassed** — `collectCommonAnswers` was called with `() => true` in all three branches of `runProjectInit`, including the fully-interactive branch where the entered name is actually used. Invalid names (e.g. `MyBadName` for Flutter) were accepted and then caused a confusing `flutter create` failure. The fully-interactive branch now passes `adapter.validateName` to enforce stack-specific naming rules at prompt time.
+- **Double-prompt bug** — Flutter and Next.js adapters no longer re-call `collectCommonAnswers()` inside `runPrompts()`, preventing duplicate interactive prompts.
+- **27 lint errors** — Removed unnecessary `\$` escapes in Dart template strings and fixed unused variable in orchestrator.
+
+### Changed
+- DummyAdapter excluded from production build via `tsconfig.json` exclude (test-only, never shipped).
+
+---
+
+## [17.1.6] — 2026-05-11
+
+### Fixed
+- **Audit now enforces mandatory gap fixes** — Previously, the audit would detect steering-vs-reality gaps but the AI agent would list them as "recommendations" without actually editing the files. The same gaps would reappear on every subsequent audit run. Step 7 now uses explicit mandatory language ("THIS STEP IS NOT A RECOMMENDATION. IT IS AN ACTION") and includes a verification step to confirm fixes were applied.
+
+### Added
+- **Execution rule 7** — "GAPS MUST BE FIXED, NOT JUST REPORTED. A gap that appears on two consecutive audit runs is a failure of the audit process itself."
+- **Execution rule 8** — Clear categorization: steering mismatches are fixed immediately; code-level issues go to developer-actions.md.
+- **Gap categorization guide** in Step 7 — Explicit rules for what gets fixed in steering (immediately) vs. what goes to developer-actions.md (security issues, architecture violations, missing infrastructure).
+- **Post-fix verification** — After writing fixes, the audit re-reads each modified file to confirm the gap is actually closed.
+
+### Changed
+- Phase 4 renamed from "FIX GOVERNANCE" to "FIX GOVERNANCE (MANDATORY — NOT OPTIONAL)" in both Claude Code and Kiro audit commands.
+- Step 6 → Step 7 transition strengthened: "Do NOT output a summary and stop. Do NOT say 'these need to be fixed' — FIX THEM NOW."
+
+---
+
 ## [17.1.4] — 2026-05-07
 
 ### Changed

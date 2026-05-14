@@ -197,4 +197,11 @@ export function scanReact(
     } else if (fileExists(projectDir, '.hygen.js') || dirExists(projectDir, '_templates')) {
         scan.scaffoldTool = 'Hygen'; scan.scaffoldCmdFeature = 'npx hygen feature new';
     }
+
+    // Has tests — __tests__ directory (colocated or top-level) or common test/ directories
+    if (dirExists(projectDir, '__tests__') || dirExists(projectDir, 'src', '__tests__') ||
+        existsSync(join(projectDir, 'test')) || existsSync(join(projectDir, 'tests'))) {
+        scan.detectedHasTests = true;
+        log.detected('Test dir detected');
+    }
 }

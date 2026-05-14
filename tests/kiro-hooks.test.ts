@@ -213,7 +213,7 @@ describe('Kiro hook content correctness', () => {
 
 describe('Kiro hooks cross-stack', () => {
     const stackExtensions: Record<Stack, string> = {
-        nodejs: '.js', react: '.tsx', flutter: '.dart', python: '.py',
+        nodejs: '.js', react: '.tsx', next: '.tsx', flutter: '.dart', python: '.py',
         kotlin: '.kt', java: '.java', angular: '.ts', swiftui: '.swift',
     };
 
