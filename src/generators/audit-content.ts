@@ -286,8 +286,42 @@ Sources/.../ViewModels/ [N] files — patterns: [describe]
 [any other dirs]        [N] files — patterns: [describe]
 \`\`\``;
 
-    case 'java': return `
-For each significant directory under \`${sourceDir}\`, read 15-25 \`.java\` files and answer:
+    case 'java': return c.scan.detectedOSGi ? `
+For each module directory that exists, read 15–25 \`.java\` files and answer:
+
+**Build system and module structure (answer this first)**
+- Is this Maven or Gradle? Count \`pom.xml\` or \`build.gradle\` files to determine number of modules.
+- What Java version is configured? Are preview features (\`--enable-preview\`) in use?
+- List every module directory and its apparent role (UI bundle, API bundle, codec bundle, launcher, etc.)
+
+**OSGi bundle structure**
+- Does each module have an \`OSGI-INF/\` directory with Declarative Services XML (\`*.xml\` component descriptors)?
+- Does \`pom.xml\` use \`bnd-maven-plugin\` or \`maven-bundle-plugin\` to generate \`MANIFEST.MF\`?
+- Are Java annotations used for DS components (\`@Component\`, \`@Reference\` from \`org.osgi.service.component.annotations\`)?
+- What packages are exported by each bundle? (check \`Export-Package\` in bnd instructions or \`MANIFEST.MF\`)
+- Is there an API bundle defining interfaces, and an impl bundle providing the DS component?
+
+**Service registration and injection**
+- How are services registered: via Declarative Services XML, \`@Component\` annotations, or programmatic \`BundleContext.registerService()\`?
+- How are service references injected: \`@Reference\` fields, setter methods, or \`BundleContext.getServiceReference()\`?
+- Are there \`BundleActivator\` classes? In which modules? What do they do?
+- Do DS components have \`activate()\`/\`deactivate()\` lifecycle methods?
+
+**UI layer (if desktop application)**
+- Is the UI built with Swing, JavaFX, or Eclipse SWT/RCP?
+- Are UI panels/windows registered as OSGi services or started from a BundleActivator?
+- Is there a \`plugin.xml\` or Eclipse 4 model (\`Application.e4xmi\`) for RCP contributions?
+- What Look & Feel library is used (FlatLaF, Nimbus, native)?
+
+**Data flow**
+- Trace one real operation from UI entry point to data source. List every bundle and class it crosses.
+- Where is data persistence? (DICOM network, local file, embedded DB, remote service?)
+
+**Per module — record as facts:**
+\`\`\`
+<module>/  — role: [describe] · key exports: [packages] · DS components: [N] · BundleActivator: [yes/no] · tests: [yes/no]
+\`\`\`` : `
+For each significant directory under \`${sourceDir}\`, read 15–25 \`.java\` files and answer:
 
 **Build system**
 - Is this Maven or Gradle? Multi-module or single module?
@@ -296,7 +330,6 @@ For each significant directory under \`${sourceDir}\`, read 15-25 \`.java\` file
 **Framework detection**
 - Is this Spring Boot, Quarkus, Micronaut, plain Java, or desktop (Swing/JavaFX)?
 - If Spring Boot: what starters are used? (web, data-jpa, security, webflux?)
-- If OSGi: what bundles exist? How do they communicate?
 
 **Layer structure**
 - What layers actually exist? (controller/, service/, repository/, model/, or flat packages?)
@@ -308,7 +341,7 @@ For each significant directory under \`${sourceDir}\`, read 15-25 \`.java\` file
 - Where are queries defined? (Repository interfaces, @Query annotations, XML mappers?)
 
 **Dependency injection**
-- What DI approach? (Spring @Autowired/@Inject, constructor injection, Guice, OSGi SCR?)
+- What DI approach? (Spring @Autowired/@Inject, constructor injection, Guice?)
 - Is field injection used anywhere? (anti-pattern — should be constructor injection)
 
 **Data flow**
@@ -534,12 +567,12 @@ Spot-check 3-5 test files:
 **First — determine which scenario applies:**
 
 **SCENARIO A — No test files:**
-If \`app/src/test/\` is empty or absent:
-- Score: 0/100
+- Single-module: if \`app/src/test/\` is absent or empty → Score: 0/100
+- Multi-module: apply SCENARIO A ONLY IF \`src/test/\` is absent or empty in EVERY module. DO NOT score SCENARIO A from the root \`app/\` alone. Check each module directory (e.g. \`:core\`, \`:features:auth\`) for its own \`src/test/\`.
 
 **SCENARIO B — Some tests exist:**
-For each feature, check \`app/src/test/.../\` for ViewModel, UseCase, and Repository test files.
-Score: (features with all three layers tested / total features) × 100. PARTIAL (some layers missing) = 50%.
+For each module or feature, check that module's \`src/test/\` (e.g. \`app/src/test/\`, \`core/src/test/\`, \`features/auth/src/test/\`) for ViewModel, UseCase, and Repository test files.
+Score: (features/modules with all three layers tested / total) × 100. PARTIAL (some layers missing) = 50%.
 
 **SCENARIO C — Tests exist everywhere:**
 Spot-check 3-5 ViewModel test files:
@@ -559,23 +592,67 @@ Score: (ViewModels + Services with tests / total) × 100.
 **SCENARIO C — Tests exist everywhere:**
 Check ViewModel tests inject dependencies (no singletons used directly).`;
 
-    case 'java': return `
+    case 'java': return c.scan.detectedOSGi ? `
+**First — determine which scenario applies:**
+
+> ⚠️ This is an OSGi multi-module project. DO NOT check only the root \`src/test/java/\`.
+> Root-level \`src/test/java/\` does not exist in multi-module OSGi projects.
+> You MUST scan every module's test directory before applying any scenario.
+
+**How to find test files (OSGi multi-module):**
+For each directory that contains its own \`pom.xml\` or \`build.gradle\`, check:
+- \`<module>/src/test/java/\` — JUnit/integration tests
+- \`<module>/src/test/resources/\` — test fixtures
+
+List each module separately:
+
+\`\`\`
+MODULE TEST INVENTORY
+  <module>/  — source files: [N] · test files: [N] · status: TESTED/PARTIAL/UNTESTED
+  <module>/  — source files: [N] · test files: [N] · status: TESTED/PARTIAL/UNTESTED
+  ...
+\`\`\`
+
+**SCENARIO A — No test files anywhere:**
+Apply SCENARIO A ONLY IF every module shows 0 test files in the inventory above AND no \`*Test.java\` or \`*Tests.java\` exists anywhere in the repository tree.
+→ Score: 0/100. Add to developer-actions.md: "Set up JUnit 5 test infrastructure in each OSGi bundle."
+
+**SCENARIO B — Some modules have tests:**
+Score = round((modules with ≥1 test file / total modules with source files) × 100).
+PARTIAL (tests exist in a module but cover <25% of its public classes) = 50% credit for that module.
+
+**SCENARIO C — Most modules have tests:**
+Spot-check 3–5 test files across different modules:
+- Are DS components tested by instantiating the class directly and calling \`activate()\`/\`deactivate()\` manually? (correct — no Spring container in OSGi)
+- Are dependencies injected via setter or constructor in tests? (correct OSGi pattern)
+- Is Mockito used (\`@ExtendWith(MockitoExtension.class)\`)? (positive signal)
+- Are any OSGi integration frameworks used (PAX Exam, Felix SCR test runner)? (advanced — note if found)
+- Are tests using \`@SpringBootTest\`, \`@MockBean\`, or \`MockMvc\`? (WRONG in OSGi — flag as mismatched if found)
+→ Score: 95 if all spot-checked tests have real assertions and follow OSGi patterns.
+` : `
 **First — determine which scenario applies:**
 
 **SCENARIO A — No test files:**
-If \`src/test/java/\` is absent or empty:
-- Score: 0/100
+- Single-module: if \`src/test/java/\` is absent or empty → Score: 0/100
+- Multi-module: apply SCENARIO A ONLY IF \`src/test/java/\` is absent or empty in EVERY module. DO NOT score SCENARIO A from the root directory alone.
 
 **SCENARIO B — Some tests exist:**
-For each service class, check if a corresponding \`*Test.java\` or \`*Tests.java\` exists in \`src/test/java/\`.
-For each controller, check if integration tests exist (using \`@WebMvcTest\` or \`@SpringBootTest\`).
+For each module directory (or root if single-module), check \`<module>/src/test/java/\` for a corresponding \`*Test.java\` or \`*Tests.java\` per service class.
+${c.scan.detectedSubtype === 'spring-boot'
+  ? `For each controller, check if integration tests exist (using \`@WebMvcTest\` or \`@SpringBootTest\`).`
+  : `For each significant class, check if a unit test exists.`}
 Score: (classes with tests / total service+controller classes) × 100. PARTIAL = 50%.
 
 **SCENARIO C — Tests exist everywhere:**
-Spot-check 3-5 test files:
-- Are services tested with mocked repositories (\`@Mock\` + \`@InjectMocks\` or \`@MockBean\`)?
+Spot-check 3–5 test files:
+${c.scan.detectedSubtype === 'spring-boot'
+  ? `- Are services tested with mocked repositories (\`@Mock\` + \`@InjectMocks\` or \`@MockBean\`)?
 - Are controllers tested with \`MockMvc\` or \`WebTestClient\`?
-- Are integration tests using \`@SpringBootTest\` with \`@Testcontainers\` or in-memory DB?`;
+- Are integration tests using \`@SpringBootTest\` with \`@Testcontainers\` or in-memory DB?`
+  : `- Are dependencies mocked with \`@Mock\` + \`@InjectMocks\`?
+- Do tests use \`@ExtendWith(MockitoExtension.class)\`?
+- Are tests isolated (no real DB, no real network calls)?`}
+`;
 
     default: return `
 **SCENARIO A — No tests:** If no test files or test directory found → Score 0/100.

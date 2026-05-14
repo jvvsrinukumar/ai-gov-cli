@@ -1,12 +1,12 @@
 # docs/ — Documentation Index
 
-**Current version:** 17.4.0 · **Updated:** 2026-05-13
+**Current version:** 17.6.0 · **Updated:** 2026-05-14
 
 All documentation files in this directory, with status and description.
 
 ---
 
-## Current (v17.4.0)
+## Current (v17.6.0)
 
 | File | Audience | Description |
 |------|----------|-------------|
@@ -25,6 +25,8 @@ All documentation files in this directory, with status and description.
 | [`developer-commands-token-guide.md`](./developer-commands-token-guide.md) | ai-gov maintainers | **Token consumption guide** — 3 input cases (Jira/ChatGPT/manual) × `/new-feature` + `/fix` + daily commands, problems identified, solution roadmap |
 | [`mcp-governance-guide.md`](./mcp-governance-guide.md) | Team leads + Developers | **MCP tool governance** — `ai-gov mcp init/onboard/validate`, token management, adding new tools, full terminal walkthroughs |
 | [`mcp-jira-implementation-plan.md`](./mcp-jira-implementation-plan.md) | Engineering leads | **Implementation plan** — all files to create/modify, test cases, build sequence, acceptance criteria for MCP governance + Jira sync features |
+| [`team-upgrade-checklist.md`](./team-upgrade-checklist.md) | All developers | **Share with team on every release** — upgrade CLI globally, check version, upgrade project governance, workspace upgrade, MCP refresh |
+| [`flutter-gradle-migration.md`](./flutter-gradle-migration.md) | Flutter developers | **Android Gradle migration** — declarative plugins block, version matrix, error→fix mapping, how `ai-gov project init` prevents this |
 
 ---
 
@@ -42,11 +44,15 @@ All documentation files in this directory, with status and description.
 **I am setting up a multi-project workspace:**
 → [`workspace_setup_guide.md`](./workspace_setup_guide.md)
 
-**I need to upgrade an existing project to v17.4.0:**
-→ [`upgrade_guide.md`](./upgrade_guide.md)
+**I need to upgrade the CLI and projects to v17.6.0:**
+→ [`team-upgrade-checklist.md`](./team-upgrade-checklist.md) ← share this with your team
+→ [`upgrade_guide.md`](./upgrade_guide.md) ← detailed reference
 
 **My CI pipeline is failing on runtime checks:**
 → [`runtime_requirements.md`](./runtime_requirements.md)
+
+**My Flutter Android build is failing with Gradle / AGP errors:**
+→ [`flutter-gradle-migration.md`](./flutter-gradle-migration.md)
 
 **I want to understand what changed in this version:**
 → Root [`CHANGELOG.md`](../CHANGELOG.md)

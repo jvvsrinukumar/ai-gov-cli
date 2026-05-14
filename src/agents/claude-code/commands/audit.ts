@@ -66,6 +66,9 @@ export function generateAuditCommand(c: GovernanceConfig): string {
 > 6. **Do not judge patterns as legacy or modern.** Observe and record what is actually there.
 > 7. **GAPS MUST BE FIXED, NOT JUST REPORTED.** If Step 6 finds gaps, Step 7 MUST edit the steering files to close them. A gap that appears on two consecutive audit runs is a failure of the audit process itself. The audit's job is to leave the project with ZERO steering gaps when it finishes.
 > 8. **Code-level issues (security, architecture violations) that CANNOT be fixed by editing steering files go to developer-actions.md.** Everything else is fixed immediately in Step 7.
+> 9. **DO NOT STOP between phases.** Phase headings (## PHASE N) are section labels — not stopping points. After every step transition marker below, continue to the next step immediately without waiting for user input or confirmation.
+> 10. **ALL 12 steps AND all 3 persist operations MUST complete in a single run.** The audit is not complete until audit-report.md, dead-code.md, and developer-actions.md have all been written.
+> 11. **For large or multi-module projects:** summarize observations per module/zone rather than per file — but complete ALL steps. Project size is not a reason to skip any step.
 
 ---
 
@@ -121,7 +124,7 @@ Read \`.claude/settings.json\`. Confirm:
 - Stop hooks registered (post-task-checklist)
 - check-spec-exists.sh: present AND registered only if \`specs/\` has active feature dirs
 
-> **After Step 3:** If all governance files, hooks, and wiring are present → say "Governance scaffolding present — proceeding to project discovery (Step 4)" and continue immediately. Do NOT output a verdict here.
+> **After Step 3:** Say exactly: "Governance scaffolding checked — proceeding to project discovery (Step 4)." Then begin Step 4 immediately. DO NOT stop. DO NOT output a verdict. DO NOT wait for developer input.
 
 ---
 
@@ -153,6 +156,8 @@ Note:
 - Any directory that looks like a second architecture zone (different patterns)
 - If monorepo: which package is the focus of this audit
 
+> **After Step 4:** Say exactly: "Directory map complete — proceeding to code observation (Step 5)." Then begin Step 5 immediately. DO NOT stop. DO NOT wait.
+
 ### Step 5 — Code observation
 
 This is the core of the audit. Read actual source files — do NOT guess from filenames.
@@ -178,7 +183,7 @@ Multi-zone:        [if different directories use clearly different patterns — 
 File size range:   [smallest to largest source file, flag any >300 lines (frontend) / >500 lines (backend)]
 \`\`\`
 
-> **After Step 5:** Do NOT output a verdict. Say "Project reality mapped — comparing to governance (Step 6)" and continue.
+> **After Step 5:** Say exactly: "Project reality mapped — proceeding to gap analysis (Step 6)." Then begin Step 6 immediately. DO NOT output a verdict. DO NOT wait.
 
 ---
 
@@ -287,8 +292,9 @@ GAP: workflow.md shows FEATURES_DIR=src/modules/ but actual directory is src/fea
      Impact: Claude will create every new feature in src/modules/ which does not exist
 \`\`\`
 
-> **After Step 6:** If NO gaps were found → say "Governance accurately describes this project. Proceeding to spec and dead code checks (Step 8)." and skip to Phase 5.
-> If gaps WERE found → proceed IMMEDIATELY to Step 7. Do NOT output a summary and stop. Do NOT say "these need to be fixed" — FIX THEM NOW in Step 7.
+> **After Step 6:**
+> - If NO gaps found → say exactly: "No governance gaps — proceeding to spec coverage (Step 8)." Begin Step 8 immediately. DO NOT stop.
+> - If gaps found → say exactly: "Found [N] gap(s) — fixing steering files now (Step 7)." Begin Step 7 immediately. DO NOT produce a list of "gaps to fix." DO NOT ask for permission. The first action of Step 7 is to open the first affected file and write the correction.
 
 ---
 
@@ -297,13 +303,16 @@ GAP: workflow.md shows FEATURES_DIR=src/modules/ but actual directory is src/fea
 
 ### Step 7 — Update steering files
 
-> ⚠️ **THIS STEP IS NOT A RECOMMENDATION. IT IS AN ACTION.**
-> You MUST open each steering file that has a gap and write the corrected content NOW.
-> Do NOT list fixes as "needed" or "recommended" — APPLY THEM IMMEDIATELY.
-> Do NOT ask for permission. Do NOT defer to a "developer-actions" list.
-> If a gap was found in Step 6, the corresponding steering file MUST be edited in this step.
-> **If you skip this step, the same gaps will appear on every future audit run — that is a bug, not a feature.**
-> **Steering fixes are ALWAYS safe** — they only change documentation to match what the code already does.
+> ⚠️ **THIS STEP IS A FILE-WRITING STEP — NOT A LISTING STEP.**
+>
+> For each gap from Step 6: open the steering file and write the corrected content now.
+>
+> **Failure modes to avoid:**
+> - If you output a list of "gaps that should be fixed" without calling the file-write tool: you have failed this step. Go back and write the files.
+> - If you write "consider updating architecture.md": you have failed this step. Open architecture.md and update it now.
+> - If you defer a steering mismatch to developer-actions.md: you have failed this step. Steering mismatches belong here, not in developer-actions.
+>
+> DO NOT ask for permission. Steering fixes are always safe — they only change documentation to match what the code already does.
 
 Fix every gap identified in Step 6. Update directly — do not ask for permission.
 
@@ -317,6 +326,8 @@ Fix every gap identified in Step 6. Update directly — do not ask for permissio
 **Verification after Step 7:**
 After writing all fixes, re-read each modified file to confirm the gap text no longer appears.
 If a gap from Step 6 still exists after Step 7, you have a bug — fix it before proceeding.
+
+> **After Step 7:** Say exactly: "All steering fixes applied and verified — proceeding to spec coverage (Step 8)." Begin Step 8 immediately. DO NOT stop.
 
 **Categorizing gaps — what goes WHERE:**
 - **Steering mismatch** (docs say X, code does Y) → FIX THE STEERING FILE in Step 7. Done.
@@ -394,6 +405,8 @@ List every feature-sized directory in \`${featuresDir}\`. For each:
 
 If spec-first is active (check-spec-exists.sh in settings.json), flag features with code but no spec as ACTION NEEDED — Claude will be blocked when trying to edit those files.
 
+> **After Step 8:** Continue immediately to Step 9 (test coverage). DO NOT stop.
+
 ### Step 9 — Test coverage
 
 ${testCoverage}
@@ -402,6 +415,8 @@ ${testCoverage}
 \`\`\`
 <feature>: TESTED / PARTIAL [missing: which layers] / UNTESTED / SCAFFOLD-ONLY
 \`\`\`
+
+> **After Step 9:** Continue immediately to Step 10 (dead file scan). DO NOT stop.
 
 ### Step 10 — Dead file scan
 
@@ -415,6 +430,8 @@ DEAD CODE CANDIDATE: <path>
   Reason: <why it's likely dead>
   Risk: <could this confuse Claude? e.g. "Claude might try to import this model that no longer has a matching endpoint">
 \`\`\`
+
+> **After Step 10:** Continue immediately to Step 11 (governance gap summary). DO NOT stop.
 
 ---
 
@@ -446,6 +463,8 @@ Fix applied:
 
 If no gaps were found: "Governance was accurate. No changes needed."
 
+> **After Step 11:** Continue immediately to Step 12 (scorecard and persist). DO NOT stop. DO NOT wait for input.
+
 ### Step 12 — Final scorecard and persist records
 
 > Use this exact format. Score each category independently.
@@ -458,24 +477,38 @@ Date: <today>
 ━━━ HEALTH SCORECARD ━━━
 
   Governance Files    <score>/100  <Grade>
-    (steering files present, hooks at correct version, settings.json wired)
+    Start: 100
+    −20 per MISSING steering file (Step 1) · −10 per empty (⚠) steering file
+    −10 per MISSING hook (Step 2) · −15 per STALE hook (version mismatch)
+    −15 if settings.json missing one or more required hook categories (Step 3)
+    Floor: 0
 
   Governance Accuracy <score>/100  <Grade>
-    (how accurately .claude/ described the project BEFORE this audit)
-    (100 = perfect match, deduct 15 per significant gap found in Step 6)
+    Measures how accurately .claude/ described the project BEFORE this audit.
+    Start: 100
+    −20 per gap where a steering file stated the WRONG tool/pattern (e.g. "ORM: Prisma" when code uses raw SQL)
+    −10 per gap where a steering file OMITTED a significant pattern present in code (e.g. no Zone Rules for a second zone)
+    −5 per gap where a steering file had a stale path or ghost file reference
+    Floor: 0. Score 100 = zero gaps found in Step 6.
 
   Steering Coverage   <score>/100  <Grade>
-    (does steering cover all significant directories and patterns?)
-    (deduct 10 per undocumented directory with >10 files)
+    Measures whether steering covers all significant directories found in Steps 4–5.
+    Start: 100
+    −10 per directory with >10 files found in Step 4 that has no mention in architecture.md
+    −5 per directory with 5–10 files found in Step 4 that has no mention in architecture.md
+    Floor: 0
 
   Test Coverage       <score>/100  <Grade>
-    (SCENARIO A: 0 · SCENARIO B: proportional · SCENARIO C: 90-100)
+    SCENARIO A (no test infrastructure found in Step 9): 0
+    SCENARIO B (partial): score = round((features/modules with ≥1 test file ÷ total active features/modules) × 100)
+      PARTIAL features (some layers tested, not all) count as 50% of full credit
+    SCENARIO C (comprehensive, real assertions confirmed in spot-check): 95
 
   Dead File Risk      <score>/100  <Grade>
-    (start 100, deduct 5 per dead code candidate found)
+    Start: 100 · −5 per dead code candidate found in Step 10 · Floor: 0
 
   OVERALL             <score>/100  Grade: <A/B/C/D>
-    (average of the 5 scored categories above)
+    Arithmetic mean of the 5 category scores above, rounded to nearest whole number
 
 ━━━ GRADE SCALE ━━━
   A: 90-100  B: 75-89  C: 60-74  D: <60
@@ -536,7 +569,10 @@ Based on Step 5 observations (actual patterns in use, not assumed):
 
 ### Persist: .claude/audit-report.md
 
-**Step 1 — Read the file first** (if it exists). Extract the most recent run entry to get previous scores. You need these for the "vs Previous" delta column. If the file does not exist, this is Run 1 — all "vs Previous" values are "—".
+**Step 1 — Determine run number:**
+- If audit-report.md does not exist: this is Run 1. All "vs Previous" values are "—".
+- If it exists: count every line that starts with \`## Run \` (the heading pattern). Call this count N_prev. This entry is Run N_prev + 1. Do NOT guess the run number from dates or entry content — count the headings.
+- Read the most recent \`## Run N_prev\` block to extract its scores for the "vs Previous" delta column.
 
 **Step 2 — Append** a new run entry. Do not overwrite or delete previous entries — the file is an append-only history log.
 

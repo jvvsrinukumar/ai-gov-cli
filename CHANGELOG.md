@@ -7,6 +7,32 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [17.6.0] — 2026-05-14
+
+### Fixed
+- **`/audit` command** — Phase continuity enforcement (rules 9–11: "DO NOT STOP between phases" + single-run completion mandate). Added inter-step transition markers at every boundary (Steps 3→12). Rewrote Step 7 as "FILE-WRITING STEP — NOT A LISTING STEP" with explicit failure modes. Replaced vague scoring with exact Start/deduct/Floor formulas for all 5 categories. Run number now counts existing `## Run` headings + 1. Java OSGi/non-OSGi multi-module test coverage: per-module MODULE TEST INVENTORY instead of root-only check. OSGi-specific observation questions added.
+- **`/assess` command** — Phase continuity enforcement (rules 7–9). Scope completeness check gate after TOTALS block. Phase 1→2 and 2→3 transition markers. Business Pressure default (score 2, CONFIDENCE=Low) when not provided.
+- **`/backlog` command** — Phase continuity enforcement (rule 6). Feature inventory now outputs visible markdown table with "OUTPUT THIS TABLE NOW" directive instead of silently merging into story generation. Phase transition markers at all boundaries (1→2, 2→3, 3→4, 4→5, 5→6).
+- **`audit-content.ts`** — Kotlin multi-module guard in SCENARIO A/B (was hardcoded to `app/src/test/`).
+- **`file-helpers.ts`** — Added `.next/`, `.nuxt/`, `target/`, `out/`, `.gradle/`, `.flutter-plugins` to recursive scan exclusion list.
+
+### Changed
+- Version bump across all CI templates, docs, and constants.
+
+---
+
+## [17.5.0] — 2026-05-14
+
+### Added
+- **MCP governance (`ai-gov mcp`)** — New command group for managing MCP server tokens securely across a team: `mcp init`, `mcp onboard`, `mcp validate`, `mcp update-token`.
+- **Jira Sync command (`/jira`)** — Reads spec `tasks.md` time estimates and creates Jira stories + sub-tasks via the Jira MCP server. Stores `.jira` metadata per spec to prevent duplicate sub-tasks on re-runs.
+- **Task estimates steering** — `task-estimates.md` generated in both `.claude/steering/` and `.kiro/steering/`.
+
+### Changed
+- Version bump across all CI templates, docs, and constants.
+
+---
+
 ## [17.4.0] — 2026-05-13
 
 ### Added

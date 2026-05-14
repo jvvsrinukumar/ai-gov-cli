@@ -18,13 +18,14 @@ export function generateBacklogCommand(c: GovernanceConfig): string {
 
 ---
 
-> ## ⚠️ EXECUTION RULES
+> ## ⚠️ EXECUTION RULES — READ BEFORE STARTING
 >
 > 1. **This is a read-only extraction tool.** Do NOT modify any source code or assessment docs.
 > 2. **All 6 phases are REQUIRED.** Run every phase. Do not stop early.
 > 3. **You extract what EXISTS.** Do not invent features, infer priorities, or add new functionality.
 > 4. **HUMAN INPUT sections are placeholders — not questions to ask now.** Generate them as-is; the developer fills them in later.
 > 5. **Output goes to \`docs/backlog/\`.** Overwrites on re-run — it is regenerated from current assessments.
+> 6. **DO NOT STOP between phases.** Phase headings (## PHASE N) are section labels — not stopping points. After every transition marker below, continue to the next phase immediately without waiting for user input or confirmation.
 
 ---
 
@@ -71,6 +72,8 @@ Check whether \`.claude/steering/cross-project-rules.md\` exists.
 - If found: use it as the primary source for API endpoint data in stories.
 - If not found: print "cross-project-rules.md not found — API contracts will be sparse. Run /audit at workspace root for richer contract data." Continue.
 
+> **After Phase 1:** Say exactly: "Assessment validated — proceeding to feature inventory extraction (Phase 2)." Then begin Phase 2 immediately. DO NOT stop. DO NOT wait for user input.
+
 ---
 
 ## PHASE 2 — EXTRACT FEATURE INVENTORY
@@ -84,11 +87,12 @@ A "feature unit" is any significant module or directory group that represents a 
 - The layer structure description (e.g. services/, controllers/, repositories/)
 - Any module or feature names explicitly called out
 
-\`\`\`
-FEATURE INVENTORY
-  <module-name>   path: <path>   layer: <layer name>
-  ...
-\`\`\`
+> ⚠️ **OUTPUT THIS TABLE NOW — before continuing to story generation.** The feature inventory must be a visible intermediate result. Do not merge this step with Phase 3. If the table is not printed here, features will be silently lost.
+
+| # | Module Name | Path | Layer | Notes |
+|---|-------------|------|-------|-------|
+| 1 | \`<module-name>\` | \`<path>\` | \`<layer name>\` | — |
+| … | | | | |
 
 **From Doc 09 — build the skip list:**
 
@@ -105,6 +109,8 @@ SKIP LIST (from Doc 09)
 If Doc 09 is missing: note "⚠️ No dead code analysis found — all modules will get stories. Run /assess to identify dead code before rebuilding."
 
 **Cross-reference:** Remove any feature unit from the inventory whose path appears in the skip list.
+
+> **After Phase 2:** Say exactly: "Feature inventory complete — [N] modules identified, [M] on skip list, [N−M] proceeding to story generation (Phase 3)." Then begin Phase 3 immediately. DO NOT stop. DO NOT wait for user input.
 
 ---
 
@@ -166,6 +172,8 @@ Constraints: <migration constraints from Doc 11 if applicable, OR "none">
 
 > **Phase numbering note:** Phase numbers here are project-internal (layer-based ordering within this project). They do NOT map to workspace phase numbers. In a workspace context, all backend project stories belong to workspace Phase 2; all frontend project stories belong to workspace Phase 3.
 
+> **After Phase 3:** Say exactly: "All rebuild stories generated — proceeding to dependency ordering (Phase 4)." Then begin Phase 4 immediately. DO NOT stop. DO NOT wait for user input.
+
 ---
 
 ## PHASE 4 — ORDER BY DEPENDENCY
@@ -180,6 +188,8 @@ Order all stories using this priority:
    - Phase 4: API / route / controller layer
    - Phase 5: UI layer (frontend only — components, pages, state)
 3. **Mark parallel-safe:** stories in the same phase with no dependencies between each other = parallel-safe.
+
+> **After Phase 4:** Say exactly: "Stories ordered by dependency — proceeding to write output files (Phase 5)." Then begin Phase 5 immediately. DO NOT stop. DO NOT wait for user input.
 
 ---
 
@@ -268,6 +278,8 @@ If Doc 09 was missing: write a note explaining no skip list was generated and de
 [stories]
 ...
 \`\`\`
+
+> **After Phase 5:** Say exactly: "All 5 backlog files written to docs/backlog/ — proceeding to summary (Phase 6)." Then begin Phase 6 immediately. DO NOT stop. DO NOT wait for user input.
 
 ---
 

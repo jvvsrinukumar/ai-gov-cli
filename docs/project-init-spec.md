@@ -73,6 +73,7 @@ src/
         dart-di.ts           ← injection.dart
         dart-main.ts         ← main.dart, app.dart
         dart-bricks.ts       ← Mason brick templates
+        dart-android.ts      ← Android Gradle files (declarative format, pinned versions)
     next/
       adapter.ts             ← Phase 3: NextAdapter
       prompts.ts             ← Next.js-specific questions
@@ -553,6 +554,19 @@ test/
     pagination/
   helpers/
 integration_test/
+android/
+  app/
+    build.gradle             ← declarative plugins block (no imperative apply)
+    src/
+      main/
+        AndroidManifest.xml
+        kotlin/<package/path>/
+          MainActivity.kt
+  gradle/
+    wrapper/
+      gradle-wrapper.properties  ← Gradle 8.10.2 pinned
+  build.gradle               ← allprojects block only (no buildscript/classpath)
+  settings.gradle            ← declarative pluginManagement + plugins block
 .github/workflows/
 .vscode/settings.json
 pubspec.yaml
@@ -560,6 +574,165 @@ analysis_options.yaml
 mason.yaml
 .gitignore
 ```
+
+**Android version constants (defined in `dart-android.ts`, exported for tests):**
+
+```typescript
+export const ANDROID_VERSIONS = {
+  gradle:      '8.10.2',
+  agp:         '8.6.1',   // Android Gradle Plugin
+  kotlin:      '2.1.0',
+  compileSdk:  35,
+  minSdk:      23,
+  targetSdk:   35,
+  java:        'VERSION_17',
+} as const;
+```
+
+These constants are the **only place** version numbers live. Both template generation and tests import from here — changing a version in one place updates everything.
+
+**`settings.gradle` generation rules:**
+
+- Use declarative `pluginManagement {}` block — reads `flutter.sdk` from `local.properties`
+- `includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")` instead of `apply from:`
+- Declare three plugins: `dev.flutter.flutter-plugin-loader`, `com.android.application` (AGP version from constants), `org.jetbrains.kotlin.android` (Kotlin version from constants)
+- `apply false` on the last two — they are applied per-module in `app/build.gradle`
+- No `buildscript {}` block at all
+
+Generated output:
+```gradle
+pluginManagement {
+    def flutterSdkPath = {
+        def properties = new Properties()
+        file("local.properties").withInputStream { properties.load(it) }
+        def flutterSdkPath = properties.getProperty("flutter.sdk")
+        assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+        flutterSdkPath
+    }()
+    settings.ext.flutterSdkPath = flutterSdkPath
+
+    includeBuild("$flutterSdkPath/packages/flutter_tools/gradle")
+
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+plugins {
+    id "dev.flutter.flutter-plugin-loader" version "1.0.0"
+    id "com.android.application" version "8.6.1" apply false
+    id "org.jetbrains.kotlin.android" version "2.1.0" apply false
+}
+
+include ":app"
+```
+
+**Root `build.gradle` generation rules:**
+
+- `allprojects` block with `google()` and `mavenCentral()` repositories only
+- No `buildscript {}`, no `classpath` dependencies — AGP is declared in `settings.gradle`
+
+Generated output:
+```gradle
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = "../build"
+subprojects {
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
+}
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
+}
+```
+
+**`app/build.gradle` generation rules:**
+
+- Starts with declarative `plugins {}` block — three plugin IDs, no `apply plugin:` calls
+- `android {}` block uses `flutter.compileSdkVersion`, `flutter.ndkVersion` — not hardcoded
+- `compileOptions` and `kotlinOptions` both set to Java 17 (from `ANDROID_VERSIONS.java`)
+- `defaultConfig.applicationId` = `ctx.androidPackage`
+- `defaultConfig.minSdk`, `targetSdk` from `ANDROID_VERSIONS` constants
+- `versionCode` and `versionName` read from `flutter.versionCode` / `flutter.versionName` locals
+- No `def localProperties` block, no `def flutterRoot` block — those are imperative and removed
+
+Generated output:
+```gradle
+plugins {
+    id "com.android.application"
+    id "kotlin-android"
+    id "dev.flutter.flutter-gradle-plugin"
+}
+
+android {
+    namespace "<ctx.androidPackage>"
+    compileSdk flutter.compileSdkVersion
+    ndkVersion flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    defaultConfig {
+        applicationId "<ctx.androidPackage>"
+        minSdk flutter.minSdkVersion
+        targetSdk flutter.targetSdkVersion
+        versionCode flutterVersionCode.toInteger()
+        versionName flutterVersionName
+    }
+
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+        }
+    }
+}
+
+flutter {
+    source "../.."
+}
+```
+
+**`gradle-wrapper.properties` generation rules:**
+
+- `distributionUrl` pinned to Gradle version from `ANDROID_VERSIONS.gradle`
+- All other fields are standard defaults
+
+Generated output:
+```properties
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.10.2-all.zip
+```
+
+**`AndroidManifest.xml` generation rules:**
+
+- Minimal manifest — `package` attribute set to `ctx.androidPackage`
+- `FlutterActivity` intent filter, `INTERNET` permission, `VIBRATE` permission
+- No hardcoded activities beyond `MainActivity`
+
+**`MainActivity.kt` generation rules:**
+
+- Package matches `ctx.androidPackage`
+- Extends `FlutterActivity()` — single-line class body
+- File path derived from package: `com.techvedika.axelo` → `com/techvedika/axelo/MainActivity.kt`
 
 **`AppConfig` generation rules:**
 - One static getter per service: `static String get <camelCase(service.name)>BaseUrl`
@@ -1150,6 +1323,179 @@ describe('FlutterAdapter.scanHints', () => {
   });
   it('returns pub for detectedPackageManager', () => {
     expect(adapter.scanHints(makeFlutterCtx()).detectedPackageManager).toBe('pub');
+  });
+});
+```
+
+**Android Gradle file tests (`dart-android.ts` output):**
+
+```typescript
+describe('Android Gradle files — declarative format', () => {
+  beforeEach(async () => {
+    await adapter.scaffold(makeFlutterCtx({
+      androidPackage: 'com.techvedika.axelo',
+    }));
+  });
+
+  // gradle-wrapper.properties
+  it('gradle-wrapper.properties exists', () => {
+    expect(existsSync(join(projectDir, 'android/gradle/wrapper/gradle-wrapper.properties'))).toBe(true);
+  });
+  it('gradle-wrapper.properties pins Gradle 8.10.2', () => {
+    const c = readFileSync(join(projectDir, 'android/gradle/wrapper/gradle-wrapper.properties'), 'utf-8');
+    expect(c).toContain('gradle-8.10.2-all.zip');
+  });
+  it('gradle-wrapper.properties does NOT contain 8.4 or older', () => {
+    const c = readFileSync(join(projectDir, 'android/gradle/wrapper/gradle-wrapper.properties'), 'utf-8');
+    expect(c).not.toMatch(/gradle-[0-7]\.|gradle-8\.[0-6]\./);
+  });
+
+  // settings.gradle
+  it('settings.gradle exists', () => {
+    expect(existsSync(join(projectDir, 'android/settings.gradle'))).toBe(true);
+  });
+  it('settings.gradle uses pluginManagement block', () => {
+    const c = readFileSync(join(projectDir, 'android/settings.gradle'), 'utf-8');
+    expect(c).toContain('pluginManagement {');
+  });
+  it('settings.gradle uses includeBuild (not apply from)', () => {
+    const c = readFileSync(join(projectDir, 'android/settings.gradle'), 'utf-8');
+    expect(c).toContain('includeBuild(');
+    expect(c).not.toContain('apply from:');
+  });
+  it('settings.gradle declares AGP via plugins block with apply false', () => {
+    const c = readFileSync(join(projectDir, 'android/settings.gradle'), 'utf-8');
+    expect(c).toContain('id "com.android.application" version');
+    expect(c).toContain('apply false');
+  });
+  it('settings.gradle declares Kotlin plugin', () => {
+    const c = readFileSync(join(projectDir, 'android/settings.gradle'), 'utf-8');
+    expect(c).toContain('id "org.jetbrains.kotlin.android"');
+  });
+  it('settings.gradle does NOT contain buildscript block', () => {
+    const c = readFileSync(join(projectDir, 'android/settings.gradle'), 'utf-8');
+    expect(c).not.toContain('buildscript');
+  });
+  it('settings.gradle does NOT contain classpath', () => {
+    const c = readFileSync(join(projectDir, 'android/settings.gradle'), 'utf-8');
+    expect(c).not.toContain('classpath');
+  });
+  it('settings.gradle AGP version matches ANDROID_VERSIONS.agp constant', () => {
+    const c = readFileSync(join(projectDir, 'android/settings.gradle'), 'utf-8');
+    expect(c).toContain(`version "${ANDROID_VERSIONS.agp}"`);
+  });
+
+  // root build.gradle
+  it('root build.gradle exists', () => {
+    expect(existsSync(join(projectDir, 'android/build.gradle'))).toBe(true);
+  });
+  it('root build.gradle does NOT contain buildscript or classpath', () => {
+    const c = readFileSync(join(projectDir, 'android/build.gradle'), 'utf-8');
+    expect(c).not.toContain('buildscript');
+    expect(c).not.toContain('classpath');
+  });
+  it('root build.gradle contains allprojects with google() and mavenCentral()', () => {
+    const c = readFileSync(join(projectDir, 'android/build.gradle'), 'utf-8');
+    expect(c).toContain('allprojects {');
+    expect(c).toContain('google()');
+    expect(c).toContain('mavenCentral()');
+  });
+
+  // app/build.gradle
+  it('app/build.gradle exists', () => {
+    expect(existsSync(join(projectDir, 'android/app/build.gradle'))).toBe(true);
+  });
+  it('app/build.gradle starts with plugins block', () => {
+    const c = readFileSync(join(projectDir, 'android/app/build.gradle'), 'utf-8');
+    expect(c.trimStart()).toMatch(/^plugins\s*\{/);
+  });
+  it('app/build.gradle declares dev.flutter.flutter-gradle-plugin', () => {
+    const c = readFileSync(join(projectDir, 'android/app/build.gradle'), 'utf-8');
+    expect(c).toContain('id "dev.flutter.flutter-gradle-plugin"');
+  });
+  it('app/build.gradle does NOT contain imperative apply plugin', () => {
+    const c = readFileSync(join(projectDir, 'android/app/build.gradle'), 'utf-8');
+    expect(c).not.toContain('apply plugin:');
+    expect(c).not.toContain('apply from:');
+  });
+  it('app/build.gradle does NOT contain localProperties or flutterRoot blocks', () => {
+    const c = readFileSync(join(projectDir, 'android/app/build.gradle'), 'utf-8');
+    expect(c).not.toContain('def localProperties');
+    expect(c).not.toContain('def flutterRoot');
+    expect(c).not.toContain('def flutterSdkPath');
+  });
+  it('app/build.gradle sets namespace to androidPackage', () => {
+    const c = readFileSync(join(projectDir, 'android/app/build.gradle'), 'utf-8');
+    expect(c).toContain('namespace "com.techvedika.axelo"');
+  });
+  it('app/build.gradle sets applicationId to androidPackage', () => {
+    const c = readFileSync(join(projectDir, 'android/app/build.gradle'), 'utf-8');
+    expect(c).toContain('applicationId "com.techvedika.axelo"');
+  });
+  it('app/build.gradle sets Java 17 compatibility', () => {
+    const c = readFileSync(join(projectDir, 'android/app/build.gradle'), 'utf-8');
+    expect(c).toContain('sourceCompatibility JavaVersion.VERSION_17');
+    expect(c).toContain('targetCompatibility JavaVersion.VERSION_17');
+    expect(c).toContain('jvmTarget = "17"');
+  });
+  it('app/build.gradle uses flutter.compileSdkVersion (not hardcoded)', () => {
+    const c = readFileSync(join(projectDir, 'android/app/build.gradle'), 'utf-8');
+    expect(c).toContain('compileSdk flutter.compileSdkVersion');
+    expect(c).not.toMatch(/compileSdk\s+\d+/);
+  });
+
+  // MainActivity.kt
+  it('MainActivity.kt exists at correct package path', () => {
+    expect(existsSync(join(
+      projectDir, 'android/app/src/main/kotlin/com/techvedika/axelo/MainActivity.kt'
+    ))).toBe(true);
+  });
+  it('MainActivity.kt has correct package declaration', () => {
+    const c = readFileSync(
+      join(projectDir, 'android/app/src/main/kotlin/com/techvedika/axelo/MainActivity.kt'), 'utf-8'
+    );
+    expect(c).toContain('package com.techvedika.axelo');
+  });
+  it('MainActivity.kt extends FlutterActivity', () => {
+    const c = readFileSync(
+      join(projectDir, 'android/app/src/main/kotlin/com/techvedika/axelo/MainActivity.kt'), 'utf-8'
+    );
+    expect(c).toContain('FlutterActivity()');
+  });
+
+  // AndroidManifest.xml
+  it('AndroidManifest.xml exists', () => {
+    expect(existsSync(join(projectDir, 'android/app/src/main/AndroidManifest.xml'))).toBe(true);
+  });
+  it('AndroidManifest.xml has correct package', () => {
+    const c = readFileSync(join(projectDir, 'android/app/src/main/AndroidManifest.xml'), 'utf-8');
+    expect(c).toContain('com.techvedika.axelo');
+  });
+  it('AndroidManifest.xml includes INTERNET permission', () => {
+    const c = readFileSync(join(projectDir, 'android/app/src/main/AndroidManifest.xml'), 'utf-8');
+    expect(c).toContain('android.permission.INTERNET');
+  });
+});
+```
+
+**Version constant tests (pure — no filesystem):**
+
+```typescript
+import { ANDROID_VERSIONS } from '../../src/stacks/flutter/templates/dart-android.js';
+
+describe('ANDROID_VERSIONS constants', () => {
+  it('gradle >= 8.7.0 (Flutter minimum requirement)', () => {
+    const [major, minor] = ANDROID_VERSIONS.gradle.split('.').map(Number);
+    expect(major > 8 || (major === 8 && minor >= 7)).toBe(true);
+  });
+  it('agp >= 8.1.1 (Flutter minimum requirement)', () => {
+    const parts = ANDROID_VERSIONS.agp.split('.').map(Number);
+    const [major, minor, patch] = parts;
+    const meetsMin = major > 8 || (major === 8 && (minor > 1 || (minor === 1 && patch >= 1)));
+    expect(meetsMin).toBe(true);
+  });
+  it('java is VERSION_17', () => {
+    expect(ANDROID_VERSIONS.java).toBe('VERSION_17');
   });
 });
 ```

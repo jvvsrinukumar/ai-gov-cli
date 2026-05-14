@@ -1,6 +1,6 @@
 # MCP Governance Guide
 
-**Version:** 17.5.0 · **Audience:** Team leads + Developers · **Feature:** `ai-gov mcp`
+**Version:** 17.6.0 · **Audience:** Team leads + Developers · **Feature:** `ai-gov mcp`
 
 Governs how MCP (Model Context Protocol) servers — Jira, Figma, Zeplin, PostgreSQL, GitHub, and others — are configured across a team so that:
 
@@ -110,7 +110,7 @@ Org-wide values (like site name) are baked in as literals. Personal tokens use `
 ```json
 {
   "_aigov": {
-    "version": "17.5.0",
+    "version": "17.6.0",
     "tools": ["jira", "figma", "zeplin", "postgres"]
   },
   "mcpServers": {

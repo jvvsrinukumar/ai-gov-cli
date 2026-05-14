@@ -128,7 +128,10 @@ export function findFilesRecursive(
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
             const full = join(dir, entry.name);
             if (entry.name === 'node_modules' || entry.name === '.dart_tool' ||
-                entry.name === 'build' || entry.name === '__pycache__') continue;
+                entry.name === 'build' || entry.name === '__pycache__' ||
+                entry.name === '.next' || entry.name === '.nuxt' ||
+                entry.name === 'target' || entry.name === 'out' ||
+                entry.name === '.gradle' || entry.name === '.flutter-plugins') continue;
             if (entry.isFile() && filter(full)) results.push(full);
             if (entry.isDirectory() && depth < maxDepth) {
                 results.push(...findFilesRecursive(full, maxDepth, filter, depth + 1));

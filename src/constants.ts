@@ -1,4 +1,4 @@
 /** Shared constants — single source of truth for version strings. */
 
-export const VERSION = '17.5.0';
-export const HOOK_VERSION = '17.5.0';
+export const VERSION = '17.6.0';
+export const HOOK_VERSION = '17.6.0';

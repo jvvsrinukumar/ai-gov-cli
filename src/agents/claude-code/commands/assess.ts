@@ -102,7 +102,7 @@ export function generateAssessCommand(c: GovernanceConfig): string {
 
 ---
 
-> ## ⚠️ EXECUTION RULES
+> ## ⚠️ EXECUTION RULES — READ BEFORE STARTING
 >
 > 1. **This is a read-only assessment. Do NOT modify any source code.**
 > 2. **All 11 documents are REQUIRED. Generate every one.**
@@ -110,6 +110,9 @@ export function generateAssessCommand(c: GovernanceConfig): string {
 > 4. **Four options exist: Rewrite, Refactor, Strangler Fig, Leave It.** All four are valid outcomes.
 > 5. **"Leave It" is not failure.** It is the correct answer when debt is stable and not costing velocity.
 > 6. **Output goes to \`docs/assessment/\`.** If the directory exists, this is a re-run — preserve previous metrics.
+> 7. **DO NOT STOP between phases.** Phase headings (## PHASE N) are section labels — not stopping points. After every transition marker below, continue to the next phase immediately without waiting for user input or confirmation.
+> 8. **ALL Phase 1 steps AND all 11 documents in Phase 2 MUST complete in a single run.** The assessment is not complete until all 11 files have been written to \`docs/assessment/\`.
+> 9. **Scope completeness is mandatory before Phase 2.** If measurement reveals more files or packages than initially counted, stop and complete the remeasurement before writing any document. Do not write documents against partial measurements.
 
 ---
 
@@ -141,6 +144,11 @@ TOTALS
   Files > 500 lines:      [N]  (list all — these are refactor candidates)
   Empty directories:      [N]  (list all)
 \`\`\`
+
+> ⚠️ **SCOPE COMPLETENESS CHECK — do this before Step 2:**
+> Compare your file count to any prior expectation (prior run, README, earlier in this conversation).
+> - If consistent: continue to Step 2 immediately.
+> - If you discover new directories or packages beyond your initial count: STOP. Re-run Step 1 for those directories and update the TOTALS block before proceeding. Documents 03, 04, and 06 depend on this total — unmeasured scope makes effort estimates meaningless.
 
 ### Step 2 — Dependency health
 
@@ -248,6 +256,8 @@ DEBT PATTERNS DETECTED
   [ ] None of the above — debt is distributed, not patterned
 \`\`\`
 
+> **After Phase 1:** Say exactly: "All 6 measurements complete — proceeding to generate assessment documents (Phase 2)." Then begin Document 00 immediately. DO NOT stop. DO NOT summarize Phase 1 as a standalone output. DO NOT wait for user input.
+
 ---
 
 ## PHASE 2 — GENERATE THE ASSESSMENT DOCUMENTS
@@ -346,10 +356,13 @@ Business pressure: [ ] No complaints (1) / [ ] Features blocked (2) / [ ] Slowin
 <!-- /HUMAN -->
 \`\`\`
 
+> **If Business Pressure has not been provided by the developer:** use a placeholder score of **2 (Features blocked)** for the scoring matrix. Note the assumption explicitly in the Evidence column: "assumed 2 — developer has not provided input". Set CONFIDENCE to Low. Do not stall — generate the recommendation with this assumption.
+
 **State the recommendation clearly:**
 \`\`\`
 RECOMMENDATION: [Rewrite / Refactor / Strangler Fig / Leave It]
 CONFIDENCE: [High / Medium / Low — Low if Business pressure not yet scored]
+BUSINESS PRESSURE: [actual value provided / assumed 2 — awaiting developer input]
 \`\`\`
 
 ### Document 03 — Implementation Phases
@@ -456,6 +469,8 @@ Write \`docs/assessment/11_migration_compatibility.md\`.
 - Data migration: schema changes, backfill strategy
 - Feature flags: what flags are needed?
 - Rollback: how to revert each phase independently
+
+> **After Document 11 (Phase 2 complete):** Say exactly: "All 11 assessment documents written — proceeding to summary (Phase 3)." Then begin Step 7 immediately. DO NOT stop. DO NOT wait for user input.
 
 ---
 
