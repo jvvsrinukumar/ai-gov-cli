@@ -7,6 +7,26 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [18.0.0] — 2026-05-14
+
+### Added
+- **Governance Dashboard** — Hub Server spec, pre-push hook generator (`src/generators/git-hooks/pre-push.ts`), hub config reader (`src/utils/hub-config.ts`), CI template hub reporting (GitHub, GitLab, Bitbucket), pre-commit AI usage logging, and 13 property-based test suites (Properties 9–18, 22–23).
+- **AI Usage Telemetry** — Pre-commit hook detects AI platform (Claude Code / Kiro) via session recency check. Pre-push hook collects AI-assisted commit counts, command names, platform distribution, and active hook counts.
+
+### Fixed
+- **Pre-commit AI detection** — Replaced directory-existence check with session.json recency check (modified within 30 min) to eliminate false positives.
+- **Pre-commit command detection** — Removed `git log --format=%s -1 HEAD` fallback that read the previous commit's message instead of the staged one.
+- **Bitbucket developer hash** — Removed "bitbucket" literal suffix; now hashes only the actor name, consistent with GitHub and GitLab.
+- **`init-ci.ts`** — Added HTTPS guard: non-https:// hub URLs are silently ignored before being passed to CI generators.
+- **Pre-push `|| true`** — Removed misleading `|| true` after `fi` keywords in 3 if-blocks.
+- **File size check** — Error message now correctly states 300KB hard limit (was saying 200).
+
+### Changed
+- Version bump to 18.0.0 across all CI templates, docs, and constants.
+- Added `coverage/` and `.claude/` to `.gitignore`.
+
+---
+
 ## [17.6.0] — 2026-05-14
 
 ### Fixed

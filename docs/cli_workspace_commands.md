@@ -1,7 +1,7 @@
 # Workspace Commands Guide
 ## How Commands Work Across Projects
 
-**Version:** 16.0.0
+**Version:** 18.0.0
 **Audience:** Developers working in multi-project workspaces
 
 > **See [`workspace_governance_guide.md`](./workspace_governance_guide.md) for the full reference.**
@@ -558,14 +558,27 @@ The per-project `.claude/git-hooks/pre-commit.sh` is always generated — only t
 
 ## Upgrading workspace hooks
 
-When a new version of ai-gov is released, upgrade each project individually:
+### Upgrade all projects at once (recommended)
+
+```bash
+# Upgrade hooks + commands in all projects (preserves steering files)
+npx ai-gov workspace --upgrade
+
+# Upgrade including steering files
+npx ai-gov workspace --upgrade --force
+
+# Preview without writing
+npx ai-gov workspace --upgrade --dry-run
+```
+
+### Upgrade individual projects
 
 ```bash
 npx ai-gov upgrade --dir ./backend/api
 npx ai-gov upgrade --dir ./frontend/web
 ```
 
-Or use a loop for larger workspaces:
+Or loop through a workspace:
 
 ```bash
 for dir in backend/* frontend/*; do
@@ -573,7 +586,7 @@ for dir in backend/* frontend/*; do
 done
 ```
 
-This regenerates hooks, commands, and CLAUDE.md in each project without touching steering files. See [`upgrade_guide.md`](./upgrade_guide.md) for full details.
+`workspace --upgrade` regenerates hooks, commands, and CLAUDE.md in each project without touching steering files. See [`upgrade_guide.md`](./upgrade_guide.md) for full details.
 
 ---
 
@@ -604,7 +617,7 @@ No. Since v16.0.0, all generated hook scripts use python3 with jq as a fallback.
 The hook scripts are in `.claude/git-hooks/` (committed to git, so they get them on `git clone`). The `.git/hooks/pre-commit` wrappers are NOT committed (they're local). The new developer needs to run once:
 ```bash
 cd <project-dir>
-npx ai-gov init --git-hooks
+npx ai-gov onboard
 ```
 This installs the local wrappers. The scripts themselves are already there from the clone.
 

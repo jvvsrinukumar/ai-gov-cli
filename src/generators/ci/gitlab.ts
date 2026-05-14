@@ -8,7 +8,7 @@ hub-report:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq
-    - npm install -g ai-gov@17.4.0
+    - npm install -g ai-gov@18.0.0
   script:
     - |
       RESULT=$(ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format json)
@@ -28,7 +28,7 @@ governance-check:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq
-    - npm install -g ai-gov@17.4.0
+    - npm install -g ai-gov@18.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab
   rules:

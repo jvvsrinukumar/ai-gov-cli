@@ -1,7 +1,9 @@
 # Flutter Android Gradle Migration Guide
 
-**Version:** 17.6.0  
+**Version:** 18.0.0  
 **Applies to:** Any Flutter project created before Flutter 3.22 (or upgraded to Flutter 3.22+)
+
+> **Note:** Projects created with `ai-gov init --stack flutter` (v18.0.0+) get the correct declarative format from day one.
 
 ---
 
@@ -15,7 +17,7 @@ Flutter 3.22 dropped support for the old imperative Gradle plugin format. Projec
 | `apply plugin: 'dev.flutter.flutter-gradle-plugin'` in `app/build.gradle` | `Failed to apply plugin 'dev.flutter.flutter-gradle-plugin'` |
 | `classpath 'com.android.tools.build:gradle:<version>'` in root `build.gradle` | AGP version conflict with Flutter's minimum |
 
-All three are fixed together by migrating to the **declarative plugins block** format. New projects created with `ai-gov project init --type flutter` (v17.6.0+) get the correct format from day one.
+All three are fixed together by migrating to the **declarative plugins block** format. New projects created with `ai-gov init --stack flutter` (v18.0.0+) get the correct format from day one.
 
 ---
 
@@ -189,7 +191,7 @@ flutter run
 
 ## How `ai-gov project init` prevents this
 
-Projects created with `ai-gov project init --type flutter` (v17.6.0+) generate all four Android files in the declarative format with pinned versions from the `ANDROID_VERSIONS` constants in `src/stacks/flutter/templates/dart-android.ts`:
+Projects created with `ai-gov init --stack flutter` (v18.0.0+) generate all four Android files in the declarative format with pinned versions from the `ANDROID_VERSIONS` constants in `src/stacks/flutter/templates/dart-android.ts`:
 
 ```typescript
 export const ANDROID_VERSIONS = {

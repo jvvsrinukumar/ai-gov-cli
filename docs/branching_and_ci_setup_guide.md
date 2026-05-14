@@ -3,8 +3,8 @@
 > This guide is written for freshers, students, and junior developers.
 > Every step is explained. Nothing is assumed. Copy-paste and follow.
 
-**Version:** 16.0.0
-**Last updated:** April 2026
+**Version:** 18.0.0
+**Last updated:** May 2026
 
 ---
 
@@ -243,7 +243,7 @@ git add .gitlab-ci.yml                            # GitLab
 # OR
 git add bitbucket-pipelines.yml                   # Bitbucket
 
-git commit -m "chore: add ai-gov governance framework v16.0.0"
+git commit -m "chore: add ai-gov governance framework v18.0.0"
 git push origin develop    # or whatever your main integration branch is
 ```
 
@@ -258,7 +258,7 @@ Team — I've added ai-gov governance to the project. Here's what you need to do
    git checkout develop && git pull
 
 2. Install git hooks (one-time, takes 5 seconds):
-   npx ai-gov init --git-hooks
+   npx ai-gov onboard
 
 3. Make sure python3 or jq is installed (hooks require one):
    python3 --version
@@ -282,7 +282,7 @@ git checkout develop
 git pull origin develop
 
 # Step 2: Install git hooks locally
-npx ai-gov init --git-hooks
+npx ai-gov onboard
 
 # Step 3: Verify python3 or jq is installed (hooks need one)
 python3 --version
@@ -695,7 +695,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install governance CLI
-        run: npm install -g ai-gov@16.0.0
+        run: npm install -g ai-gov@18.0.0
 
       - name: Run governance check
         run: ai-gov pr-check --base ${{ github.event.pull_request.base.ref }} --format github > /tmp/governance-report.md
@@ -884,7 +884,7 @@ governance-check:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq
-    - npm install -g ai-gov@16.0.0
+    - npm install -g ai-gov@18.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab
   rules:
@@ -942,7 +942,7 @@ governance-check:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq curl
-    - npm install -g ai-gov@16.0.0
+    - npm install -g ai-gov@18.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab > /tmp/report.md
     - |
@@ -1064,7 +1064,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq
-            - npm install -g ai-gov@16.0.0
+            - npm install -g ai-gov@18.0.0
             - ai-gov pr-check --base $BITBUCKET_PR_DESTINATION_BRANCH --format terminal
 ```
 
@@ -1109,7 +1109,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq curl
-            - npm install -g ai-gov@16.0.0
+            - npm install -g ai-gov@18.0.0
             - ai-gov pr-check --base $BITBUCKET_PR_DESTINATION_BRANCH --format terminal > /tmp/report.txt
             - cat /tmp/report.txt
             - |
@@ -1241,7 +1241,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install governance CLI
-        run: npm install -g ai-gov@16.0.0
+        run: npm install -g ai-gov@18.0.0
 
       - name: Run governance check
         run: ai-gov pr-check --base ${{ github.event.pull_request.base.ref }} --format github > /tmp/governance-report.md
@@ -1285,7 +1285,7 @@ governance-check:
   image: node:20
   before_script:
     - apt-get update && apt-get install -y jq
-    - npm install -g ai-gov@16.0.0
+    - npm install -g ai-gov@18.0.0
   script:
     - ai-gov pr-check --base $CI_MERGE_REQUEST_TARGET_BRANCH_NAME --format gitlab
   rules:
@@ -1324,7 +1324,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq
-            - npm install -g ai-gov@16.0.0
+            - npm install -g ai-gov@18.0.0
             - |
               # Only run for specific target branches
               TARGET="$BITBUCKET_PR_DESTINATION_BRANCH"
@@ -1400,11 +1400,11 @@ winget install Python.Python.3
 
 ---
 
-### Challenge 2: ".git/hooks/ not installed" — developer forgot to run init --git-hooks
+### Challenge 2: ".git/hooks/ not installed" — developer forgot to run onboard
 
 **What happens:** Developer clones the repo, starts committing. No governance checks fire. They think everything is fine.
 
-**Why:** `.git/hooks/` is local to each machine. Git doesn't commit it. Each developer must run `npx ai-gov init --git-hooks` once.
+**Why:** `.git/hooks/` is local to each machine. Git doesn't commit it. Each developer must run `npx ai-gov onboard` once.
 
 **How to detect:**
 ```bash
@@ -1414,14 +1414,14 @@ ls -la .git/hooks/pre-commit
 
 **How to fix:**
 ```bash
-npx ai-gov init --git-hooks
+npx ai-gov onboard
 ```
 
 **Prevention:** Add a `postinstall` script to `package.json`:
 ```json
 {
   "scripts": {
-    "postinstall": "npx ai-gov init --git-hooks 2>/dev/null || true"
+    "postinstall": "npx ai-gov onboard 2>/dev/null || true"
   }
 }
 ```
@@ -1432,7 +1432,7 @@ Now every time someone runs `npm install`, git hooks are installed automatically
 
 ### Challenge 3: "Existing hook system detected: husky"
 
-**What happens:** You run `npx ai-gov init --git-hooks` and it doesn't install wrappers. Instead it prints integration guidance.
+**What happens:** You run `npx ai-gov onboard` and it doesn't install wrappers. Instead it prints integration guidance.
 
 **Why:** ai-gov detects husky (or lefthook, or pre-commit) and doesn't want to overwrite your existing hooks.
 
@@ -1693,7 +1693,7 @@ npx ai-gov doctor
 
 # Commit
 git add .claude/ specs/ CLAUDE.md .github/    # adjust for your platform
-git commit -m "chore: add ai-gov governance framework v16.0.0"
+git commit -m "chore: add ai-gov governance framework v18.0.0"
 git push origin develop
 ```
 
@@ -1703,8 +1703,8 @@ git push origin develop
 git clone <repo-url>
 cd your-project
 npm install
-npx ai-gov init --git-hooks    # installs local .git/hooks/ wrappers
-npx ai-gov onboard             # installs hooks, checks runtime, verifies setup
+npx ai-gov onboard             # installs .git/hooks/ wrappers, verifies runtime
+npx ai-gov mcp onboard         # set up MCP tokens (if project uses MCP)
 npx ai-gov doctor              # verify everything is active
 ```
 
@@ -1765,4 +1765,4 @@ add login screen                                        ❌ (missing type prefix
 
 ---
 
-*This guide covers ai-gov v16.0.0. For CLI reference and troubleshooting, see [complete_usage_guide.md](./complete_usage_guide.md).*
+*This guide covers ai-gov v18.0.0. For CLI reference and troubleshooting, see [complete_usage_guide.md](./complete_usage_guide.md).*

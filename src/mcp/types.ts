@@ -65,4 +65,5 @@ export interface McpCommandOptions {
   dir: string;
   overwrite?: boolean;
   tool?: string;
+  dryRun?: boolean;
 }

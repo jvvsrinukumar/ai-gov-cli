@@ -15,9 +15,11 @@ import { join, resolve } from 'path';
 import { execSync } from 'child_process';
 import { log } from '../utils/logger.js';
 import { installGitHookWrappers } from './init-git-hooks.js';
+import { detectAgent } from '../agents/detect-agent.js';
 
 export interface OnboardOptions {
     dir: string;
+    dryRun?: boolean;
 }
 
 export function runOnboard(options: OnboardOptions): void {
@@ -37,12 +39,13 @@ export function runOnboard(options: OnboardOptions): void {
     const warn = (msg: string) => console.log(`  ⚠  ${msg}`);
 
     // 1. Detect agent from existing directory
+    const agent = detectAgent(projectDir, undefined);
     const hasKiro = existsSync(join(projectDir, '.kiro'));
     const hasClaude = existsSync(join(projectDir, '.claude'));
-    const agent = hasKiro ? 'kiro' : hasClaude ? 'claude-code' : null;
+    const agentPresent = hasKiro || hasClaude;
     const agentDir = agent === 'kiro' ? '.kiro' : '.claude';
 
-    if (!agent) {
+    if (!agentPresent) {
         fail('Neither .kiro/ nor .claude/ found', 'Team lead must run: npx ai-gov init first');
         console.log('');
         console.log('  This project has not been initialised with ai-gov yet.');
@@ -96,6 +99,9 @@ export function runOnboard(options: OnboardOptions): void {
             warn(`  Run 'npx ai-gov init --git-hooks --force' to replace it, or add manually:`);
             warn(`  bash ${agentDir}/git-hooks/pre-commit.sh`);
         }
+    } else if (options.dryRun) {
+        log.dryNew('.git/hooks/pre-commit', 3);
+        log.dryNew('.git/hooks/commit-msg', 3);
     } else {
         console.log('  Installing git hook wrappers...');
         installGitHookWrappers(projectDir, false, false, agent);

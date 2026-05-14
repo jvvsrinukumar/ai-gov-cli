@@ -29,6 +29,7 @@ import { generateGitHooks } from '../generators/git-hooks/index.js';
 import { log } from '../utils/logger.js';
 import { agentRegistry } from '../agents/types.js';
 import { HOOK_VERSION } from '../constants.js';
+import { detectAgent } from '../agents/detect-agent.js';
 
 export interface UpgradeOptions {
     dir: string;
@@ -47,8 +48,7 @@ export function runUpgrade(options: UpgradeOptions): void {
         process.exit(1);
     }
 
-    const kiroDir = join(projectDir, '.kiro');
-    const agent: Agent = (options.agent as Agent) ?? (existsSync(kiroDir) ? 'kiro' : 'claude-code');
+    const agent = detectAgent(projectDir, options.agent);
     const agentDirName = agent === 'kiro' ? '.kiro' : '.claude';
     const agentDir = join(projectDir, agentDirName);
 

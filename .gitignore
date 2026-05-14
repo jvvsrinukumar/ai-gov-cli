@@ -3,6 +3,8 @@ dist/
 *.js.map
 *.d.ts.map
 .DS_Store
+coverage/
+.claude/
 
 # AI governance CLI
 ai_governance_v14*.sh

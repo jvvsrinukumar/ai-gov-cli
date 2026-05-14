@@ -5,7 +5,7 @@ import { log } from './utils/logger.js';
 
 export function detectStack(projectDir: string, explicit?: string): Stack {
     if (explicit) {
-        const valid: Stack[] = ['flutter', 'kotlin', 'nodejs', 'react', 'angular', 'swiftui', 'python', 'java'];
+        const valid: Stack[] = ['flutter', 'kotlin', 'nodejs', 'react', 'next', 'angular', 'swiftui', 'python', 'java'];
         if (!valid.includes(explicit as Stack)) {
             log.error(`Unknown stack: ${explicit}`);
             process.exit(1);

@@ -35,7 +35,7 @@ function makeConfig(stack: Stack = 'nodejs', agent: 'claude-code' | 'kiro' = 'cl
     return {
         agent, stack, profile, scan, project: DEFAULT_PROJECT, blocks,
         isBackend: stack === 'nodejs' || stack === 'python' || stack === 'java',
-        hookVersion: '17.4.0', projectDir: '/tmp/test',
+        hookVersion: '18.0.0', projectDir: '/tmp/test',
         specFirstEnabled: false, conflictMode: 'keep',
         overwrite: false, dryRun: false, updateHooks: false,
     };

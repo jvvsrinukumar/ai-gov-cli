@@ -8,7 +8,7 @@ export function generateBitbucketCI(options?: { hubUrl?: string }): string {
           name: Report to Governance Hub
           script:
             - apt-get update && apt-get install -y jq
-            - npm install -g ai-gov@17.4.0
+            - npm install -g ai-gov@18.0.0
             - RESULT=$(ai-gov pr-check --format json)
             - DEVELOPER_HASH=$(echo -n "\${BITBUCKET_PR_AUTHOR}" | sha256sum | awk '{print $1}')
             - >-
@@ -30,7 +30,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq
-            - npm install -g ai-gov@17.4.0
+            - npm install -g ai-gov@18.0.0
             - ai-gov pr-check --base $BITBUCKET_PR_DESTINATION_BRANCH --format terminal
 ${hubReportingStep}`;
 }

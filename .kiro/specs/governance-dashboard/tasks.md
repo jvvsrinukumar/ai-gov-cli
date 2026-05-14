@@ -354,16 +354,17 @@ This plan implements the Governance Dashboard feature in two deliverables: (1) a
     - **Property 23: AI usage payload contains no content**
     - **Validates: Requirements 15.6**
 
-- [ ] 19. Implement AI Usage Telemetry — Hub Server and Dashboard
-  - [ ] 19.1 Extend Hub Server to store and aggregate AI usage data
+- [~] 19. Implement AI Usage Telemetry — Hub Server and Dashboard
+  - [x] 19.1 Extend Hub Server to store and aggregate AI usage data
     - Add `ai_usage` TEXT column (JSON) to events table migration
     - Extend event validation to accept optional ai_usage object (validate ai_platform enum, commands_used max 20 items each max 64 chars, active_hooks_count 0-999)
     - Extend GET /api/report to aggregate AI usage: total_ai_commits, ai_adoption_pct, commands_distribution, platform_distribution, per-team AI adoption rates
     - Calculate AI adoption trend using same logic as violation trends
     - Include compliance_comparison in ai_usage report section: ai_pass_rate and manual_pass_rate (null when no entries for category)
     - _Requirements: 1.9, 16.5, 16.6, 16.7, 16.9_
+    - **Status: Complete in ai-governance-hub/ (src/routes/report.ts aggregates ai_usage; validation in middleware/validate.ts)**
 
-  - [ ] 19.2 Implement AI Usage dashboard tab (`public/dashboard.html`)
+  - [~] 19.2 Implement AI Usage dashboard tab (`public/dashboard.html`)
     - Add "AI Usage" tab to navigation (7 tabs total)
     - Display aggregate metrics: total AI-assisted commits, AI adoption %, most-used commands, platform distribution
     - Display per-team breakdown: team name, AI adoption rate, top command, trend arrow
@@ -371,6 +372,7 @@ This plan implements the Governance Dashboard feature in two deliverables: (1) a
     - Add AI adoption rate line chart (daily granularity) for selected period
     - Support URL hash #ai-usage
     - _Requirements: 16.1, 16.2, 16.3, 16.4, 16.8_
+    - **Status: UI tab present and data binding wired; chart rendering pending**
 
   - [ ]* 19.3 Write property test for AI adoption trend calculation (Property 24)
     - **Property 24: AI adoption trend calculation**
@@ -383,12 +385,13 @@ This plan implements the Governance Dashboard feature in two deliverables: (1) a
     - Test trend calculation with various data distributions
     - _Requirements: 16.5, 16.7_
 
-  - [ ] 19.5 Extend report aggregation to compute compliance_comparison
+  - [x] 19.5 Extend report aggregation to compute compliance_comparison
     - Query events table within selected period: count entries where ai_platform != "manual" with "pass" status and total AI-assisted entries
     - Query events table within selected period: count entries where ai_platform == "manual" with "pass" status and total manual entries
     - Set ai_pass_rate to null when total AI-assisted entries is 0; set manual_pass_rate to null when total manual entries is 0
     - Include compliance_comparison object in the ai_usage section of GET /api/report response
     - _Requirements: 16.9_
+    - **Status: Complete in ai-governance-hub/ (compliance_comparison computed and included in /api/report response)**
 
   - [ ]* 19.6 Write property test for AI vs manual compliance rate (Property 25)
     - **Property 25: AI vs manual compliance rate calculation**

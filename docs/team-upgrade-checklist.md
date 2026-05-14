@@ -1,6 +1,6 @@
 # Team Upgrade Checklist
 
-**Package:** `ai-gov` · **Current version:** 17.6.0 · **Audience:** All developers + Team leads
+**Package:** `ai-gov` · **Current version:** 18.0.0 · **Audience:** All developers + Team leads
 
 Share this page whenever a new version of `ai-gov` is released. Follow the steps top to bottom.
 
@@ -17,7 +17,7 @@ If you get "command not found", the CLI is not installed globally. Install it fi
 Expected output for this release:
 
 ```
-17.6.0
+18.0.0
 ```
 
 ---
@@ -32,7 +32,7 @@ Verify the upgrade worked:
 
 ```bash
 ai-gov --version
-# 17.6.0
+# 18.0.0
 ```
 
 > **First install?** Same command: `npm install -g ai-gov@latest`
@@ -92,7 +92,7 @@ npx ai-gov upgrade --force
 
 ```bash
 git add .claude/        # or .kiro/ if using Kiro
-git commit -m "chore: upgrade ai-gov to v17.6.0"
+git commit -m "chore: upgrade ai-gov to v18.0.0"
 git push
 ```
 
@@ -183,9 +183,31 @@ npx ai-gov doctor
 
 ---
 
-## What changed in v17.6.0
+## What changed in v18.0.0
 
-### MCP governance (`ai-gov mcp`)
+### `next` stack added
+
+`ai-gov init --stack next` now generates governance for Next.js projects. Use `--stack next` explicitly for Next.js repos (React detection remains for pure React projects).
+
+### `--dry-run` for onboard, mcp init, mcp onboard
+
+All setup commands now support preview mode:
+
+```bash
+npx ai-gov onboard --dry-run       # preview git hook installation
+npx ai-gov mcp init --dry-run      # preview MCP config generation
+npx ai-gov mcp onboard --dry-run   # preview token setup
+```
+
+### Consistent agent detection
+
+`upgrade` and `onboard` now use the same agent detection logic as `init` and `doctor` — explicit flag → directory detection → default `claude-code`.
+
+### File size enforcement — backend stacks exempt
+
+300-line hard-block applies only to frontend stacks (react, next, angular, flutter, kotlin). Backend stacks (nodejs, python, java) generate a no-op stub.
+
+### v17.5.0 — MCP governance (`ai-gov mcp`)
 
 New command group for managing MCP server tokens securely across a team:
 
@@ -196,11 +218,11 @@ New command group for managing MCP server tokens securely across a team:
 
 See [MCP Governance Guide](./mcp-governance-guide.md) for the full walkthrough.
 
-### Jira Sync command (`/jira`)
+### v17.5.0 — Jira Sync command (`/jira`)
 
 New slash command for Claude Code (`/jira`) and Kiro hook (`workflow-jira-sync`) that reads spec `tasks.md` time estimates and creates Jira stories + sub-tasks via the Jira MCP server. Stores `.jira` metadata per spec to prevent duplicate sub-tasks on re-runs.
 
-### Task estimates steering
+### v17.5.0 — Task estimates steering
 
 `task-estimates.md` is now generated in both `.claude/steering/` and `.kiro/steering/` — provides Claude and Kiro with the team's time-boxing conventions (`[S]` / `[M]` / `[L]` / `[~Xmin]`).
 

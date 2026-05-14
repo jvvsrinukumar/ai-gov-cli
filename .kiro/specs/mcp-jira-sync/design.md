@@ -466,7 +466,7 @@ export function generateWorkflowJiraSync(c: GovernanceConfig): string;
 ```json
 {
   "_aigov": {
-    "version": "17.4.0",
+    "version": "18.0.0",
     "tools": ["jira", "figma", "postgres"]
   },
   "mcpServers": {

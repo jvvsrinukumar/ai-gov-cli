@@ -31,6 +31,7 @@ export function scanProject(
             scanAngular(projectDir, profile, scan);
             break;
         case 'react':
+        case 'next':
             scanJsPackageManager(projectDir, profile, scan);
             scanJsScripts(projectDir, profile, scan);
             scanJsTooling(projectDir, profile, scan);

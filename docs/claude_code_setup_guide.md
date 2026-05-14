@@ -14,8 +14,9 @@ npx ai-gov init --agent claude-code
 # Preview without writing files
 npx ai-gov init --dry-run
 
-# Force a specific stack
+# Force a specific stack (flutter|kotlin|nodejs|react|next|angular|swiftui|python|java)
 npx ai-gov init --stack flutter
+npx ai-gov init --stack next
 
 # All three layers at once
 npx ai-gov init --git-hooks --ci github
@@ -189,8 +190,23 @@ npx ai-gov onboard
 
 Installs `.git/hooks/` wrappers, verifies python3/jq runtime, confirms governance files are present.
 
+```bash
+# Preview what onboard would do before running it
+npx ai-gov onboard --dry-run
+```
+
 Or without Node.js:
 
 ```bash
 curl -s https://raw.githubusercontent.com/jvvsrinukumar/ai-gov-cli/main/onboard.sh | bash
 ```
+
+## MCP Tool Setup (after onboard)
+
+If your project uses MCP servers (Jira, Figma, PostgreSQL, etc.), set up your personal tokens:
+
+```bash
+npx ai-gov mcp onboard
+```
+
+See [MCP Governance Guide](./mcp-governance-guide.md) for the full walkthrough.

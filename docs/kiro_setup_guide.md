@@ -11,8 +11,9 @@ npx ai-gov init --agent kiro
 # Preview without writing files
 npx ai-gov init --agent kiro --dry-run
 
-# Force a specific stack
+# Force a specific stack (flutter|kotlin|nodejs|react|next|angular|swiftui|python|java)
 npx ai-gov init --agent kiro --stack flutter
+npx ai-gov init --agent kiro --stack next
 ```
 
 > **Note:** Unlike Claude Code, Kiro is not the default. You must pass `--agent kiro` explicitly — unless a `.kiro/` directory already exists (in which case the CLI auto-detects it).
@@ -147,3 +148,16 @@ npx ai-gov onboard
 ```
 
 Auto-detects `.kiro/` and installs git hook wrappers.
+
+```bash
+# Preview what onboard would do
+npx ai-gov onboard --dry-run
+```
+
+If the project uses MCP servers, also run:
+
+```bash
+npx ai-gov mcp onboard
+```
+
+See [MCP Governance Guide](./mcp-governance-guide.md) for MCP token setup details.

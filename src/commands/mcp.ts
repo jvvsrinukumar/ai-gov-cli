@@ -79,21 +79,38 @@ export async function runMcpInit(options: McpCommandOptions): Promise<void> {
 
     // Write .mcp.json
     const config = buildMcpConfig(selectedTools, orgValuesByTool);
-    writeMcpConfig(projectDir, config);
-    log.created('.mcp.json');
+    if (!options.dryRun) {
+        writeMcpConfig(projectDir, config);
+        log.created('.mcp.json');
+    } else {
+        log.dryNew('.mcp.json', 10);
+    }
 
     // Write .env.mcp.example
     const exampleContent = generateEnvExample(selectedTools);
-    writeFileSync(join(projectDir, '.env.mcp.example'), exampleContent, 'utf-8');
-    log.created('.env.mcp.example');
+    if (!options.dryRun) {
+        writeFileSync(join(projectDir, '.env.mcp.example'), exampleContent, 'utf-8');
+        log.created('.env.mcp.example');
+    } else {
+        log.dryNew('.env.mcp.example', exampleContent.split('\n').length);
+    }
 
     // Write .envrc
-    writeFileSync(join(projectDir, '.envrc'), generateEnvrc(), 'utf-8');
-    log.created('.envrc');
+    const envrcContent = generateEnvrc();
+    if (!options.dryRun) {
+        writeFileSync(join(projectDir, '.envrc'), envrcContent, 'utf-8');
+        log.created('.envrc');
+    } else {
+        log.dryNew('.envrc', envrcContent.split('\n').length);
+    }
 
     // Add .env.mcp to .gitignore
-    ensureMcpGitignore(projectDir);
-    log.info('  .env.mcp added to .gitignore');
+    if (!options.dryRun) {
+        ensureMcpGitignore(projectDir);
+        log.info('  .env.mcp added to .gitignore');
+    } else {
+        log.dryNew('.gitignore (append)', 1);
+    }
 
     console.log('\n  Next steps:');
     console.log('  1. Run: npx ai-gov mcp onboard   (each developer sets their tokens)');
@@ -160,13 +177,21 @@ export async function runMcpOnboard(options: McpCommandOptions): Promise<void> {
     }
 
     if (Object.keys(newGlobal).length > 0) {
-        writeGlobalEnv(newGlobal);
-        log.created('~/.config/ai-gov/.env.mcp.global (updated)');
+        if (!options.dryRun) {
+            writeGlobalEnv(newGlobal);
+            log.created('~/.config/ai-gov/.env.mcp.global (updated)');
+        } else {
+            log.dryNew('~/.config/ai-gov/.env.mcp.global', Object.keys(newGlobal).length);
+        }
     }
 
     if (Object.keys(newProject).length > 0) {
-        writeEnvFile(join(projectDir, '.env.mcp'), newProject);
-        log.created('.env.mcp');
+        if (!options.dryRun) {
+            writeEnvFile(join(projectDir, '.env.mcp'), newProject);
+            log.created('.env.mcp');
+        } else {
+            log.dryNew('.env.mcp', Object.keys(newProject).length);
+        }
     }
 
     console.log('\n  Token setup complete.');

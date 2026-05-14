@@ -1,6 +1,6 @@
 # MCP Governance Guide
 
-**Version:** 17.6.0 · **Audience:** Team leads + Developers · **Feature:** `ai-gov mcp`
+**Version:** 18.0.0 · **Audience:** Team leads + Developers · **Feature:** `ai-gov mcp`
 
 Governs how MCP (Model Context Protocol) servers — Jira, Figma, Zeplin, PostgreSQL, GitHub, and others — are configured across a team so that:
 
@@ -110,7 +110,7 @@ Org-wide values (like site name) are baked in as literals. Personal tokens use `
 ```json
 {
   "_aigov": {
-    "version": "17.6.0",
+    "version": "18.0.0",
     "tools": ["jira", "figma", "zeplin", "postgres"]
   },
   "mcpServers": {
@@ -574,12 +574,13 @@ npx ai-gov mcp validate
 ```bash
 # Team lead
 npx ai-gov mcp init                    # first-time project setup (interactive)
-npx ai-gov mcp init --add github       # add a tool to an existing project
-npx ai-gov mcp init --dry-run          # preview what would be generated
+npx ai-gov mcp init --overwrite        # re-run init (e.g. after tool catalog update)
+npx ai-gov mcp init --dry-run          # preview what would be generated (no files written)
 
 # Developer
 npx ai-gov mcp onboard                 # first-time personal token setup
 npx ai-gov mcp onboard                 # re-run: only prompts for missing tokens
+npx ai-gov mcp onboard --dry-run       # preview token setup (no files written)
 npx ai-gov mcp update-token --tool jira  # update one tool's tokens
 npx ai-gov mcp update-token            # update all tokens
 

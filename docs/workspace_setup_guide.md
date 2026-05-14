@@ -7,7 +7,7 @@
 > - Layout A — Grouped (backend/ + frontend/ folders)
 > - Layout B — Flat (all projects at root level)
 
-**Version:** 16.0.0
+**Version:** 18.0.0
 
 ---
 
@@ -138,7 +138,7 @@ winget install Python.Python.3
 
 ```bash
 npm install -g ai-gov
-ai-gov --version    # → 16.0.0
+ai-gov --version    # → 18.0.0
 ```
 
 ---
@@ -588,23 +588,23 @@ After completing Steps 1–4, commit the generated files for every project.
 # Backend projects
 cd /path/to/my-workspace/backend/accushield-kiosk-apis
 git add .claude/ specs/ CLAUDE.md .github/
-git commit -m "chore: add ai-gov governance framework v16.0.0"
+git commit -m "chore: add ai-gov governance framework v18.0.0"
 git push
 
 cd /path/to/my-workspace/backend/corporate_node
 git add .claude/ specs/ CLAUDE.md .github/
-git commit -m "chore: add ai-gov governance framework v16.0.0"
+git commit -m "chore: add ai-gov governance framework v18.0.0"
 git push
 
 cd /path/to/my-workspace/backend/monitor_nodejs
 git add .claude/ specs/ CLAUDE.md .github/
-git commit -m "chore: add ai-gov governance framework v16.0.0"
+git commit -m "chore: add ai-gov governance framework v18.0.0"
 git push
 
 # Frontend project
 cd /path/to/my-workspace/frontend/corporate_angular
 git add .claude/ specs/ CLAUDE.md .github/
-git commit -m "chore: add ai-gov governance framework v16.0.0"
+git commit -m "chore: add ai-gov governance framework v18.0.0"
 git push
 
 # Workspace root (shared steering files)
@@ -619,12 +619,12 @@ git push
 ```bash
 cd /path/to/my-workspace/accushield-kiosk-apis
 git add .claude/ specs/ CLAUDE.md .github/
-git commit -m "chore: add ai-gov governance framework v16.0.0"
+git commit -m "chore: add ai-gov governance framework v18.0.0"
 git push
 
 cd /path/to/my-workspace/corporate_node
 git add .claude/ specs/ CLAUDE.md .github/
-git commit -m "chore: add ai-gov governance framework v16.0.0"
+git commit -m "chore: add ai-gov governance framework v18.0.0"
 git push
 
 # Repeat for each project...
@@ -658,17 +658,17 @@ git push
 # After cloning accushield-kiosk-apis:
 cd /path/to/my-workspace/backend/accushield-kiosk-apis
 npm install
-ai-gov init --git-hooks --dir .    # installs local .git/hooks/ wrappers
+npx ai-gov onboard    # installs local .git/hooks/ wrappers
 
 # After cloning corporate_node:
 cd /path/to/my-workspace/backend/corporate_node
 npm install
-ai-gov init --git-hooks --dir .
+npx ai-gov onboard
 
 # After cloning corporate_angular:
 cd /path/to/my-workspace/frontend/corporate_angular
 npm install
-ai-gov init --git-hooks --dir .
+npx ai-gov onboard
 ```
 
 ### Layout B — developer setup
@@ -677,11 +677,11 @@ ai-gov init --git-hooks --dir .
 # After cloning any project:
 cd /path/to/my-workspace/corporate_node
 npm install
-ai-gov init --git-hooks --dir .
+npx ai-gov onboard
 
 cd /path/to/my-workspace/staff-server
 npm install
-ai-gov init --git-hooks --dir .
+npx ai-gov onboard
 ```
 
 ### Verify it worked
@@ -789,7 +789,7 @@ for project in \
   frontend/corporate_angular; do
   cd /path/to/my-workspace/$project
   git add .claude/ specs/ CLAUDE.md .github/
-  git commit -m "chore: add ai-gov governance framework v16.0.0"
+  git commit -m "chore: add ai-gov governance framework v18.0.0"
   git push
   cd /path/to/my-workspace
 done
@@ -839,7 +839,7 @@ done
 for project in accushield-kiosk-apis amazonq corporate_node monitor_nodejs staff-server volunteer-server; do
   cd $WORKSPACE/$project
   git add .claude/ specs/ CLAUDE.md .github/
-  git commit -m "chore: add ai-gov governance framework v16.0.0"
+  git commit -m "chore: add ai-gov governance framework v18.0.0"
   git push
 done
 
@@ -887,7 +887,7 @@ Symptom: you push bad commit messages and nothing blocks them.
 Fix:
 ```bash
 cd /path/to/project
-ai-gov init --git-hooks --dir .
+npx ai-gov onboard
 ```
 
 Each developer must do this once. The `.git/hooks/` wrappers are not committed to git.
@@ -954,13 +954,18 @@ sudo apt install python3
 
 | Task | Command |
 |------|---------|
-| Init all projects in workspace | `ai-gov workspace --dir <workspace>` |
-| Add git hooks to one project | `ai-gov init --git-hooks --dir <project>` |
-| Add GitHub CI to one project | `ai-gov init --ci github --dir <project>` |
-| Add GitLab CI to one project | `ai-gov init --ci gitlab --dir <project>` |
-| Add Bitbucket CI to one project | `ai-gov init --ci bitbucket --dir <project>` |
-| Run PR check locally | `ai-gov pr-check --base main --dir <project>` |
-| Verify setup | `ai-gov doctor --dir <project>` |
-| Developer one-time setup | `ai-gov init --git-hooks --dir <project>` |
-| Preview without writing | `ai-gov workspace --dir <workspace> --dry-run` |
-| Init specific projects only | `ai-gov workspace --dir <workspace> --only path/a,path/b` |
+| Init all projects in workspace | `npx ai-gov workspace --dir <workspace>` |
+| **Upgrade all projects in workspace** | **`npx ai-gov workspace --upgrade`** |
+| Upgrade workspace + steering files | `npx ai-gov workspace --upgrade --force` |
+| Preview upgrade without writing | `npx ai-gov workspace --upgrade --dry-run` |
+| Upgrade single project | `npx ai-gov upgrade --dir <project>` |
+| Add git hooks to one project | `npx ai-gov init --git-hooks --dir <project>` |
+| Add GitHub CI to one project | `npx ai-gov init --ci github --dir <project>` |
+| Add GitLab CI to one project | `npx ai-gov init --ci gitlab --dir <project>` |
+| Add Bitbucket CI to one project | `npx ai-gov init --ci bitbucket --dir <project>` |
+| Run PR check locally | `npx ai-gov pr-check --base main --dir <project>` |
+| Verify setup | `npx ai-gov doctor --dir <project>` |
+| Developer one-time setup | `npx ai-gov onboard` |
+| Developer MCP token setup | `npx ai-gov mcp onboard` |
+| Preview without writing | `npx ai-gov workspace --dir <workspace> --dry-run` |
+| Init specific projects only | `npx ai-gov workspace --dir <workspace> --only path/a,path/b` |

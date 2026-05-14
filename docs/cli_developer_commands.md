@@ -1,8 +1,7 @@
 # Developer Commands Guide
-## Claude Code + Graphify
 
 **Audience:** Developers · Daily use reference
-**Date:** 2026-04-25
+**Date:** 2026-05-14 · **CLI version:** 18.0.0
 
 ---
 
@@ -16,14 +15,14 @@
    - 1.5 [Memory & Docs](#15-memory--docs)
    - 1.6 [Diagnostics](#16-diagnostics)
    - 1.7 [Governance Commands](#17-governance-commands)
-2. [Graphify Commands](#2-graphify-commands)
+2. [Graphify Commands](#2-graphify-commands) *(optional — separate tool)*
    - 2.1 [Build the Graph](#21-build-the-graph)
    - 2.2 [Query the Graph](#22-query-the-graph)
    - 2.3 [Navigate the Graph](#23-navigate-the-graph)
    - 2.4 [Maintain the Graph](#24-maintain-the-graph)
 3. [Stack-Specific Examples](#3-stack-specific-examples)
    - Flutter
-   - Node.js
+   - Node.js / Next.js
    - Python
    - React / Next.js
    - Kotlin
@@ -127,6 +126,9 @@
 | Command | What it does | When to use |
 |---|---|---|
 | `/audit` | 12-step project truth check — scans governance files, reads actual code, scores 6 categories, self-heals steering | Start of sprint, after major refactor, onboarding a new developer |
+| `/assess` | Evidence-based refactor vs rewrite assessment — reads actual code, scores complexity, outputs recommendation | Before proposing a large rewrite |
+| `/backlog` | Generates structured backlog from latest `/assess` report — phases, milestones, priorities | After `/assess`, when planning sprints |
+| `/jira` | Reads spec `tasks.md` estimates, creates Jira stories + sub-tasks via Jira MCP server | When syncing specs to Jira (requires `ai-gov mcp init` with Jira) |
 
 #### /audit — Detail
 
@@ -162,6 +164,7 @@
 
 ## 2. Graphify Commands
 
+> **Note:** Graphify is a separate optional tool — not included in `ai-gov`. Install separately if your team uses it.
 > `/graphify` commands are typed in Claude Code CLI chat.
 > `graphify` commands (no slash) are typed in the terminal.
 
@@ -418,4 +421,4 @@ END OF DAY
 
 ---
 
-*Claude Code CLI only — governance hooks and graphify slash commands do not work in the chat extension.*
+*Claude Code CLI only — governance hooks and slash commands do not work in the chat extension. Graphify is a separate optional tool.*

@@ -388,23 +388,15 @@ describe('generateSettingsJson', () => {
 // ─── check-file-size.sh ───────────────────────────────────────────────────────
 
 describe('generateCheckFileSize', () => {
-    test('nodejs: active hook with 200-line limit and .js extension', () => {
+    test('nodejs: no-op stub (backend stack exempt from 300-line limit)', () => {
         const out = generateCheckFileSize(makeConfig('nodejs'));
-        expect(out).toContain('200');
-        expect(out).toContain('.js');
-        expect(out).toContain('LINES');
-    });
-
-    test('nodejs: does not skip routes files (backend skip pattern)', () => {
-        const out = generateCheckFileSize(makeConfig('nodejs'));
-        // Backend skip pattern should NOT include 'routes' (we want to catch God-route files)
-        const skipLine = out.split('\n').find(l => l.includes('grep -qiE') && l.includes('exit 0'));
-        expect(skipLine).not.toContain('routes');
+        expect(out).toContain('exit 0');
+        expect(out).not.toContain('LINES');
     });
 
     test('react: active hook with frontend skip pattern (includes routes)', () => {
         const out = generateCheckFileSize(makeConfig('react'));
-        expect(out).toContain('200');
+        expect(out).toContain('LINES');
         const skipLine = out.split('\n').find(l => l.includes('grep -qiE') && l.includes('exit 0'));
         expect(skipLine).toContain('routes');
     });
@@ -412,13 +404,13 @@ describe('generateCheckFileSize', () => {
     test('flutter: active hook with .dart extension', () => {
         const out = generateCheckFileSize(makeConfig('flutter'));
         expect(out).toContain('.dart');
-        expect(out).toContain('200');
+        expect(out).toContain('LINES');
     });
 
-    test('python: active hook', () => {
+    test('python: no-op stub (backend stack exempt from 300-line limit)', () => {
         const out = generateCheckFileSize(makeConfig('python'));
-        expect(out).toContain('200');
-        expect(out).toContain('LINES');
+        expect(out).toContain('exit 0');
+        expect(out).not.toContain('LINES');
     });
 
     test('swiftui: no-op (not in active stacks)', () => {

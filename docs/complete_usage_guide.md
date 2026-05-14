@@ -1,90 +1,95 @@
-# ai-gov Complete Usage Guide — v16.0.0
+# ai-gov Complete Usage Guide
 
 > Step-by-step guide for developers, team leads, and CI/CD engineers.
 > Covers all three governance layers: AI Steering · Git Hooks · CI + PR Check.
 
-**Version:** 16.0.0
-**Audience:** New adopters and teams upgrading from v15.1.0
+**Version:** 18.0.0
+**Audience:** New adopters and teams upgrading from any previous version
 
 ---
 
 ## Table of Contents
 
-1. [Prerequisites](#1-prerequisites)
-2. [Installation](#2-installation)
-3. [Layer 1 — AI Steering (ai-gov init)](#3-layer-1--ai-steering)
-4. [Layer 2 — Git Hooks (ai-gov init --git-hooks)](#4-layer-2--git-hooks)
-5. [Layer 3 — CI + PR Check (ai-gov init --ci + ai-gov pr-check)](#5-layer-3--ci--pr-check)
-6. [Daily Developer Workflow](#6-daily-developer-workflow)
-7. [Team Lead Configuration](#7-team-lead-configuration)
-8. [Slash Commands Reference](#8-slash-commands-reference)
-9. [All CLI Commands Reference](#9-all-cli-commands-reference)
-10. [Upgrading from v15.1.0](#10-upgrading-from-v1510)
-11. [Troubleshooting](#11-troubleshooting)
+1. [What Is ai-gov](#1-what-is-ai-gov)
+2. [Prerequisites](#2-prerequisites)
+3. [Installation](#3-installation)
+4. [Layer 1 — AI Steering (ai-gov init)](#4-layer-1--ai-steering)
+5. [Layer 2 — Git Hooks (ai-gov init --git-hooks)](#5-layer-2--git-hooks)
+6. [Layer 3 — CI + PR Check (ai-gov init --ci)](#6-layer-3--ci--pr-check)
+7. [New Developer Onboarding (ai-gov onboard)](#7-new-developer-onboarding)
+8. [MCP Tool Governance (ai-gov mcp)](#8-mcp-tool-governance)
+9. [Upgrading (ai-gov upgrade)](#9-upgrading)
+10. [Workspace (multiple projects)](#10-workspace-multiple-projects)
+11. [Daily Developer Workflow](#11-daily-developer-workflow)
+12. [Slash Commands Reference](#12-slash-commands-reference)
+13. [All CLI Commands Reference](#13-all-cli-commands-reference)
+14. [Troubleshooting](#14-troubleshooting)
 
 ---
 
-## 1. Prerequisites
+## 1. What Is ai-gov
 
-Before starting, verify these are installed:
+`ai-gov` is a governance framework for AI-assisted development. It installs guardrails at three levels:
+
+| Layer | What | When It Runs |
+|-------|------|-------------|
+| **1 — AI Steering** | Markdown files read by Claude/Kiro at every session start | Every AI session |
+| **2 — Git Hooks** | Bash scripts that run `git commit` checks | Every commit |
+| **3 — CI + PR Check** | Workflow file that runs governance checks on every PR | Every pull request |
+
+### Supported stacks
+
+`flutter` · `kotlin` · `nodejs` · `react` · `next` · `angular` · `swiftui` · `python` · `java`
+
+### Supported agents
+
+`claude-code` (default) · `kiro`
+
+---
+
+## 2. Prerequisites
 
 ```bash
 node --version     # must be >= 18.0.0
 npm --version      # any recent version
 git --version      # any recent version
-claude --version   # Claude Code CLI
 ```
 
 ### Runtime for hooks (python3 preferred, jq fallback)
 
-Hooks need **python3** or **jq** to read `config.json`. python3 is preferred.
+Hooks need **python3** or **jq** to read `config.json`. python3 is preferred — pre-installed on macOS and Ubuntu.
 
 | Platform | Install python3 | Install jq (fallback) |
 |----------|----------------|----------------------|
-| macOS | `brew install python3` | `brew install jq` |
-| Ubuntu / Debian / WSL2 | `sudo apt-get install -y python3` | `sudo apt-get install -y jq` |
+| macOS | `brew install python3` (or already built-in) | `brew install jq` |
+| Ubuntu / Debian / WSL2 | Already installed on 20.04+ | `sudo apt-get install -y jq` |
 | Windows | `winget install Python.Python.3` | `winget install jqlang.jq` |
 
 > If **neither** is installed, hooks emit a warning and skip — no silent failures. Run `ai-gov doctor` to check.
 
-### Windows note
-
-The CLI (`ai-gov init`) runs on bare Windows. The bash hook scripts (`.claude/git-hooks/*.sh`, `.git/hooks/*`) require **Git Bash or WSL2** in PATH. Without it, git hooks fire but bash isn't found — they silently skip.
-
 ---
 
-## 2. Installation
+## 3. Installation
 
 ### Option A — npm (recommended for teams)
 
 ```bash
 npm install -g ai-gov
-ai-gov --version    # → 16.0.0
+ai-gov --version    # → 18.0.0
 ```
 
-### Option B — npx (no install)
+### Option B — npx (no global install required)
 
 ```bash
 npx ai-gov init
 npx ai-gov doctor
 ```
 
-### Option C — From source
-
-```bash
-git clone https://github.com/jvvsrinukumar/ai-gov-cli.git
-cd ai-gov-cli
-npm install
-npm run build
-npm link            # makes 'ai-gov' available globally
-ai-gov --version    # → 16.0.0
-```
-
 ---
 
-## 3. Layer 1 — AI Steering
+## 4. Layer 1 — AI Steering
 
-Layer 1 generates governance files that **Claude Code reads before every task**. This is the foundation — Layers 2 and 3 build on it.
+Layer 1 generates governance files that **Claude Code or Kiro reads before every task**. This is the foundation — Layers 2 and 3 build on it.
 
 ### Step 1: Navigate to your project
 
@@ -97,949 +102,440 @@ Your project must have a manifest file (`pubspec.yaml`, `package.json`, `build.g
 ### Step 2: Preview first (optional but recommended)
 
 ```bash
-ai-gov init --dry-run
+npx ai-gov init --dry-run
 ```
 
-Shows every file that would be created with line counts — nothing is written. Example output:
+This shows every file that would be created — nothing is written.
 
-```
-============================================
- AI Governance v16.0.0 (Scan-Adaptive · Claude Code)
-============================================
-
-  ~ Detecting stack...
-  + State: flutter_bloc
-  + DI: injectable / get_it
-  + Router: go_router
-  + Network: Dio
-  + DB: Hive
-  + Code gen: freezed, json_serializable
-
-  [dry-run] CLAUDE.md (new file, 4 lines)
-  [dry-run] .claude/CLAUDE.md (new file, 120 lines)
-  [dry-run] .claude/settings.json (new file, 108 lines)
-  [dry-run] .claude/steering/constitution.md (new file, 36 lines)
-  [dry-run] .claude/steering/architecture.md (new file, 50 lines)
-  [dry-run] .claude/steering/coding-standards.md (new file, 54 lines)
-  [dry-run] .claude/steering/ai-usage-policy.md (new file, 42 lines)
-  [dry-run] .claude/steering/workflow.md (new file, 49 lines)
-  [dry-run] .claude/steering/spec-first-workflow.md (new file, 48 lines)
-  [dry-run] .claude/steering/feature-readme.md (new file, 28 lines)
-  [dry-run] .claude/steering/prompt-templates.md (new file, 63 lines)
-  [dry-run] .claude/hooks/protect-files.sh (new file, 17 lines)
-  [dry-run] .claude/hooks/check-spec-exists.sh (new file, 111 lines)
-  ... (31 files total)
-```
-
-### Step 3: Generate governance files
+### Step 3: Run init
 
 ```bash
-ai-gov init
+# Auto-detect stack, default to claude-code agent
+npx ai-gov init
+
+# Explicit stack
+npx ai-gov init --stack next
+
+# Kiro agent
+npx ai-gov init --agent kiro
+
+# All layers at once
+npx ai-gov init --git-hooks --ci github
 ```
 
-If auto-detection picks the wrong stack, specify it:
-
-```bash
-ai-gov init --stack flutter
-ai-gov init --stack react
-ai-gov init --stack kotlin
-ai-gov init --stack nodejs
-ai-gov init --stack angular
-ai-gov init --stack python
-ai-gov init --stack swiftui
-```
-
-### Step 4: Verify the setup
-
-```bash
-ai-gov doctor
-```
-
-Expected output:
+### What gets generated (Claude Code)
 
 ```
-============================================
- AI Governance Doctor
-============================================
-
-  ✓ CLAUDE.md exists
-  ✓ .claude/CLAUDE.md exists
-  ✓ .claude/settings.json exists
-  ✓ specs/_template/ exists
-  ✓ .claude/hooks/ exists
-  ✓   protect-files.sh
-  ✓   check-secrets.sh
-  ✓   block-dangerous-commands.sh
-  ✓   check-spec-exists.sh
-  ✓   session-continuity.sh
-  ✓   format-code.sh
-  ✓   analyze-code.sh
-  ✓   check-feature-readme.sh
-  ✓   check-consistency.sh
-  ✓   check-file-size.sh
-  ✓   post-task-checklist.sh
-  ✓ python3 available (hooks runtime)
-
-All checks passed!
+your-project/
+├── CLAUDE.md                          ← Root pointer to .claude/CLAUDE.md
+├── .claude/
+│   ├── CLAUDE.md                      ← Master rules file
+│   ├── settings.json                  ← Registers all 11 Claude Code hooks
+│   ├── steering/
+│   │   ├── constitution.md            ← Hard rules (never bypass specs)
+│   │   ├── architecture.md            ← Layer flow, high-risk files
+│   │   ├── coding-standards.md        ← Naming, file size limits
+│   │   ├── ai-usage-policy.md         ← What Claude can/cannot do
+│   │   ├── workflow.md                ← Feature, bug, hotfix workflows
+│   │   ├── spec-first-workflow.md     ← Spec-before-code enforcement
+│   │   ├── feature-readme.md          ← README policy per feature
+│   │   ├── task-estimates.md          ← Time-boxing conventions [S/M/L]
+│   │   └── prompt-templates.md        ← Reusable templates
+│   ├── hooks/                         ← 11 bash hooks (run inside IDE)
+│   └── commands/                      ← Slash commands
+│       ├── new-feature.md             ← /new-feature — 3-gate spec workflow
+│       ├── edit-feature.md            ← /edit-feature
+│       ├── fix.md                     ← /fix
+│       ├── refactor.md                ← /refactor
+│       ├── hotfix.md                  ← /hotfix
+│       ├── explore.md                 ← /explore (read-only)
+│       ├── audit.md                   ← /audit — full governance audit
+│       ├── assess.md                  ← /assess — refactor vs rewrite
+│       ├── backlog.md                 ← /backlog — from assessment to sprint
+│       └── jira.md                    ← /jira — sync tasks.md to Jira
+└── specs/
+    └── _template/
+        ├── requirements.md
+        ├── design.md
+        └── tasks.md
 ```
 
-If any hook shows `✗`, run `ai-gov init` again. If runtime check fails, install python3 or jq.
+### Steering files — what gets customised vs what is regenerated
 
-### Step 5: Commit the governance files
-
-```bash
-git add .claude/ specs/ CLAUDE.md
-git commit -m "chore: add AI governance framework v16.0.0"
-git push
-```
-
-Every developer who pulls gets the same Claude Code governance automatically. The `.claude/settings.json` registers all hooks — Claude Code reads it on startup.
-
-### Step 6: Open Claude Code and verify
-
-```bash
-cd /path/to/your/project
-claude
-```
-
-Claude Code reads `.claude/CLAUDE.md` and all steering files on startup. Test it:
-
-```
-> build a hello world screen
-```
-
-Claude should:
-1. Check if `specs/hello-world/` exists
-2. If not — create spec files from `specs/_template/`, fill them out, **stop and wait for your "go ahead"**
-3. After you approve — implement phase by phase
-
-If Claude skips straight to coding without spec, check: `ls .claude/CLAUDE.md` and `jq --version`.
+| Path | Behaviour |
+|------|-----------|
+| `.claude/steering/architecture.md` | **Preserved on upgrade** — your team's decisions |
+| `.claude/steering/coding-standards.md` | **Preserved on upgrade** |
+| `.claude/steering/workflow.md` | **Preserved on upgrade** |
+| `.claude/steering/constitution.md` | **Preserved on upgrade** |
+| `.claude/hooks/` | **Always regenerated** on upgrade |
+| `.claude/commands/` | **Always regenerated** on upgrade |
+| `.claude/CLAUDE.md` | **Always regenerated** (app name extracted and preserved) |
 
 ---
 
-## 4. Layer 2 — Git Hooks
-
-Layer 2 installs governance checks that run on **every `git commit`** — before code ever reaches a PR.
-
-### Step 1: Generate and install git hooks
+## 5. Layer 2 — Git Hooks
 
 ```bash
-ai-gov init --git-hooks
+npx ai-gov init --git-hooks
 ```
 
-What this does:
+Generates bash scripts in `.claude/git-hooks/` that run on `git commit`. These are committed to git — every developer gets them automatically.
 
-```
-Git Hooks:
-  Created: .claude/git-hooks/config.json
-  Created: .claude/git-hooks/pre-commit.sh
-  Created: .claude/git-hooks/commit-msg.sh
-  Created: .claude/git-hooks/checks/file-size.sh
-  Created: .claude/git-hooks/checks/secrets.sh
-  Created: .claude/git-hooks/checks/no-todos.sh
-  Created: .claude/git-hooks/checks/no-debug.sh
-  Created: .claude/git-hooks/checks/format-check.sh
-  Created: .claude/git-hooks/checks/lint-check.sh
-  + Git hook scripts made executable
-  Created: .git/hooks/pre-commit
-  Created: .git/hooks/commit-msg
-```
+### What gets blocked vs warned
 
-### Step 2: Commit the git-hooks directory
+| Check | Blocks (exit 2) | Warns (exit 0) |
+|-------|-----------------|----------------|
+| File size (frontend stacks) | > 300 lines | > 200 lines |
+| File size (backend stacks: nodejs/python/java) | — (no-op) | — |
+| Secrets | AWS AKIA keys, credential-named variables | — |
+| TODOs | — | TODO/FIXME without ticket reference |
+| Debug | — | console.log, print, debugger |
+| Commit message format | Non-conventional commits | — |
+
+> **Backend stacks are exempt from the 300-line file size rule.** The check generates a 5-line no-op stub for nodejs, python, and java projects.
+
+### Developer install (once per clone)
 
 ```bash
-git add .claude/git-hooks/
-git commit -m "chore: add git governance hooks v16.0.0"
-git push
-```
-
-> **Important:** `.claude/git-hooks/` is committed to the repo so every teammate gets the same checks when they pull. The `.git/hooks/` wrappers are local-only and each developer installs them once (see Step 3).
-
-### Step 3: Each developer installs their local wrappers
-
-When a teammate pulls the repo for the first time, they run:
-
-```bash
-ai-gov init --git-hooks
-```
-
-The CLI detects that `.claude/git-hooks/` already exists and installs only the `.git/hooks/` thin wrappers locally. No files are overwritten.
-
-### Step 4: Test the hooks
-
-```bash
-# Test pre-commit: stage something and commit
-echo "AKIA_EXAMPLE_KEY_FOR_DOCS" > test-secret.txt
-git add test-secret.txt
-git commit -m "test"
-```
-
-Expected:
-
-```
-  🔒 Pre-commit governance check
-  ───────────────────────────────
-  ❌ SECRETS: test-secret.txt — AWS Access Key ID detected (AKIA pattern)
-     → Use environment variables or AWS Secrets Manager
-
-  ❌ 1 blocking issue(s) found. Fix and try again.
-  (bypass with: git commit --no-verify)
-```
-
-```bash
-# Clean up
-git restore --staged test-secret.txt
-rm test-secret.txt
-```
-
-```bash
-# Test commit-msg validator
-git commit --allow-empty -m "stuff"
-```
-
-Expected:
-
-```
-  ❌ COMMIT MESSAGE: doesn't follow conventional format
-
-  Expected: <type>(<scope>): <description>
-  Types:    feat|fix|refactor|hotfix|docs|test|chore|style|perf|ci|build
-  Minimum:  10 characters in description
-
-  Your message: "stuff"
-```
-
-### Existing hook system (husky / lefthook / pre-commit)
-
-If your project already uses a hook system, the CLI detects it and prints integration guidance instead of overwriting:
-
-```
-  Existing hook system detected: husky
-
-  ai-gov scripts are generated in .claude/git-hooks/ (committed to repo).
-  To integrate with husky, add to .husky/pre-commit:
-
-    bash .claude/git-hooks/pre-commit.sh
-
-  And add to .husky/commit-msg:
-
-    bash .claude/git-hooks/commit-msg.sh "$1"
-
-  Or to replace husky entirely:
-    ai-gov init --git-hooks --force
-```
-
-To force-overwrite `.git/hooks/` regardless:
-
-```bash
-ai-gov init --git-hooks --force
+npx ai-gov onboard   # installs .git/hooks/ wrappers
 ```
 
 ---
 
-## 5. Layer 3 — CI + PR Check
-
-Layer 3 runs governance checks on **every PR/MR** and posts results as a comment.
-
-### Part A: Generate CI pipeline config
-
-#### GitHub Actions
+## 6. Layer 3 — CI + PR Check
 
 ```bash
-ai-gov init --ci github
+npx ai-gov init --ci github    # GitHub Actions
+npx ai-gov init --ci gitlab    # GitLab CI
+npx ai-gov init --ci bitbucket # Bitbucket Pipelines
 ```
 
-Creates `.github/workflows/governance-check.yml`. Commit and push:
+Generates a CI pipeline file that runs `npx ai-gov pr-check` on every PR. Validates governance files exist, checks commit message format, verifies no secrets in diff.
 
-```bash
-git add .github/workflows/governance-check.yml
-git commit -m "chore: add GitHub Actions governance check"
-git push
-```
+### Hub Telemetry (opt-in)
 
-Every PR now gets a governance comment automatically. Example:
-
-```
-🏛️ Governance Review
-
-Changed files: 12 | Blockers: 0 | Warnings: 2
-
-⚠️ This PR has warnings. Merge is allowed but consider addressing them.
-
-✅ Architecture: No layer boundary violations detected
-✅ File Size: All files within size limits
-✅ Credentials: No credentials detected in diff
-✅ Spec Coverage: All feature files have matching specs
-⚠️ Test Coverage: 2 source file(s) without tests
-   → src/features/payment/PaymentService.ts: No corresponding test file found
-✅ TODOs: No TODO/FIXME/HACK/XXX in added lines
-⚠️ Commit Messages: 1 commit(s) don't follow conventional format
-   → commit: Non-conventional commit: "WIP"
-✅ PR Description: PR template exists
-
----
-Generated by ai-gov
-```
-
-#### GitLab
-
-```bash
-ai-gov init --ci gitlab
-```
-
-Appends a `governance-check` job to `.gitlab-ci.yml` (or creates the file if it doesn't exist). Commit and push.
-
-#### Bitbucket
-
-```bash
-ai-gov init --ci bitbucket
-```
-
-Creates `bitbucket-pipelines.yml`. Commit and push.
+If a hub is configured (`npx ai-gov init --hub-url https://...`), the CLI posts anonymised governance health metrics to your team's dashboard. Email addresses are SHA-256 hashed before transmission. The pipeline never blocks on hub unavailability.
 
 ---
 
-### Part B: Run pr-check locally
+## 7. New Developer Onboarding
 
-You can run the same checks locally before pushing:
-
-```bash
-# Check against main (default)
-ai-gov pr-check
-
-# Check against a different base branch
-ai-gov pr-check --base develop
-
-# Simulate GitHub PR comment format
-ai-gov pr-check --format github
-
-# Machine-readable JSON for scripting
-ai-gov pr-check --format json
-
-# Run from a different directory
-ai-gov pr-check --base main -d /path/to/your/project
-```
-
-Example terminal output:
-
-```
-  ════════════════════════════════════
-    Governance PR Check
-  ════════════════════════════════════
-  Changed files: 8
-
-  ✅ Architecture: No layer boundary violations detected
-  ✅ File Size: All files within size limits
-  ✅ Credentials: No credentials detected in diff
-  ✅ Spec Coverage: All feature files have matching specs
-  ⚠️  Test Coverage: 1 source file(s) without tests
-    → src/auth/TokenService.ts: No corresponding test file found
-  ✅ TODOs: No TODO/FIXME/HACK/XXX in added lines
-  ✅ Commit Messages: All 3 commit(s) follow conventional format
-  ⏭  PR Description: No PR template found — not applicable in CLI context
-
-  ⚠️  1 warning(s), 7 passed — no blockers
-```
-
-Exit codes: `0` = no blockers, `1` = at least one `fail` check.
-
----
-
-## 6. Daily Developer Workflow
-
-### Starting a feature
+After cloning a repo that already has governance set up:
 
 ```bash
-# 1. Create a feature branch
-git checkout -b feature/payment-flow
+# Step 1 — Install git hook wrappers on your machine
+npx ai-gov onboard
 
-# 2. Open Claude Code
-claude
+# Step 2 — Set up MCP tokens (if project uses MCP tools)
+npx ai-gov mcp onboard
 
-# 3. Ask Claude to build the feature
-/new-feature
-
-# Claude creates spec, waits for your approval, then implements
+# Step 3 — Verify everything is correct
+npx ai-gov doctor
 ```
 
-### During development — what you see at each commit
+### What `ai-gov onboard` does
 
-#### Normal commit (all checks pass)
+- Installs `.git/hooks/pre-commit` and `.git/hooks/commit-msg` wrappers
+- Wrappers delegate to the scripts in `.claude/git-hooks/` (committed to git)
+- Verifies python3/jq runtime is available
+- Confirms governance files are present
+
+### Preview before running
 
 ```bash
-git add src/features/payment/
-git commit -m "feat(payment): add payment service layer"
-
-  🔒 Pre-commit governance check
-  ───────────────────────────────
-
-  ✅ All checks passed.
-
-[feature/payment-flow abc1234] feat(payment): add payment service layer
- 4 files changed, 89 insertions(+)
-```
-
-#### Commit blocked — file too large
-
-```bash
-git add src/features/payment/PaymentScreen.tsx   # 380 lines
-git commit -m "feat(payment): add payment UI"
-
-  🔒 Pre-commit governance check
-  ───────────────────────────────
-  ❌ FILE SIZE: src/features/payment/PaymentScreen.tsx has 380 lines (max 300)
-     → Split into smaller components before committing
-
-  ❌ 1 blocking issue(s) found. Fix and try again.
-  (bypass with: git commit --no-verify)
-```
-
-**Fix:** Split into `PaymentScreen.tsx` (< 300 lines) + `PaymentForm.tsx`, then commit again.
-
-#### Commit blocked — secret detected
-
-```bash
-git add src/config/api.ts
-git commit -m "feat: configure payment API"
-
-  🔒 Pre-commit governance check
-  ───────────────────────────────
-  ❌ SECRETS: src/config/api.ts — AWS Access Key ID detected (AKIA pattern)
-     → Use environment variables or AWS Secrets Manager
-
-  ❌ 1 blocking issue(s) found. Fix and try again.
-```
-
-**Fix:** Move the key to `.env`, read via `process.env.API_KEY`, commit again.
-
-#### Commit blocked — bad commit message
-
-```bash
-git commit -m "fix stuff"
-
-  ❌ COMMIT MESSAGE: doesn't follow conventional format
-
-  Expected: <type>(<scope>): <description>
-  Types:    feat|fix|refactor|hotfix|docs|test|chore|style|perf|ci|build
-  Minimum:  10 characters in description
-
-  Examples:
-    feat: add user profile edit screen
-    fix(auth): resolve null pointer in login flow
-
-  Your message: "fix stuff"
-```
-
-**Fix:** Use a proper message:
-
-```bash
-git commit -m "fix(payment): resolve null check in payment service"
-```
-
-#### Commit with TODO — warning only, not blocked
-
-```bash
-git add src/features/payment/PaymentService.ts
-git commit -m "feat(payment): add payment service"
-
-  🔒 Pre-commit governance check
-  ───────────────────────────────
-  ⚠️  TODO: src/features/payment/PaymentService.ts — // TODO: handle retry logic
-
-  ⚠️  1 warning(s). Commit allowed — consider fixing.
-
-[feature/payment-flow def5678] feat(payment): add payment service
-```
-
-The commit goes through. Warnings don't block.
-
-To suppress a TODO with a ticket reference (allowed by default):
-
-```
-// TODO: handle retry logic — PROJ-456
-```
-
-This passes without a warning.
-
-### Before raising a PR — local pr-check
-
-Run this before pushing to catch what the CI would flag:
-
-```bash
-ai-gov pr-check --base main
-```
-
-If there are blockers, fix them before pushing. If there are only warnings, you can push but the CI comment will show them.
-
-### Raising the PR
-
-```bash
-git push -u origin feature/payment-flow
-# Open PR on GitHub / GitLab / Bitbucket
-```
-
-Within ~2 minutes, the CI posts a governance comment on the PR. The comment updates on every new push to the branch.
-
-### If the CI governance check blocks the PR
-
-Only the **Credentials** check is a hard blocker by default (exits 1, fails the required check). All other checks are warnings.
-
-```
-❌ Governance Review
-
-Blockers: 1
-
-❌ Credentials: 1 potential credential(s) found
-  → diff: AWS Access Key ID detected (AKIA pattern) — use environment variables
-```
-
-Fix the credential, push again — the CI re-runs and the comment updates.
-
----
-
-## 7. Team Lead Configuration
-
-### Configuring git hook thresholds
-
-Edit `.claude/git-hooks/config.json` and commit it. All teammates pick up the new config on next pull.
-
-```json
-{
-  "pre-commit": {
-    "file-size": {
-      "enabled": true,
-      "max-lines": 250,
-      "frontend-only": true,
-      "frontend-extensions": [".dart", ".tsx", ".jsx", ".ts", ".kt"],
-      "exclude-patterns": ["generated", "schema", "proto", "graphql"]
-    },
-    "secrets": {
-      "enabled": true,
-      "skip-dirs": ["test", "tests", "__tests__", "fixtures", "mocks", "seeds"],
-      "skip-extensions": [".md", ".txt", ".env.example", ".env.template"]
-    },
-    "no-todos": {
-      "enabled": true,
-      "allow-with-ticket": true,
-      "ticket-pattern": "PROJ-[0-9]+"
-    },
-    "no-debug": {
-      "enabled": true
-    },
-    "format-check": {
-      "enabled": false
-    },
-    "lint-check": {
-      "enabled": false
-    }
-  },
-  "commit-msg": {
-    "conventional-commits": true,
-    "allowed-types": ["feat", "fix", "refactor", "hotfix", "docs", "test", "chore", "style", "perf", "ci", "build"],
-    "min-description-length": 10,
-    "require-ticket-ref": false,
-    "ticket-pattern": "PROJ-[0-9]+"
-  }
-}
-```
-
-### Common configuration scenarios
-
-#### Lower file size threshold for a strict frontend team
-
-```json
-"file-size": {
-  "enabled": true,
-  "max-lines": 200,
-  "frontend-only": true
-}
-```
-
-#### Enable format and lint checks for the whole team
-
-Only do this once the team has agreed and all developers have the formatter installed:
-
-```json
-"format-check": { "enabled": true },
-"lint-check": { "enabled": true }
-```
-
-#### Require a ticket reference in every commit
-
-```json
-"commit-msg": {
-  "conventional-commits": true,
-  "require-ticket-ref": true,
-  "ticket-pattern": "JIRA-[0-9]+"
-}
-```
-
-After this change, `feat: add payment screen` fails. `feat: add payment screen [JIRA-456]` passes.
-
-#### Allow custom commit types (e.g., `release`, `wip`)
-
-```json
-"commit-msg": {
-  "allowed-types": ["feat", "fix", "refactor", "hotfix", "docs", "test", "chore", "style", "perf", "ci", "build", "release", "wip"]
-}
-```
-
-#### Exclude generated files from file-size checks
-
-```json
-"file-size": {
-  "exclude-patterns": ["generated", "g.dart", "freezed", "pb.dart", "schema"]
-}
-```
-
-#### Turn off a check entirely
-
-```json
-"no-debug": { "enabled": false }
-```
-
-#### Stack-aware debug patterns (set automatically by ai-gov init)
-
-The `no-debug.sh` script is generated per stack:
-
-| Stack | Blocked patterns |
-|-------|-----------------|
-| Flutter | `print(`, `debugPrint(`, `debugger;` |
-| React | `console.log(`, `console.debug(`, `debugger` |
-| Angular | `console.log(`, `console.debug(`, `debugger` |
-| Kotlin | `println(`, `Log.d(`, `Log.v(` |
-| Node.js | `console.log(` |
-| Python | `print(`, `breakpoint(`, `pdb.set_trace(` |
-| Java | `System.out.print`, `System.err.print`, `.printStackTrace(` |
-
-### Bypass rules (for emergencies)
-
-A developer can bypass all pre-commit checks for a single commit:
-
-```bash
-git commit --no-verify -m "chore: emergency hotfix"
-```
-
-> The `--no-verify` bypass is local only. The CI `pr-check` still runs on the PR and catches everything the pre-commit missed.
-
-### Integrating with Husky
-
-If your team uses Husky, don't use `--force`. Instead, add to `.husky/pre-commit`:
-
-```bash
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-# Run ai-gov governance checks
-bash .claude/git-hooks/pre-commit.sh
-```
-
-And add to `.husky/commit-msg`:
-
-```bash
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-# Validate conventional commit format
-bash .claude/git-hooks/commit-msg.sh "$1"
-```
-
-### Running pr-check in CI scripts
-
-```bash
-# Exit 1 if blockers found (use for required CI checks)
-ai-gov pr-check --base main --format github > /tmp/report.md
-# exit code: 0 = clean, 1 = blockers
-
-# Parse JSON results in a script
-BLOCKERS=$(ai-gov pr-check --format json | jq '.summary.blockers')
-if [ "$BLOCKERS" -gt 0 ]; then
-  echo "Governance blockers found: $BLOCKERS"
-  exit 1
-fi
+npx ai-gov onboard --dry-run
 ```
 
 ---
 
-## 8. Slash Commands Reference
+## 8. MCP Tool Governance
 
-After `ai-gov init`, these `/commands` are available in Claude Code sessions.
+MCP (Model Context Protocol) servers let Claude connect to external tools: Jira, Figma, PostgreSQL, GitHub, etc. The `ai-gov mcp` commands govern how tokens are managed across a team so no credentials are ever committed to git.
 
-### Governance commands (generated by ai-gov)
-
-| Command | What it does | When to use |
-|---------|-------------|-------------|
-| `/new-feature` | Enters plan mode. Creates spec files (requirements → design → tasks), waits for approval at each gate, then implements phase by phase | Starting any non-trivial feature |
-| `/edit-feature` | Reads existing spec + current code, proposes targeted edits, implements after approval | Modifying an existing feature |
-| `/fix` | Bug fix workflow — reads spec, reproduces issue, diagnoses root cause, fixes, verifies | Any bug fix |
-| `/refactor` | Reads spec + code, proposes refactoring plan, implements after approval. Never adds new behaviour | Code quality improvements |
-| `/hotfix` | Emergency fix — minimal change, no new files, adds a regression test, done | Production incidents |
-| `/explore` | Read-only exploration — answers questions, maps architecture, suggests approach. Writes no files | Understanding unfamiliar code |
-| `/audit` | Full governance audit — reads actual code, scores 6 categories (governance, architecture, code patterns, feature structure, test coverage, dead code), writes `docs/governance-audit-YYYY-MM-DD.md`, self-heals stale steering files | Start of sprint, after major refactor, onboarding |
-
-### Example: using /new-feature
-
-```
-> /new-feature
-
-Claude: I'll build this as a new feature. Let me start with the spec.
-
-== GATE 1: REQUIREMENTS ==
-
-I'll fill specs/payment-flow/requirements.md now.
-
-[fills requirements.md with user stories, API endpoints, data models]
-
-Here is the requirements spec. Please review and approve before I continue.
-
-> approved, proceed
-
-== GATE 2: DESIGN ==
-
-[fills design.md with layer mapping, file list, hard rules compliance table]
-
-Here is the design. Please review and approve before I continue.
-
-> approved, proceed
-
-== GATE 3: TASKS ==
-
-[fills tasks.md with phased breakdown and size estimates]
-
-Here is the task breakdown. I'll implement in this order:
-Phase 1 (Data): PaymentRepository, PaymentApiService
-Phase 2 (Logic): PaymentUseCase
-Phase 3 (State): PaymentCubit, PaymentState
-Phase 4 (UI): PaymentScreen, PaymentForm
-Phase 5 (Tests): unit + widget tests
-
-Shall I begin Phase 1?
-
-> yes
-
-[implements Phase 1, hooks fire after each file written, Claude reports]
-```
-
-### Example: using /audit
-
-```
-> /audit
-
-[Claude reads all .claude/steering/ files, scans actual source code]
-
-/audit — Project Truth Check
-════════════════════════════════════════
-Stack: React (Zustand · React Query · Next.js App Router)
-Audit date: 2026-04-26
-
-HEALTH SCORECARD
-────────────────
-Governance       A  97/100  All 8 steering files present, hooks v16.0.0
-Architecture     B  85/100  1 component fetches API directly without custom hook
-Code Patterns    A  90/100  92% Zustand usage, 3 components still use local state
-Feature Structure B  78/100  5/6 features have spec + README
-Test Coverage    C  62/100  2 features untested
-Dead Code        A  95/100  1 unused export found
-
-OVERALL: B  84/100  PASS WITH UPDATES
-
-Step 11: Updating .claude/steering/architecture.md ... done
-Step 11: Updating .claude/steering/coding-standards.md ... done
-
-ACTION ITEMS
-1. Move direct fetch in src/features/orders/OrderList.tsx into useOrders hook
-2. Create spec for: notifications feature
-3. Add tests for: cart feature, checkout feature
-4. Remove unused export: formatCurrency in src/utils/format.ts
-════════════════════════════════════════
-```
-
----
-
-## 9. All CLI Commands Reference
-
-### `ai-gov init`
-
-```
-ai-gov init [options]
-```
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-s, --stack <stack>` | flutter \| kotlin \| nodejs \| react \| angular \| swiftui \| python \| java | auto-detect |
-| `--overwrite` | Replace all existing governance files | false |
-| `--dry-run` | Preview all changes — nothing is written | false |
-| `--update-hooks` | Update only hooks that are at a lower version than the CLI | false |
-| `-d, --dir <path>` | Target project directory | current directory |
-| `--git-hooks` | Generate git hook scripts + install `.git/hooks/` wrappers | false |
-| `--ci <platform>` | Generate CI config: github \| gitlab \| bitbucket | — |
-| `--force` | Overwrite existing `.git/hooks/` even if another hook system exists | false |
-
-**Usage examples:**
+### Team lead (once per project)
 
 ```bash
-# First-time setup on a Flutter project
-ai-gov init --stack flutter
-
-# Preview without writing
-ai-gov init --dry-run
-
-# Full setup: governance + git hooks + GitHub CI
-ai-gov init --git-hooks --ci github
-
-# Re-run on existing project (prompts per changed file)
-ai-gov init
-
-# Overwrite everything silently
-ai-gov init --overwrite
-
-# Update only stale hooks after CLI upgrade
-ai-gov init --update-hooks
-
-# Install git hooks, force-overwrite husky
-ai-gov init --git-hooks --force
-
-# Point at a different directory
-ai-gov init -d /path/to/project --stack react
+npx ai-gov mcp init
 ```
 
----
+Generates `.mcp.json` (committed — uses `${VAR}` placeholders), `.env.mcp.example` (committed — instructions for devs), `.envrc` (committed — loads tokens via direnv).
 
-### `ai-gov pr-check`
-
+Preview first:
+```bash
+npx ai-gov mcp init --dry-run
 ```
-ai-gov pr-check [options]
-```
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `--base <branch>` | Base branch to diff against | `main` |
-| `--format <format>` | terminal \| github \| gitlab \| json | `terminal` |
-| `-d, --dir <path>` | Target project directory | current directory |
-
-**Usage examples:**
+### Developer (once per clone)
 
 ```bash
-# Run against main (default)
-ai-gov pr-check
-
-# Run against develop branch
-ai-gov pr-check --base develop
-
-# Output for GitHub PR comment
-ai-gov pr-check --format github
-
-# Output for GitLab MR note
-ai-gov pr-check --format gitlab
-
-# Machine-readable JSON
-ai-gov pr-check --format json
-
-# Save GitHub-format report to file
-ai-gov pr-check --format github > /tmp/governance-report.md
-
-# Extract summary from JSON
-ai-gov pr-check --format json | jq '.summary'
-# → { "changedFiles": 12, "blockers": 0, "warnings": 2, "passed": 6, "hasBlockers": false }
-
-# Run from a different project directory
-ai-gov pr-check --base main -d /path/to/project
+npx ai-gov mcp onboard
 ```
 
-**Checks run:**
+Guided prompts per tool. Global tokens (Jira email/API key, Figma token) stored in `~/.config/ai-gov/.env.mcp.global` — set once, reused across all your projects automatically.
 
-| Check | What it finds | Default |
-|-------|---------------|---------|
-| Architecture | Files crossing UI↔data layer in same PR | warn |
-| File Size | Source files > 300 lines | warn |
-| Credentials | AWS AKIA keys + credential variables with long values | **fail** |
-| Spec Coverage | Feature files without matching spec in `specs/` | warn |
-| Test Coverage | New source files without a test file | warn |
-| TODOs | `TODO` / `FIXME` / `HACK` / `XXX` in added lines | warn |
-| Commit Messages | Non-conventional commit format | warn |
-| PR Description | Presence of a PR template | skip |
-
-Only **Credentials** exits with code 1. All other checks exit 0 (warnings only).
-
----
-
-### `ai-gov doctor`
-
-```
-ai-gov doctor [-d <path>]
+Preview first:
+```bash
+npx ai-gov mcp onboard --dry-run
 ```
 
-Checks: CLAUDE.md exists, settings.json valid, all 11 hooks present, jq installed.
+### Validate your setup
 
 ```bash
-ai-gov doctor
-ai-gov doctor -d /path/to/project
+npx ai-gov mcp validate
 ```
 
----
-
-## 10. Upgrading from v15.1.0
-
-v16.0.0 adds git hooks and CI/PR check on top of the existing governance files. No existing files are changed by the upgrade.
+### Rotate a token
 
 ```bash
-# 1. Install the new version
-npm install -g ai-gov@16.0.0
-ai-gov --version   # → 16.0.0
-
-# 2. Update hooks in your project
-cd /path/to/your/project
-ai-gov init --update-hooks
-
-# 3. Add git hooks (new in 16.0.0)
-ai-gov init --git-hooks
-
-# 4. Add CI config (new in 16.0.0)
-ai-gov init --ci github    # or gitlab or bitbucket
-
-# 5. Commit everything
-git add .claude/git-hooks/ .github/workflows/
-git commit -m "chore: upgrade governance to v16.0.0 — git hooks + CI"
-git push
+npx ai-gov mcp update-token --tool jira
 ```
 
-Each teammate runs `ai-gov init --git-hooks` once after pulling to install their local `.git/hooks/` wrappers.
+### Catalog of supported tools
+
+| Tool | Category | OAuth | Token URL |
+|------|----------|-------|-----------|
+| Jira (Atlassian) | pm | No | `id.atlassian.com/manage-profile/security/api-tokens` |
+| Figma | design | No | `figma.com/settings` |
+| Zeplin | design | No | `app.zeplin.io/profile/developer-tools` |
+| PostgreSQL | database | No | — (connection URL) |
+| GitHub | devops | No | `github.com/settings/personal-access-tokens` |
+| Linear | pm | No | `linear.app/settings/api` |
+| Notion | communication | Yes | `/mcp` in Claude Code |
+| Slack | communication | Yes | `/mcp` in Claude Code |
+| Sentry | devops | Yes | `/mcp` in Claude Code |
+
+See [`mcp-governance-guide.md`](./mcp-governance-guide.md) for full walkthrough and multi-workspace setup.
 
 ---
 
-## 11. Troubleshooting
-
-| Problem | Cause | Fix |
-|---------|-------|-----|
-| `ai-gov: command not found` | Not installed or npm link not done | `npm install -g ai-gov` |
-| Hooks don't fire at all | `python3` and `jq` both missing | `brew install python3` (macOS) or `sudo apt install python3` |
-| Claude skips spec and codes directly | `.claude/CLAUDE.md` missing or runtime missing | Run `ai-gov doctor` — it will identify the missing piece |
-| `permission denied` on hook scripts | chmod not applied | `chmod +x .claude/git-hooks/*.sh .claude/git-hooks/checks/*.sh` |
-| Existing husky hooks stopped firing | ai-gov `--force` overwrote them | Add `bash .claude/git-hooks/pre-commit.sh` back to `.husky/pre-commit` |
-| `pr-check` shows 0 changed files | Running on main branch with no diverged commits | Switch to a feature branch first |
-| Wrong stack detected | Ambiguous manifest or mixed project | `ai-gov init --stack <correct>` |
-| Hooks are outdated after upgrade | CLI upgraded but project hooks weren't updated | `ai-gov init --update-hooks` |
-| `[dry-run]` showed changes but nothing written | That's correct behaviour — dry-run never writes | Remove `--dry-run` to write for real |
-| CI reports `npm: command not found` in pipeline | Node not available in CI image | Ensure `actions/setup-node@v4` runs before governance step |
-| Secrets check flags a test fixture | False positive on a test credential | Add `# nosecret` or `# ai-gov:ignore` on the line, or add `test/` to `skip-dirs` in config.json |
-| `--no-verify` used to bypass hooks | Developer bypassed locally | The CI `pr-check` still runs on the PR — it will catch what pre-commit missed |
-
-### Getting detailed output
+## 9. Upgrading
 
 ```bash
-# See full stack trace on CLI errors
-DEBUG=1 ai-gov init
+# Preview what would change
+npx ai-gov upgrade --dry-run
 
-# Run a hook manually to test it
-echo "test-file.ts" | bash .claude/git-hooks/checks/file-size.sh .claude/git-hooks
+# Upgrade hooks + commands (preserves steering files)
+npx ai-gov upgrade
 
-# Check hook config values
-jq '.' .claude/git-hooks/config.json
+# Upgrade everything including steering files
+npx ai-gov upgrade --force
+```
 
-# Manually run pr-check and see JSON
-ai-gov pr-check --format json | jq '.'
+**Always upgraded:** hooks, git-hooks, commands, CLAUDE.md
+**Preserved by default:** steering files, specs, custom-hooks.json
+
+See [`upgrade_guide.md`](./upgrade_guide.md) for full details including `--force` strategy and per-directory upgrades.
+
+---
+
+## 10. Workspace (multiple projects)
+
+For a workspace containing multiple projects (backend APIs, frontend apps, mobile apps):
+
+```bash
+# First-time setup
+npx ai-gov workspace --dir /path/to/workspace
+
+# Upgrade all projects in workspace
+npx ai-gov workspace --upgrade
+
+# Upgrade workspace + steering files
+npx ai-gov workspace --upgrade --force
+```
+
+`workspace` auto-discovers sub-projects, detects each stack, generates per-project governance, and adds shared workspace-level steering files.
+
+### Workspace layouts
+
+**Layout A — Grouped** (backend/frontend folders):
+```
+workspace/
+  backend/
+    api-server/      ← ai-gov init target
+  frontend/
+    web-app/         ← ai-gov init target
+```
+
+**Layout B — Flat** (all projects at root level):
+```
+workspace/
+  api-server/        ← ai-gov init target
+  web-app/           ← ai-gov init target
+  mobile-app/        ← ai-gov init target
+```
+
+See [`workspace_setup_guide.md`](./workspace_setup_guide.md) for the full setup walkthrough.
+
+---
+
+## 11. Daily Developer Workflow
+
+```
+START OF SPRINT
+───────────────
+/audit                     ← 6-category health check, self-heals steering files
+/assess                    ← before proposing a large refactor or rewrite
+
+START OF DAY
+────────────
+/resume                    ← pick up where you left off
+/graphify query "..."      ← check what exists before writing (if using Graphify)
+
+DURING DEVELOPMENT
+──────────────────
+/plan [description]        ← always plan before coding
+/new-feature               ← spec-first: requirements → design → tasks → implement
+/fix [description]         ← reproduce → diagnose → minimal fix → test
+/refactor                  ← impact analysis gate before changes
+
+END OF FEATURE
+──────────────
+/simplify                  ← quality + efficiency review
+/security-review           ← catch issues before commit
+git commit                 ← git hooks run automatically
+/review [PR]               ← review before merging
+
+AFTER SPRINT
+────────────
+/backlog                   ← generate sprint backlog from assess report
+/jira                      ← sync spec tasks.md to Jira stories
 ```
 
 ---
 
-*Document covers ai-gov v16.0.0. For changes since v15.1.0 see CHANGELOG.md.*
+## 12. Slash Commands Reference
+
+Slash commands are markdown files in `.claude/commands/`. Type `/command-name` in Claude Code chat.
+
+| Command | Gates | What It Does |
+|---------|:-----:|--------------|
+| `/new-feature` | 3 | Spec-first: requirements → design → tasks → implement |
+| `/edit-feature` | 1 | Read existing spec + code → propose changes → implement |
+| `/fix` | 1 | Reproduce → root cause → minimal fix → regression test |
+| `/refactor` | 1 | Impact analysis → tests before → apply → tests after |
+| `/hotfix` | 1 | Emergency: smallest change, must have test |
+| `/explore` | 0 | Read-only: trace data flows, answer questions |
+| `/audit` | 0 | 11-step governance audit → writes dated report |
+| `/assess` | 0 | Refactor vs rewrite evidence-based assessment |
+| `/backlog` | 0 | Generate sprint backlog from latest assess report |
+| `/jira` | 0 | Sync spec tasks.md time estimates to Jira via MCP |
+
+**Gates:** Commands with gates start with `EnterPlanMode`. Claude can read files and show plans but cannot write anything until you approve each gate.
+
+---
+
+## 13. All CLI Commands Reference
+
+```bash
+# ── Init (team lead) ──────────────────────────────────────────────
+npx ai-gov init                         # init with auto-detection
+npx ai-gov init --stack next            # force stack (flutter|kotlin|nodejs|react|next|angular|swiftui|python|java)
+npx ai-gov init --agent kiro            # generate Kiro governance
+npx ai-gov init --git-hooks             # add Layer 2 — git hooks
+npx ai-gov init --ci github             # add Layer 3 — GitHub Actions
+npx ai-gov init --ci gitlab             # add Layer 3 — GitLab CI
+npx ai-gov init --ci bitbucket          # add Layer 3 — Bitbucket Pipelines
+npx ai-gov init --dry-run               # preview only, writes nothing
+
+# ── Onboard (each developer) ──────────────────────────────────────
+npx ai-gov onboard                      # install git hooks, verify runtime
+npx ai-gov onboard --dry-run            # preview what would be installed
+
+# ── Doctor (verify setup) ─────────────────────────────────────────
+npx ai-gov doctor                       # health check for current project
+npx ai-gov doctor --agent kiro          # health check for Kiro agent
+
+# ── Upgrade (team lead) ───────────────────────────────────────────
+npx ai-gov upgrade                      # upgrade hooks + commands
+npx ai-gov upgrade --force              # upgrade including steering files
+npx ai-gov upgrade --dry-run            # preview changes
+npx ai-gov upgrade --dir ./backend      # upgrade specific directory
+
+# ── Workspace ─────────────────────────────────────────────────────
+npx ai-gov workspace                    # init all sub-projects
+npx ai-gov workspace --upgrade          # upgrade all sub-projects
+npx ai-gov workspace --upgrade --force  # upgrade + steering files
+npx ai-gov workspace --dir /path/to/ws  # specify workspace root
+
+# ── MCP governance ────────────────────────────────────────────────
+npx ai-gov mcp init                     # team lead: generate .mcp.json
+npx ai-gov mcp init --overwrite         # overwrite existing .mcp.json
+npx ai-gov mcp init --dry-run           # preview MCP config
+npx ai-gov mcp onboard                  # developer: set personal tokens
+npx ai-gov mcp onboard --dry-run        # preview token setup
+npx ai-gov mcp validate                 # check all tokens present
+npx ai-gov mcp update-token --tool jira # rotate one tool's tokens
+
+# ── PR check (CI) ─────────────────────────────────────────────────
+npx ai-gov pr-check                     # run governance check (CI use)
+```
+
+---
+
+## 14. Troubleshooting
+
+### "`.claude/` not found — run `ai-gov init` first"
+
+The project has never been initialised. Run:
+```bash
+npx ai-gov init
+```
+
+### Hooks not firing after `git commit`
+
+Run `npx ai-gov onboard` to install the local `.git/hooks/` wrappers. Every developer must run this once per clone — the wrappers are not committed to git.
+
+### `ai-gov: command not found` after global install
+
+Your npm global bin directory is not in `PATH`. Find it and add it:
+```bash
+npm bin -g       # e.g. /usr/local/bin ← add this to PATH
+```
+
+Add to `~/.zshrc` or `~/.bashrc`:
+```bash
+export PATH="$(npm bin -g):$PATH"
+```
+
+### Hook skips with "install jq or python3" warning
+
+Neither runtime is installed. Install one:
+```bash
+brew install python3   # macOS
+apt install python3    # Ubuntu/Debian
+```
+
+See [`runtime_requirements.md`](./runtime_requirements.md) for platform-specific instructions.
+
+### App name is wrong after upgrade
+
+Upgrade extracts the app name from the existing `.claude/CLAUDE.md` line `**App:** <name>`. If that line was removed, it falls back to `package.json`. Edit `.claude/CLAUDE.md` after upgrade and correct the `**App:**` line.
+
+### Steering files changed without `--force`
+
+Standard upgrade never touches steering files. If they changed, check for a concurrent git merge — the changes are from git, not the upgrade command.
+
+### MCP: "environment variable not set"
+
+Your shell hasn't loaded `.env.mcp`. Run:
+```bash
+direnv allow          # if using direnv
+# or
+source .env.mcp       # one-off manual load
+```
+
+### MCP: token prompt says "already set" but I want to change it
+
+```bash
+npx ai-gov mcp update-token --tool jira
+```
+
+### CI failure: `ai-gov pr-check` exits non-zero
+
+Run the check locally to see the error:
+```bash
+npx ai-gov pr-check
+```
+
+Common causes: missing steering files, hooks not present, python3/jq not in CI runner. Add `python3` to your CI image if using Alpine-based containers.

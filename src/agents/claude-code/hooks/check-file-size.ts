@@ -3,7 +3,7 @@ import { JSON_HELPER, JSON_GUARD } from './shared.js';
 
 export function generateCheckFileSize(c: GovernanceConfig): string {
   const p = c.profile;
-  const activeStacks = ['flutter', 'kotlin', 'react', 'angular', 'nodejs', 'python', 'java'];
+  const activeStacks = ['flutter', 'kotlin', 'react', 'angular', 'next'];
 
   // Stacks without meaningful per-file size limits → no-op
   if (!activeStacks.includes(c.stack)) {
