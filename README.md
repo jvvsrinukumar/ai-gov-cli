@@ -7,7 +7,7 @@
 
 > The scaffolding layer for AI agent team adoption. When multiple developers use Claude Code or Kiro on the same codebase without shared rules, you get inconsistency at machine speed. This CLI fixes that.
 
-**Version:** 17.4.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
+**Version:** 17.5.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
 
 ---
 
@@ -1084,6 +1084,53 @@ ai-gov doctor [-d <path>]
 ```
 
 Checks: CLAUDE.md exists, settings.json valid, all 11 hooks present, python3 or jq installed, git hooks wired, config.json schema valid. Exits with code 1 if neither python3 nor jq is available (hooks are unenforced).
+
+### `ai-gov mcp`
+
+MCP server governance — configure team tools (Jira, Figma, Zeplin, PostgreSQL, GitHub, Linear, Notion, Slack, Sentry) without committing tokens to git. Uses two-level token storage: global tokens (`~/.config/ai-gov/.env.mcp.global`) are set once per developer and shared across all projects; project tokens (`.env.mcp`) are per-repo.
+
+```bash
+ai-gov mcp init [options]
+ai-gov mcp onboard [options]
+ai-gov mcp validate [options]
+ai-gov mcp update-token --tool <id> [options]
+```
+
+| Subcommand | Who runs it | What it does |
+|------------|-------------|--------------|
+| `mcp init` | Team lead (once) | Interactive tool selection → writes `.mcp.json`, `.env.mcp.example`, `.envrc`, updates `.gitignore` |
+| `mcp onboard` | Each developer | Scope-aware token prompts → global tokens to `~/.config/ai-gov/.env.mcp.global`, project tokens to `.env.mcp` |
+| `mcp validate` | Developer or CI | Checks all required env vars are set (merges global + project), exits 0 or 1 |
+| `mcp update-token` | Developer | Re-prompts for one tool's tokens, writes to correct scope file |
+
+| Flag | Applies to | Description | Default |
+|------|-----------|-------------|---------|
+| `-d, --dir <path>` | All | Project directory | `process.cwd()` |
+| `--overwrite` | `init` | Re-init existing config without confirmation | false |
+| `--tool <id>` | `update-token` | Tool ID from catalog (e.g. `jira`, `figma`, `postgres`) | required |
+
+```bash
+# Team lead: set up MCP governance for the project
+npx ai-gov mcp init
+
+# Developer: set personal tokens (global tokens only prompted once across all projects)
+npx ai-gov mcp onboard
+
+# Verify all tokens are set
+npx ai-gov mcp validate
+
+# Rotate a single tool's token
+npx ai-gov mcp update-token --tool jira
+```
+
+**Key behaviors:**
+- Global-scoped tokens (Jira, Figma, GitHub, etc.) are set once and reused across all projects — no re-prompting
+- Project-scoped tokens (DATABASE_URL) are prompted per-project
+- OAuth tools (Notion, Slack, Sentry) require no tokens — authenticate via browser
+- Re-running `onboard` shows ✓ for already-set tokens and only prompts for missing ones
+- Custom entries manually added to `.mcp.json` are never touched by `onboard`
+
+See [MCP Governance Guide](docs/mcp-governance-guide.md) for the full walkthrough.
 
 ---
 

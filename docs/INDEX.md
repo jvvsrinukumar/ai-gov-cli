@@ -23,6 +23,8 @@ All documentation files in this directory, with status and description.
 | [`knowledge_hub_proposal.md`](./knowledge_hub_proposal.md) | Product | Proposal for centralised knowledge hub feature (not yet implemented) |
 | [`governance-dashboard-plan.md`](./governance-dashboard-plan.md) | CEO / Engineering Leads | **Dashboard plan** — resources needed, architecture, implementation phases, cost, timeline, developer impact |
 | [`developer-commands-token-guide.md`](./developer-commands-token-guide.md) | ai-gov maintainers | **Token consumption guide** — 3 input cases (Jira/ChatGPT/manual) × `/new-feature` + `/fix` + daily commands, problems identified, solution roadmap |
+| [`mcp-governance-guide.md`](./mcp-governance-guide.md) | Team leads + Developers | **MCP tool governance** — `ai-gov mcp init/onboard/validate`, token management, adding new tools, full terminal walkthroughs |
+| [`mcp-jira-implementation-plan.md`](./mcp-jira-implementation-plan.md) | Engineering leads | **Implementation plan** — all files to create/modify, test cases, build sequence, acceptance criteria for MCP governance + Jira sync features |
 
 ---
 
@@ -30,7 +32,8 @@ All documentation files in this directory, with status and description.
 
 **I am a new developer joining a governed project:**
 → Run `curl -s https://raw.githubusercontent.com/jvvsrinukumar/ai-gov-cli/main/onboard.sh | bash`
-→ Or: `npx ai-gov onboard`
+→ Or: `npx ai-gov onboard` then `npx ai-gov mcp onboard`
+→ See: [`mcp-governance-guide.md`](./mcp-governance-guide.md)
 
 **I am a team lead setting up governance for the first time:**
 → [`claude_code_setup_guide.md`](./claude_code_setup_guide.md) (Claude Code)

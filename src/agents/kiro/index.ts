@@ -21,6 +21,7 @@ import { generateFeatureReadme } from '../../generators/feature-readme.js';
 import { generatePromptTemplates } from '../../generators/prompt-templates.js';
 import { generateMonorepoGovernance } from '../../generators/monorepo.js';
 import { generateNamingConventions } from '../../generators/naming-conventions.js';
+import { generateTaskEstimates } from '../../generators/task-estimates.js';
 
 export function generateKiro(config: GovernanceConfig): void {
     console.log('');
@@ -49,6 +50,8 @@ export function generateKiro(config: GovernanceConfig): void {
     log.section('Steering:');
     const steeringDir = join(dir, '.kiro', 'steering');
 
+    safeWrite(join(steeringDir, 'task-estimates.md'),
+        wrapWithFrontMatter(generateTaskEstimates(config)), opts);
     safeWrite(join(steeringDir, 'constitution.md'),
         wrapWithFrontMatter(generateConstitution(config)), opts);
     safeWrite(join(steeringDir, 'architecture.md'),
@@ -243,6 +246,7 @@ export function upgradeKiro(config: GovernanceConfig, opts: WriteOptions, force:
         safeWrite(join(steeringDir, 'workflow.md'), wrapWithFrontMatter(generateWorkflow(config)), opts);
         safeWrite(join(steeringDir, 'constitution.md'), wrapWithFrontMatter(generateConstitution(config)), opts);
         safeWrite(join(steeringDir, 'naming-conventions.md'), wrapWithFrontMatter(generateNamingConventions(config)), opts);
+        safeWrite(join(steeringDir, 'task-estimates.md'), wrapWithFrontMatter(generateTaskEstimates(config)), opts);
     } else {
         log.info('Steering files kept (use --force to also upgrade them)');
     }

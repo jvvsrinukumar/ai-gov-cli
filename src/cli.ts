@@ -23,6 +23,7 @@ import { detectAgent } from './agents/detect-agent.js';
 import { VERSION, HOOK_VERSION } from './constants.js';
 import { getSupportedStackIds, getAdapter } from './stacks/registry.js';
 import { runProjectInit } from './commands/project-init.js';
+import { runMcpInit, runMcpOnboard, runMcpValidate, runMcpUpdateToken } from './commands/mcp.js';
 
 // Import adapter modules to trigger self-registration (Req 17.3, 17.4)
 // Order is deterministic: Flutter, React (Vite SPA), Next.js
@@ -514,6 +515,48 @@ projectCmd
             log.error(msg);
             process.exit(1);
         }
+    });
+
+// ---------------------------------------------------------------------------
+// mcp command group
+// ---------------------------------------------------------------------------
+
+const mcp = program
+    .command('mcp')
+    .description('MCP server governance — configure team tools without committing tokens');
+
+mcp
+    .command('init')
+    .description('Team lead: select tools, set org vars, write .mcp.json + .env.mcp.example + .envrc')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .option('--overwrite', 'Overwrite existing .mcp.json', false)
+    .action(async (options) => {
+        await runMcpInit({ dir: options.dir, overwrite: options.overwrite });
+    });
+
+mcp
+    .command('onboard')
+    .description('Developer: set personal tokens in global and project env files')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .action(async (options) => {
+        await runMcpOnboard({ dir: options.dir });
+    });
+
+mcp
+    .command('validate')
+    .description('CI: verify all required tokens are present in the merged environment')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .action(async (options) => {
+        await runMcpValidate({ dir: options.dir });
+    });
+
+mcp
+    .command('update-token')
+    .description('Rotate a single tool\'s personal token(s)')
+    .requiredOption('--tool <id>', 'Tool identifier (e.g. jira, figma, postgres)')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .action(async (options) => {
+        await runMcpUpdateToken({ dir: options.dir, tool: options.tool });
     });
 
 program.parse();

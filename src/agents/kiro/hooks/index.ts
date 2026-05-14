@@ -22,6 +22,7 @@ import { generateWorkflowRefactor } from './workflow-refactor.js';
 import { generateWorkflowHotfix } from './workflow-hotfix.js';
 import { generateWorkflowExplore } from './workflow-explore.js';
 import { generateWorkflowEditFeature } from './workflow-edit-feature.js';
+import { generateWorkflowJiraSync } from './workflow-jira-sync.js';
 
 export function generateAllKiroHooks(config: GovernanceConfig, opts: WriteOptions): void {
     const hooksDir = join(config.projectDir, '.kiro', 'hooks');
@@ -63,6 +64,7 @@ export function generateAllKiroHooks(config: GovernanceConfig, opts: WriteOption
     w('workflow-hotfix.kiro.hook', generateWorkflowHotfix(config));
     w('workflow-explore.kiro.hook', generateWorkflowExplore(config));
     w('workflow-edit-feature.kiro.hook', generateWorkflowEditFeature(config));
+    w('workflow-jira-sync.kiro.hook', generateWorkflowJiraSync(config));
 
     // README
     w('README.md', generateHooksReadme(config));
