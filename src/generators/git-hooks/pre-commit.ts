@@ -78,6 +78,71 @@ run_check "format-check"  "format-check.sh"   "warn"
 run_check "lint-check"    "lint-check.sh"      "warn"
 
 echo ""
+
+# --- Pre-commit logging (Requirements 9.1–9.6, 15.1–15.3) ---
+# Create log directory if it does not exist
+mkdir -p .ai-gov/usage-logs/ || true
+
+_AIGOV_LOG=".ai-gov/usage-logs/precommit.log"
+_AIGOV_TS=$(date +%s) || true
+
+# --- AI platform detection (Requirements 15.1, 15.2, 15.3) ---
+_AIGOV_PLATFORM="manual"
+_AIGOV_COMMAND=""
+
+# Detect Claude Code: check for .claude/ session artifacts
+if [ -d ".claude" ] && [ -n "$(ls -A .claude/ 2>/dev/null)" ]; then
+    _AIGOV_PLATFORM="claude-code"
+    # Attempt to detect command from recent session metadata
+    if [ -f ".claude/session.json" ]; then
+        _AIGOV_COMMAND=$(cat .claude/session.json 2>/dev/null | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/' 2>/dev/null) || true
+    fi
+    # Fallback: detect from commit message context markers (AI workflow prefixes)
+    if [ -z "\$_AIGOV_COMMAND" ]; then
+        _AIGOV_MSG=$(git log --format=%s -1 HEAD 2>/dev/null) || true
+        case "\$_AIGOV_MSG" in
+            feat:*|feat\\(*) _AIGOV_COMMAND="new-feature" ;;
+            fix:*|fix\\(*) _AIGOV_COMMAND="fix" ;;
+            refactor:*|refactor\\(*) _AIGOV_COMMAND="refactor" ;;
+            explore:*|explore\\(*) _AIGOV_COMMAND="explore" ;;
+            hotfix:*|hotfix\\(*) _AIGOV_COMMAND="hotfix" ;;
+        esac
+    fi || true
+# Detect Kiro: check for .kiro/ workspace markers
+elif [ -d ".kiro" ] && [ -n "$(ls -A .kiro/ 2>/dev/null)" ]; then
+    _AIGOV_PLATFORM="kiro"
+    # Attempt to detect command from kiro session or workspace metadata
+    if [ -f ".kiro/session.json" ]; then
+        _AIGOV_COMMAND=$(cat .kiro/session.json 2>/dev/null | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/' 2>/dev/null) || true
+    fi
+    # Fallback: detect from commit message context markers
+    if [ -z "\$_AIGOV_COMMAND" ]; then
+        _AIGOV_MSG=$(git log --format=%s -1 HEAD 2>/dev/null) || true
+        case "\$_AIGOV_MSG" in
+            feat:*|feat\\(*) _AIGOV_COMMAND="new-feature" ;;
+            fix:*|fix\\(*) _AIGOV_COMMAND="fix" ;;
+            refactor:*|refactor\\(*) _AIGOV_COMMAND="refactor" ;;
+            explore:*|explore\\(*) _AIGOV_COMMAND="explore" ;;
+            hotfix:*|hotfix\\(*) _AIGOV_COMMAND="hotfix" ;;
+        esac
+    fi || true
+fi || true
+# --- End AI platform detection ---
+
+if [[ $ERRORS -gt 0 ]]; then
+    echo "\${_AIGOV_TS}|fail|\${_AIGOV_PLATFORM}|\${_AIGOV_COMMAND}" >> "\$_AIGOV_LOG" || true
+else
+    echo "\${_AIGOV_TS}|pass|\${_AIGOV_PLATFORM}|\${_AIGOV_COMMAND}" >> "\$_AIGOV_LOG" || true
+fi
+
+# Log rotation: keep most recent 500 entries if file exceeds 500 lines
+_AIGOV_LINES=$(wc -l < "\$_AIGOV_LOG" 2>/dev/null) || true
+_AIGOV_LINES=\${_AIGOV_LINES// /}
+if [ "\${_AIGOV_LINES:-0}" -gt 500 ] 2>/dev/null; then
+    tail -500 "\$_AIGOV_LOG" > "\$_AIGOV_LOG.tmp" && mv "\$_AIGOV_LOG.tmp" "\$_AIGOV_LOG" || true
+fi
+# --- End pre-commit logging and AI detection ---
+
 if [[ $ERRORS -gt 0 ]]; then
     echo "  ❌ $ERRORS blocking issue(s) found. Fix and try again."
     echo "  (bypass with: git commit --no-verify)"

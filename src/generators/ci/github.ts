@@ -1,4 +1,19 @@
-export function generateGithubCI(): string {
+export function generateGithubCI(options?: { hubUrl?: string }): string {
+  const hubUrl = options?.hubUrl;
+
+  const hubReportingStep = hubUrl ? `
+      - name: Report to Governance Hub
+        if: always()
+        run: |
+          RESULT=$(ai-gov pr-check --format json)
+          DEVELOPER_HASH=$(echo -n "\${{ github.actor }}" | sha256sum | cut -d' ' -f1)
+          PAYLOAD=$(echo "$RESULT" | jq -c --arg hash "$DEVELOPER_HASH" --arg platform "github" '{project: .project, team: .team, platform: $platform, result: .result, developer_hash: $hash}')
+          curl -s --max-time 10 -X POST "${hubUrl}/api/pr-reports" \\
+            -H "Content-Type: application/json" \\
+            -H "Authorization: Bearer \${{ secrets.AI_GOV_SECRET }}" \\
+            -d "$PAYLOAD" || true
+` : '';
+
   return `name: Governance Check
 on:
   pull_request:
@@ -52,5 +67,5 @@ jobs:
                 issue_number: context.issue.number, body: report
               });
             }
-`;
+${hubReportingStep}`;
 }

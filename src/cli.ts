@@ -20,6 +20,7 @@ import { runUpgrade } from './commands/upgrade.js';
 import { runOnboard } from './commands/onboard.js';
 import { runUninstall } from './commands/uninstall.js';
 import { detectAgent } from './agents/detect-agent.js';
+import { readHubConfig } from './utils/hub-config.js';
 import { VERSION, HOOK_VERSION } from './constants.js';
 import { getSupportedStackIds, getAdapter } from './stacks/registry.js';
 import { runProjectInit } from './commands/project-init.js';
@@ -144,6 +145,12 @@ program
         }
         if (options.ci) {
             generateCIConfig(config, options.ci);
+        }
+
+        // Transparency disclosure and gitignore management
+        if (!options.dryRun) {
+            addUsageLogsToGitignore(projectDir);
+            displayTransparencyDisclosure(projectDir);
         }
 
         // Summary
@@ -705,4 +712,40 @@ function addToGitignore(projectDir: string): void {
             appendFileSync(gi, '\n# AI governance CLI\nonboard.sh\n');
         }
     } catch { /* ignore */ }
+}
+
+function addUsageLogsToGitignore(projectDir: string): void {
+    const gi = join(projectDir, '.gitignore');
+    const gitDir = join(projectDir, '.git');
+    // Skip if no .gitignore and no .git directory
+    if (!existsSync(gi) && !existsSync(gitDir)) return;
+    try {
+        const content = existsSync(gi) ? readFileSync(gi, 'utf-8') : '';
+        if (!content.includes('.ai-gov/usage-logs/')) {
+            appendFileSync(gi, '\n# AI governance usage logs (local telemetry)\n.ai-gov/usage-logs/\n');
+        }
+    } catch { /* ignore */ }
+}
+
+function displayTransparencyDisclosure(projectDir: string): void {
+    const hubConfig = readHubConfig(projectDir);
+    if (!hubConfig || !hubConfig.hub) return;
+
+    console.log('');
+    log.section('  Hub Telemetry Disclosure');
+    console.log('');
+    console.log(`  Hub URL: ${hubConfig.hub}`);
+    console.log('');
+    console.log('  Data reported on git push:');
+    console.log('    • Commit count');
+    console.log('    • Compliance percentage');
+    console.log('    • Violation counts');
+    console.log('');
+    console.log('  Privacy:');
+    console.log('    • No source code or commit messages are sent');
+    console.log('    • Developer emails are hashed (SHA-256) before transmission');
+    console.log('');
+    console.log('  To disable telemetry:');
+    console.log('    export AI_GOV_TELEMETRY=off');
+    console.log('');
 }
