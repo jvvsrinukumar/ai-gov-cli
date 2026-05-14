@@ -52,7 +52,7 @@ echo "$BN" | grep -qiE '(\\.type\\.|\\. types\\.|\\. model\\.|\\. models\\.|\\. 
 [[ ! -f "$FILE_PATH" ]] && exit 0
 LINES=$(wc -l < "$FILE_PATH" | tr -d ' ')
 if [[ "$LINES" -gt 300 ]]; then
-  echo "BLOCKED: '$BN' has $LINES lines (HARD LIMIT: 200). This file is far too large." >&2
+  echo "BLOCKED: '$BN' has $LINES lines (HARD LIMIT: 300). This file is far too large." >&2
   echo "You MUST split this file into smaller components NOW before continuing." >&2
   echo "See .claude/steering/coding-standards.md 'File Size' section for how to decompose." >&2
   exit 2

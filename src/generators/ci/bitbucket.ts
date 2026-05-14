@@ -10,7 +10,7 @@ export function generateBitbucketCI(options?: { hubUrl?: string }): string {
             - apt-get update && apt-get install -y jq
             - npm install -g ai-gov@17.4.0
             - RESULT=$(ai-gov pr-check --format json)
-            - DEVELOPER_HASH=$(echo -n "\${BITBUCKET_PR_AUTHOR}bitbucket" | sha256sum | awk '{print $1}')
+            - DEVELOPER_HASH=$(echo -n "\${BITBUCKET_PR_AUTHOR}" | sha256sum | awk '{print $1}')
             - >-
               curl -s --max-time 10
               -X POST "${hubUrl}/api/pr-reports"

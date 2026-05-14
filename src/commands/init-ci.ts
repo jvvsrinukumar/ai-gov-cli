@@ -10,7 +10,8 @@ import { log } from '../utils/logger.js';
 export function generateCIConfig(config: GovernanceConfig, platform: string): void {
     const projectDir = config.projectDir;
     const cfg = readHubConfig(projectDir);
-    const hubUrl = cfg?.hub || undefined;
+    const rawHub = cfg?.hub || '';
+    const hubUrl = rawHub.startsWith('https://') ? rawHub : undefined;
 
     switch (platform.toLowerCase()) {
         case 'github': {

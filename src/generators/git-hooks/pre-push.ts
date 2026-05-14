@@ -134,7 +134,7 @@ if [[ -f "$LOG_FILE" ]]; then
             fi
         done <<< "$AI_ENTRIES"
     fi
-fi || true
+fi
 
 # Determine primary AI platform
 if [[ "$HAS_CLAUDE" == true && "$HAS_KIRO" == true ]]; then
@@ -178,13 +178,13 @@ ACTIVE_HOOKS_COUNT=0
 if [[ -d ".claude/hooks" ]]; then
     CLAUDE_HOOKS=$(find .claude/hooks -maxdepth 1 -name "*.js" -type f 2>/dev/null | wc -l | tr -d ' ') || CLAUDE_HOOKS=0
     ACTIVE_HOOKS_COUNT=$((ACTIVE_HOOKS_COUNT + CLAUDE_HOOKS))
-fi || true
+fi
 
 # Count .kiro.hook files in .kiro/hooks/ (Kiro hooks)
 if [[ -d ".kiro/hooks" ]]; then
     KIRO_HOOKS=$(find .kiro/hooks -maxdepth 1 -name "*.kiro.hook" -type f 2>/dev/null | wc -l | tr -d ' ') || KIRO_HOOKS=0
     ACTIVE_HOOKS_COUNT=$((ACTIVE_HOOKS_COUNT + KIRO_HOOKS))
-fi || true
+fi
 
 # --- Process refs from stdin ---
 ZERO="0000000000000000000000000000000000000000"

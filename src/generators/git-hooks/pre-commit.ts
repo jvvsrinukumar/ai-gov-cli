@@ -90,43 +90,25 @@ _AIGOV_TS=$(date +%s) || true
 _AIGOV_PLATFORM="manual"
 _AIGOV_COMMAND=""
 
-# Detect Claude Code: check for .claude/ session artifacts
-if [ -d ".claude" ] && [ -n "$(ls -A .claude/ 2>/dev/null)" ]; then
+# Returns true if a file was modified within the last 30 minutes (1800 seconds).
+# Uses GNU stat (-c %Y) with macOS stat (-f %m) fallback.
+_recently_modified() {
+    local file="$1" now mtime
+    now=$(date +%s) || return 1
+    mtime=$(stat -c %Y "$file" 2>/dev/null || stat -f %m "$file" 2>/dev/null) || return 1
+    [ $((now - mtime)) -lt 1800 ]
+}
+
+# Only log as AI-assisted if the agent's session file was touched in the last 30 min.
+# Directory existence alone is not sufficient — .claude/ and .kiro/ are always present
+# once governance is installed, even for fully manual commits.
+if [ -f ".claude/session.json" ] && _recently_modified ".claude/session.json"; then
     _AIGOV_PLATFORM="claude-code"
-    # Attempt to detect command from recent session metadata
-    if [ -f ".claude/session.json" ]; then
-        _AIGOV_COMMAND=$(cat .claude/session.json 2>/dev/null | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/' 2>/dev/null) || true
-    fi
-    # Fallback: detect from commit message context markers (AI workflow prefixes)
-    if [ -z "\$_AIGOV_COMMAND" ]; then
-        _AIGOV_MSG=$(git log --format=%s -1 HEAD 2>/dev/null) || true
-        case "\$_AIGOV_MSG" in
-            feat:*|feat\\(*) _AIGOV_COMMAND="new-feature" ;;
-            fix:*|fix\\(*) _AIGOV_COMMAND="fix" ;;
-            refactor:*|refactor\\(*) _AIGOV_COMMAND="refactor" ;;
-            explore:*|explore\\(*) _AIGOV_COMMAND="explore" ;;
-            hotfix:*|hotfix\\(*) _AIGOV_COMMAND="hotfix" ;;
-        esac
-    fi || true
-# Detect Kiro: check for .kiro/ workspace markers
-elif [ -d ".kiro" ] && [ -n "$(ls -A .kiro/ 2>/dev/null)" ]; then
+    _AIGOV_COMMAND=$(cat .claude/session.json 2>/dev/null | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/' 2>/dev/null) || true
+elif [ -f ".kiro/session.json" ] && _recently_modified ".kiro/session.json"; then
     _AIGOV_PLATFORM="kiro"
-    # Attempt to detect command from kiro session or workspace metadata
-    if [ -f ".kiro/session.json" ]; then
-        _AIGOV_COMMAND=$(cat .kiro/session.json 2>/dev/null | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/' 2>/dev/null) || true
-    fi
-    # Fallback: detect from commit message context markers
-    if [ -z "\$_AIGOV_COMMAND" ]; then
-        _AIGOV_MSG=$(git log --format=%s -1 HEAD 2>/dev/null) || true
-        case "\$_AIGOV_MSG" in
-            feat:*|feat\\(*) _AIGOV_COMMAND="new-feature" ;;
-            fix:*|fix\\(*) _AIGOV_COMMAND="fix" ;;
-            refactor:*|refactor\\(*) _AIGOV_COMMAND="refactor" ;;
-            explore:*|explore\\(*) _AIGOV_COMMAND="explore" ;;
-            hotfix:*|hotfix\\(*) _AIGOV_COMMAND="hotfix" ;;
-        esac
-    fi || true
-fi || true
+    _AIGOV_COMMAND=$(cat .kiro/session.json 2>/dev/null | grep -o '"command"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"command"[[:space:]]*:[[:space:]]*"\\([^"]*\\)".*/\\1/' 2>/dev/null) || true
+fi
 # --- End AI platform detection ---
 
 if [[ $ERRORS -gt 0 ]]; then
