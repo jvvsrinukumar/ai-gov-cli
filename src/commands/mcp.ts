@@ -1,9 +1,9 @@
 import { join, resolve } from 'path';
 import { log } from '../utils/logger.js';
 import { readTTYLine } from '../utils/tty.js';
-import { MCP_CATALOG, getToolById, getTokenTools, getValidToolIds } from '../mcp/catalog.js';
+import { MCP_CATALOG, getToolById, getValidToolIds } from '../mcp/catalog.js';
 import { buildMcpConfig, readMcpConfig, writeMcpConfig } from '../mcp/mcp-json.js';
-import { generateEnvExample, generateEnvrc, readEnvFile, readMergedEnv, writeEnvFile } from '../mcp/env-files.js';
+import { generateEnvExample, generateEnvrc, readMergedEnv, writeEnvFile } from '../mcp/env-files.js';
 import { readGlobalEnv, writeGlobalEnv } from '../mcp/global-env.js';
 import { ensureMcpGitignore } from '../mcp/gitignore.js';
 import { writeFileSync, existsSync } from 'fs';

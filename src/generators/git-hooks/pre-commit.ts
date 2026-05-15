@@ -112,16 +112,16 @@ fi
 # --- End AI platform detection ---
 
 if [[ $ERRORS -gt 0 ]]; then
-    echo "\${_AIGOV_TS}|fail|\${_AIGOV_PLATFORM}|\${_AIGOV_COMMAND}" >> "\$_AIGOV_LOG" || true
+    echo "\${_AIGOV_TS}|fail|\${_AIGOV_PLATFORM}|\${_AIGOV_COMMAND}" >> "$_AIGOV_LOG" || true
 else
-    echo "\${_AIGOV_TS}|pass|\${_AIGOV_PLATFORM}|\${_AIGOV_COMMAND}" >> "\$_AIGOV_LOG" || true
+    echo "\${_AIGOV_TS}|pass|\${_AIGOV_PLATFORM}|\${_AIGOV_COMMAND}" >> "$_AIGOV_LOG" || true
 fi
 
 # Log rotation: keep most recent 500 entries if file exceeds 500 lines
-_AIGOV_LINES=$(wc -l < "\$_AIGOV_LOG" 2>/dev/null) || true
+_AIGOV_LINES=$(wc -l < "$_AIGOV_LOG" 2>/dev/null) || true
 _AIGOV_LINES=\${_AIGOV_LINES// /}
 if [ "\${_AIGOV_LINES:-0}" -gt 500 ] 2>/dev/null; then
-    tail -500 "\$_AIGOV_LOG" > "\$_AIGOV_LOG.tmp" && mv "\$_AIGOV_LOG.tmp" "\$_AIGOV_LOG" || true
+    tail -500 "$_AIGOV_LOG" > "$_AIGOV_LOG.tmp" && mv "$_AIGOV_LOG.tmp" "$_AIGOV_LOG" || true
 fi
 # --- End pre-commit logging and AI detection ---
 
