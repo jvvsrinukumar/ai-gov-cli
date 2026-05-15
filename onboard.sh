@@ -3,7 +3,7 @@
 # ai-gov onboard — run once after cloning a governed project
 #
 # Usage (after cloning):
-#   curl -s https://raw.githubusercontent.com/jvvsrinukumar/ai-gov-cli/main/onboard.sh | bash
+#   curl -s http://vgit.techvedika.com/tvdatascience/ai-governance/ai-governance-cli/-/raw/main/onboard.sh | bash
 #   # or download and run:
 #   bash onboard.sh
 #   # or from a specific directory:

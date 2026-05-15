@@ -212,10 +212,19 @@ test: add fixture for Flutter Riverpod + Drift
 
 ---
 
-## Pull Request Checklist
+## Merge Request Checklist
 
 - [ ] `npm run build` passes (zero TypeScript errors)
 - [ ] `npm test` passes (284+ tests)
 - [ ] New detections have test coverage
 - [ ] New hooks are registered in settings-json.ts and hooks-readme.ts
 - [ ] CHANGELOG.md updated
+
+---
+
+## Repository
+
+- **Primary:** [vgit.techvedika.com/tvdatascience/ai-governance/ai-governance-cli](https://vgit.techvedika.com/tvdatascience/ai-governance/ai-governance-cli)
+- **Mirror (read-only for external contributors):** [github.com/jvvsrinukumar/ai-gov-cli](https://github.com/jvvsrinukumar/ai-gov-cli)
+
+Submit merge requests on GitLab. Issues can be filed on either platform.

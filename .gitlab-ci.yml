@@ -1,0 +1,52 @@
+# GitLab CI/CD for ai-governance CLI
+# Mirrors hub pipeline structure with an additional publish stage
+
+stages:
+  - build
+  - test
+  - publish
+
+default:
+  image: node:20
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/
+
+before_script:
+  - npm ci
+
+build:
+  stage: build
+  script:
+    - npm run build
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 1 hour
+
+typecheck:
+  stage: build
+  script:
+    - npx tsc --noEmit
+
+lint:
+  stage: build
+  script:
+    - npm run lint
+
+test:
+  stage: test
+  script:
+    - npm test
+  needs:
+    - build
+
+publish-npm:
+  stage: publish
+  script:
+    - echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+    - npm publish
+  only:
+    - tags
+  when: manual

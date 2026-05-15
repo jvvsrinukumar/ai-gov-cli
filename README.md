@@ -1,6 +1,6 @@
 # AI Governance CLI
 
-[![CI](https://github.com/jvvsrinukumar/ai-gov-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/jvvsrinukumar/ai-gov-cli/actions/workflows/ci.yml)
+[![pipeline status](https://vgit.techvedika.com/tvdatascience/ai-governance/ai-governance-cli/badges/main/pipeline.svg)](https://vgit.techvedika.com/tvdatascience/ai-governance/ai-governance-cli/-/commits/main)
 [![npm version](https://img.shields.io/npm/v/ai-gov.svg)](https://www.npmjs.com/package/ai-gov)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org/)
@@ -754,7 +754,7 @@ The scanner reads manifest files and produces tailored governance for each stack
 
 ## Telemetry (optional)
 
-If your team runs an [AI Governance Hub](https://github.com/jvvsrinukumar/ai-governance-hub), governance metrics are reported automatically on each `git push` — commit count, compliance percentage, violation counts.
+If your team runs an [AI Governance Hub](https://vgit.techvedika.com/tvdatascience/ai-governance/ai-governance-hub), governance metrics are reported automatically on each `git push` — commit count, compliance percentage, violation counts.
 
 Configure in `.ai-gov/config.json`:
 
