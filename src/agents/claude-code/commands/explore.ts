@@ -1,4 +1,5 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleCommand } from '../../../utils/knowledge-preamble.js';
 
 export function generateExploreCommand(c: GovernanceConfig): string {
   const { profile } = c;
@@ -11,9 +12,7 @@ export function generateExploreCommand(c: GovernanceConfig): string {
 > Use when you need to understand a feature or module before deciding what to do.
 > The entire reading phase is in plan mode — nothing is written until you choose a next action.
 > Transitions seamlessly into /fix, /refactor, create spec, or update spec — without re-reading files.
-
----
-
+${generateKnowledgePreambleCommand()}
 ## STEP 1 — Enter Plan Mode
 
 Call \`EnterPlanMode\` immediately. You will stay in plan mode throughout the entire reading phase.

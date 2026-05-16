@@ -4,6 +4,7 @@ import {
   getDeadCodeSignals,
   getTestCoverageInstructions,
 } from '../../../generators/audit-content.js';
+import { generateKnowledgeHealthCheck } from '../../../utils/knowledge-health-check.js';
 
 export function generateWorkflowAudit(c: GovernanceConfig): string {
   const { profile, scan, project } = c;
@@ -344,7 +345,7 @@ DEAD CODE CANDIDATE: <path>
 \`\`\`
 
 ---
-
+${generateKnowledgeHealthCheck()}
 ## PHASE 6 — REPORT
 *(What was wrong, what's fixed, what Kiro will now do correctly)*
 

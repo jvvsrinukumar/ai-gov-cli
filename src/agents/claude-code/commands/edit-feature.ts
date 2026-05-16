@@ -1,4 +1,6 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleCommand } from '../../../utils/knowledge-preamble.js';
+import { generateSilentCaptureInstructionEditFeature } from '../../../utils/knowledge-capture.js';
 
 export function generateEditFeatureCommand(c: GovernanceConfig): string {
     const { profile } = c;
@@ -23,9 +25,7 @@ export function generateEditFeatureCommand(c: GovernanceConfig): string {
 You cannot write or edit any files during planning. File writes happen only after all 3 gates are approved and \`ExitPlanMode\` is called.
 
 > Feature name from \`$ARGUMENTS\`: the existing feature to edit. If blank, ask: "Which feature are you editing?"
-
----
-
+${generateKnowledgePreambleCommand()}
 ## STEP 1 — Read Existing Spec + Context
 
 Read ALL of these before generating anything:
@@ -78,9 +78,7 @@ Show the FULL updated \`requirements.md\` in the chat.
 > Does this capture what you're adding? Say **ok** to proceed or tell me what to adjust."
 
 **DO NOT proceed until explicit approval.**
-
----
-
+${generateSilentCaptureInstructionEditFeature()}
 ## STEP 3 — GATE 2: Updated Design
 
 Show the FULL updated \`design.md\` in the chat.

@@ -1,5 +1,6 @@
 import type { GovernanceConfig } from '../../../types.js';
 import { getObservationQuestions, getDeadCodeSignals, getTestCoverageInstructions } from '../../../generators/audit-content.js';
+import { generateKnowledgeHealthCheck } from '../../../utils/knowledge-health-check.js';
 
 export function generateAuditCommand(c: GovernanceConfig): string {
   const { profile, scan, project } = c;
@@ -434,7 +435,7 @@ DEAD CODE CANDIDATE: <path>
 > **After Step 10:** Continue immediately to Step 11 (governance gap summary). DO NOT stop.
 
 ---
-
+${generateKnowledgeHealthCheck()}
 ## PHASE 6 — REPORT
 *(What was wrong, what's fixed, what Claude will now do correctly)*
 

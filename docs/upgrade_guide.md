@@ -1,6 +1,6 @@
 # AI Governance Upgrade Guide
 
-**Version:** 18.0.0
+**Version:** 17.2.0
 **Command:** `ai-gov upgrade`
 
 This guide covers how to upgrade an existing project from an older ai-gov version to the latest hooks, commands, and steering files — without losing your team's customised content.
@@ -72,7 +72,7 @@ The regenerated `.claude/CLAUDE.md` contains your app name (extracted from the o
 
 ```bash
 git add .claude/   # or .kiro/ if using Kiro
-git commit -m "chore: upgrade ai-gov hooks to v18.0.0"
+git commit -m "chore: upgrade ai-gov hooks to v17.2.0"
 git push
 ```
 
@@ -170,66 +170,13 @@ This is why steering files are preserved by default.
 
 ---
 
-## What changed in v18.0.0
-
-### `next` stack added
-
-`ai-gov init --stack next` now generates governance for Next.js projects. Reuses the React scanner (same JS tooling: package manager, linter, test framework, source dir) — no new dependencies.
-
-### `--dry-run` for onboard, mcp init, mcp onboard
-
-Preview exactly what would be written before committing:
-
-```bash
-npx ai-gov onboard --dry-run
-npx ai-gov mcp init --dry-run
-npx ai-gov mcp onboard --dry-run
-```
-
-### Consistent agent detection
-
-`upgrade` and `onboard` now use the shared `detectAgent()` utility — same logic as `init` and `doctor`. Priority: explicit `--agent` flag → existing `.kiro/` or `.claude/` directory → default `claude-code`. Interactive prompt when both directories exist in a TTY session.
-
-### File size enforcement — backend stacks exempt
-
-The 300-line hard-block rule now applies only to frontend stacks (react, next, angular, flutter, kotlin). Backend stacks (nodejs, python, java) generate a 5-line no-op stub so file-size enforcement does not interfere with backend development patterns.
-
-### CLI refactored for maintainability
-
-`src/cli.ts` decomposed from 751 lines to ~250 lines. Logic extracted to:
-- `src/commands/init-cmd.ts` — init command handler
-- `src/commands/doctor.ts` — doctor command handler
-- `src/commands/workspace-cmd.ts` — workspace routing
-- `src/utils/collect-project-info.ts`, `validate-git-hooks-config.ts`, `gitignore-manager.ts`, `display-hub-disclosure.ts`
-
-No user-visible changes — all commands work identically.
-
----
-
-## What changed in v17.5.0
-
-### MCP governance (`ai-gov mcp`)
-
-New command group for managing MCP server tokens securely across a team:
-
-- `ai-gov mcp init` — team lead sets up `.mcp.json` with `${VAR}` placeholders; no tokens ever committed
-- `ai-gov mcp onboard` — each developer sets their own tokens once; global tokens (Jira, Figma, GitHub) stored in `~/.config/ai-gov/.env.mcp.global` and reused across all projects automatically
-- `ai-gov mcp validate` — checks all required tokens are present in current environment
-- `ai-gov mcp update-token --tool jira` — rotate a single tool's tokens
-
-See [MCP Governance Guide](./mcp-governance-guide.md) for the full walkthrough.
-
-### Jira Sync command (`/jira`)
-
-New slash command for Claude Code (`/jira`) and Kiro hook (`workflow-jira-sync`) that reads spec `tasks.md` time estimates and creates Jira stories + sub-tasks via the Jira MCP server.
-
----
-
 ## What changed in v17.0.0
 
 ### Kiro agent support
 
 `ai-gov init --agent kiro` generates governance files in `.kiro/` with Kiro-native formats: steering files with YAML front-matter, JSON hooks auto-discovered by the IDE, and spec templates in `.kiro/specs/_template/`.
+
+**Impact:** Teams using Kiro can now use the same governance framework. The `--agent` flag is available on `init`, `workspace`, `upgrade`, and `doctor`.
 
 ### Agent auto-detection
 
@@ -238,3 +185,35 @@ The CLI detects which agent to target from existing `.kiro/` or `.claude/` direc
 ### Workflow shortcuts (userTriggered hooks)
 
 6 new `userTriggered` hooks provide the Kiro equivalent of Claude Code's slash commands: audit, new-feature, fix, refactor, hotfix, explore. Triggered from the Agent Hooks panel.
+
+### Pre-write secrets gate
+
+New `preToolUse` hook catches hardcoded credentials BEFORE they are written to disk — closes the enforcement gap where secrets were only detected post-write.
+
+### Agent registry
+
+Internal architecture change: agents are now registered in a central registry (`src/agents/types.ts`). Adding a third agent is a 3-line change.
+
+---
+
+## What changed in v16.0.0
+
+### Python3 fallback for all hooks
+
+Previously all bash hook scripts required `jq`. If `jq` was not installed, hooks silently did nothing — no errors, no warnings, no enforcement. This was a silent governance failure on most developer machines (macOS has python3 built-in but not jq).
+
+v16.0.0 adds a `_json()` helper function to every Claude Code hook and a `cfg()` function to every git hook. Both try `jq` first and fall back to `python3`. When neither is available, the hook prints a visible warning to stderr and exits 0 instead of silently passing.
+
+**Impact:** After upgrading, governance hooks are enforced on macOS out of the box without installing jq.
+
+### Multi-repo workspace git hook installation
+
+`ai-gov workspace` now detects whether each sub-project has its own `.git/` directory. For multi-repo layouts (each project is an independent git repo), it installs `.git/hooks/pre-commit` and `.git/hooks/commit-msg` wrappers automatically. For monorepo layouts, it installs one workspace-level hook at the root `.git/`.
+
+### `ai-gov upgrade` command (new)
+
+New command for safe, incremental upgrades without re-running full init. See this guide.
+
+### Integration test suite (new)
+
+v16.0.0 adds `tests/integration.test.ts` which executes generated bash scripts against real git repos. This catches shell-level bugs (like the python3 double-quote quoting issue) that unit tests of TypeScript generators cannot catch.

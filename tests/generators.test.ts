@@ -28,6 +28,16 @@ import { generateAnalyzeCode } from '../src/agents/claude-code/hooks/analyze-cod
 import { generateFormatCode } from '../src/agents/claude-code/hooks/format-code.js';
 import { generateBlockDangerous } from '../src/agents/claude-code/hooks/block-dangerous.js';
 import { generatePostTaskChecklist } from '../src/agents/claude-code/hooks/post-task-checklist.js';
+import { generateTechKnowledgeCommand } from '../src/agents/claude-code/commands/tech-knowledge.js';
+import { generateProductKnowledgeCommand } from '../src/agents/claude-code/commands/product-knowledge.js';
+import { generateDetectConflictsCommand } from '../src/agents/claude-code/commands/detect-conflicts.js';
+import { generateNewFeatureCommand } from '../src/agents/claude-code/commands/new-feature.js';
+import { generateEditFeatureCommand } from '../src/agents/claude-code/commands/edit-feature.js';
+import { generateFixCommand } from '../src/agents/claude-code/commands/fix.js';
+import { generateExploreCommand } from '../src/agents/claude-code/commands/explore.js';
+import { generateRefactorCommand } from '../src/agents/claude-code/commands/refactor.js';
+import { generateAssessCommand } from '../src/agents/claude-code/commands/assess.js';
+import { generateAuditCommand } from '../src/agents/claude-code/commands/audit.js';
 
 // ─── Helper ──────────────────────────────────────────────────────────────────
 
@@ -637,5 +647,199 @@ describe('computeContentBlocks', () => {
             const blocks = computeContentBlocks(stack, profile, scan);
             expect(blocks.hardRules.length).toBeGreaterThan(10);
         }
+    });
+});
+
+// ─── Knowledge Hub — Phase 1 commands ────────────────────────────────────────
+
+describe('generateTechKnowledgeCommand', () => {
+    test('contains INFERRED tag rules', () => {
+        const out = generateTechKnowledgeCommand(makeConfig('nodejs'));
+        expect(out).toContain('[INFERRED]');
+        expect(out).toContain('Needs Clarification');
+    });
+
+    test('contains stack display name', () => {
+        const cfg = makeConfig('nodejs');
+        const out = generateTechKnowledgeCommand(cfg);
+        expect(out).toContain(cfg.profile.stackDisplay);
+    });
+
+    test('contains output directory rule', () => {
+        const out = generateTechKnowledgeCommand(makeConfig('nodejs'));
+        expect(out).toContain('knowledge/');
+    });
+
+    test('contains read-only rule', () => {
+        const out = generateTechKnowledgeCommand(makeConfig('nodejs'));
+        expect(out).toContain('Read-only');
+    });
+
+    test('all stacks: non-empty output', () => {
+        for (const stack of ['nodejs', 'react', 'flutter', 'python', 'java'] as Stack[]) {
+            expect(generateTechKnowledgeCommand(makeConfig(stack)).length).toBeGreaterThan(500);
+        }
+    });
+});
+
+describe('generateProductKnowledgeCommand', () => {
+    test('contains INFERRED tag rules', () => {
+        const out = generateProductKnowledgeCommand(makeConfig('nodejs'));
+        expect(out).toContain('[INFERRED]');
+        expect(out).toContain('Needs Clarification');
+    });
+
+    test('angular: uses Angular-specific reading strategy', () => {
+        const out = generateProductKnowledgeCommand(makeConfig('angular'));
+        expect(out).toContain('NgRx');
+        expect(out).toContain('guards');
+    });
+
+    test('react: uses React-specific reading strategy', () => {
+        const out = generateProductKnowledgeCommand(makeConfig('react'));
+        expect(out).toContain('hooks/');
+        expect(out).toContain('route');
+    });
+
+    test('nodejs: uses Node.js reading strategy', () => {
+        const out = generateProductKnowledgeCommand(makeConfig('nodejs'));
+        expect(out).toContain('middleware');
+        expect(out).toContain('ORM');
+    });
+
+    test('python: uses Python reading strategy', () => {
+        const out = generateProductKnowledgeCommand(makeConfig('python'));
+        expect(out).toContain('FastAPI');
+        expect(out).toContain('Pydantic');
+    });
+
+    test('contains User Flows and Domain Objects sections', () => {
+        const out = generateProductKnowledgeCommand(makeConfig('nodejs'));
+        expect(out).toContain('User Flows');
+        expect(out).toContain('Domain Objects');
+        expect(out).toContain('Permissions');
+        expect(out).toContain('Business States');
+    });
+
+    test('all stacks: non-empty output', () => {
+        for (const stack of ['nodejs', 'react', 'flutter', 'kotlin', 'python', 'angular', 'swiftui', 'java'] as Stack[]) {
+            expect(generateProductKnowledgeCommand(makeConfig(stack)).length).toBeGreaterThan(500);
+        }
+    });
+});
+
+describe('generateDetectConflictsCommand', () => {
+    test('contains all four conflict types', () => {
+        const out = generateDetectConflictsCommand(makeConfig('nodejs'));
+        expect(out).toContain('Permission conflicts');
+        expect(out).toContain('Domain object conflicts');
+        expect(out).toContain('Business state conflicts');
+        expect(out).toContain('Flow assumption conflicts');
+    });
+
+    test('contains conservative threshold rule', () => {
+        const out = generateDetectConflictsCommand(makeConfig('nodejs'));
+        expect(out).toContain('conservative');
+    });
+
+    test('contains knowledge/conflicts/ output directory', () => {
+        const out = generateDetectConflictsCommand(makeConfig('nodejs'));
+        expect(out).toContain('knowledge/conflicts/');
+    });
+
+    test('contains resolution tracking instruction', () => {
+        const out = generateDetectConflictsCommand(makeConfig('nodejs'));
+        expect(out).toContain('Resolved');
+        expect(out).toContain('re-raised');
+    });
+
+    test('all stacks: non-empty output', () => {
+        for (const stack of ['nodejs', 'react', 'flutter', 'python'] as Stack[]) {
+            expect(generateDetectConflictsCommand(makeConfig(stack)).length).toBeGreaterThan(500);
+        }
+    });
+});
+
+// ─── Knowledge Hub — Phase 2 utility injection ────────────────────────────────
+// These tests catch the \${} escape bug: if the preamble is escaped in a template
+// literal, the function is never called and this assertion fails immediately.
+
+describe('Knowledge Hub preamble injection — Phase 2', () => {
+    const preambleSection = '## KNOWLEDGE CONTEXT — Read Before Acting';
+
+    test('new-feature.md contains knowledge preamble', () => {
+        expect(generateNewFeatureCommand(makeConfig('nodejs'))).toContain(preambleSection);
+    });
+
+    test('edit-feature.md contains knowledge preamble', () => {
+        expect(generateEditFeatureCommand(makeConfig('nodejs'))).toContain(preambleSection);
+    });
+
+    test('fix.md contains knowledge preamble', () => {
+        expect(generateFixCommand(makeConfig('nodejs'))).toContain(preambleSection);
+    });
+
+    test('explore.md contains knowledge preamble', () => {
+        expect(generateExploreCommand(makeConfig('nodejs'))).toContain(preambleSection);
+    });
+
+    test('refactor.md contains knowledge preamble', () => {
+        expect(generateRefactorCommand(makeConfig('nodejs'))).toContain(preambleSection);
+    });
+
+    test('assess.md contains knowledge preamble', () => {
+        expect(generateAssessCommand(makeConfig('nodejs'))).toContain(preambleSection);
+    });
+
+    test('preamble contains [CONFIRMED] and [INFERRED] usage rules', () => {
+        const out = generateFixCommand(makeConfig('nodejs'));
+        expect(out).toContain('[CONFIRMED]');
+        expect(out).toContain('[INFERRED]');
+    });
+});
+
+// ─── Knowledge Hub — Phase 3 capture injection ────────────────────────────────
+
+describe('Knowledge Hub capture injection — Phase 3', () => {
+    const captureSection = '## SILENT KNOWLEDGE CAPTURE — After Gate 1 Approval';
+
+    test('new-feature.md contains silent capture instruction', () => {
+        expect(generateNewFeatureCommand(makeConfig('nodejs'))).toContain(captureSection);
+    });
+
+    test('edit-feature.md contains silent capture instruction', () => {
+        expect(generateEditFeatureCommand(makeConfig('nodejs'))).toContain(captureSection);
+    });
+
+    test('edit-feature.md capture only targets NEW/CHANGED items', () => {
+        const out = generateEditFeatureCommand(makeConfig('nodejs'));
+        expect(out).toContain('<!-- NEW -->');
+        expect(out).toContain('<!-- CHANGED');
+    });
+
+    test('capture instruction contains merge rules', () => {
+        const out = generateNewFeatureCommand(makeConfig('nodejs'));
+        expect(out).toContain('[CONFIRMED]');
+        expect(out).toContain('never overwrite');
+    });
+});
+
+// ─── Knowledge Hub — Phase 4 health check injection ───────────────────────────
+
+describe('Knowledge Hub health check injection — Phase 4', () => {
+    test('audit.md contains knowledge health check section', () => {
+        const out = generateAuditCommand(makeConfig('nodejs'));
+        expect(out).toContain('## KNOWLEDGE HEALTH CHECK');
+    });
+
+    test('audit.md health check contains STALE and UNVERIFIABLE classifications', () => {
+        const out = generateAuditCommand(makeConfig('nodejs'));
+        expect(out).toContain('[STALE]');
+        expect(out).toContain('[UNVERIFIABLE]');
+    });
+
+    test('audit.md health check is read-only — no writes to knowledge files', () => {
+        const out = generateAuditCommand(makeConfig('nodejs'));
+        expect(out).toContain('Do NOT write to or modify any knowledge file');
     });
 });

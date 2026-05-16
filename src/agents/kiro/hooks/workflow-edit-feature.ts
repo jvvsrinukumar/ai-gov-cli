@@ -1,4 +1,6 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleHook } from '../../../utils/knowledge-preamble.js';
+import { generateSilentCaptureInstructionEditFeature } from '../../../utils/knowledge-capture.js';
 
 export function generateWorkflowEditFeature(c: GovernanceConfig): string {
     const stackDisplay = c.profile.stackDisplay;
@@ -38,8 +40,7 @@ Then ask exactly ONE question:
    — Any constraints (e.g. 'keep the API contract unchanged', 'no new dependencies')"
 
 Do not ask follow-up questions. Use the user's answer for all three gates.
-
----
+${generateKnowledgePreambleHook()}
 
 ## STEP 1 — Read Existing Spec
 
@@ -93,8 +94,7 @@ Rules:
 
 Ask: "Does this capture what you're adding? Say **ok** to proceed to design, or tell me what to adjust."
 Do NOT proceed until user says ok / approved / yes / lgtm / proceed.
-
----
+${generateSilentCaptureInstructionEditFeature()}
 
 ## GATE 2 — Updated Design
 

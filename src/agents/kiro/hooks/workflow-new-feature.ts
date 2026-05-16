@@ -1,4 +1,6 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleHook } from '../../../utils/knowledge-preamble.js';
+import { generateSilentCaptureInstructionNewFeature } from '../../../utils/knowledge-capture.js';
 
 export function generateWorkflowNewFeature(c: GovernanceConfig): string {
     const stackDisplay = c.profile.stackDisplay;
@@ -50,8 +52,7 @@ If NO in-progress features:
    — Any specific requirements or constraints"
 
 Do not ask any further questions after the user answers. Use their answer to drive all three gates.
-
----
+${generateKnowledgePreambleHook()}
 
 ## GATE 1 — REQUIREMENTS
 
@@ -78,8 +79,7 @@ Draft and show IN CHAT (do NOT write any file yet):
 
 Ask: "Does this capture the requirements? Say **ok** to proceed to design, or tell me what to change."
 Do NOT write any files. Do NOT proceed until user says ok / approved / yes / lgtm / proceed.
-
----
+${generateSilentCaptureInstructionNewFeature()}
 
 ## GATE 2 — DESIGN
 

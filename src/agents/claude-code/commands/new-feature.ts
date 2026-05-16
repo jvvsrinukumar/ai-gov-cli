@@ -1,4 +1,6 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleCommand } from '../../../utils/knowledge-preamble.js';
+import { generateSilentCaptureInstructionNewFeature } from '../../../utils/knowledge-capture.js';
 
 function getPhases(c: GovernanceConfig): string {
     const state = c.profile.stateFramework || '';
@@ -136,9 +138,7 @@ export function generateNewFeatureCommand(c: GovernanceConfig): string {
 In plan mode you CANNOT write or edit any files. You will only show spec content as text in the chat for developer review. File writes happen only after all 3 gates are approved and you call \`ExitPlanMode\`.
 
 > Feature name from \`$ARGUMENTS\`: use exactly as typed. If blank, ask: "What is the feature name?"
-
----
-
+${generateKnowledgePreambleCommand()}
 ## STEP 1 — Read Context
 
 Architecture rules, naming conventions, layer flow, and file size limits are already in \`.claude/CLAUDE.md\` — you have them.
@@ -186,9 +186,7 @@ Show the following content as a formatted markdown preview **in the chat** (do N
 **DO NOT proceed to Gate 2 until you receive explicit approval.**
 Accepted approval words: ok, okay, approved, looks good, yes, good, perfect, proceed, next, lgtm, done.
 If developer requests changes, update the content and show it again.
-
----
-
+${generateSilentCaptureInstructionNewFeature()}
 ## STEP 3 — GATE 2: Design
 
 After Gate 1 approval, show design content **in the chat**:
