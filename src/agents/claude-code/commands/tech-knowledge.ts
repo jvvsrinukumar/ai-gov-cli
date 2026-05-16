@@ -91,6 +91,18 @@ Generated: [today's date]
 
 ---
 
+## Layer Flow Diagram
+
+\`\`\`mermaid
+graph LR
+  A[Entry / Controller] --> B[Service / Use Case]
+  B --> C[Repository / Data Access]
+  C --> D[(Database / External API)]
+\`\`\`
+(Replace node labels with actual layer names observed. Add edges for every import or call dependency. Label edges when the relationship type is notable, e.g. "calls", "injects", "reads".)
+
+---
+
 ## Patterns in Use
 
 | Pattern | Value | Confidence |

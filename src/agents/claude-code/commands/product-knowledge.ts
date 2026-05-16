@@ -147,6 +147,17 @@ Generated: [today's date]
 3. [step]
 Entry point: \\\`[file path]\\\`
 
+\`\`\`mermaid
+flowchart TD
+  A([Start]) --> B[Step 1]
+  B --> C{Decision?}
+  C -->|yes| D[Step 2a]
+  C -->|no| E[Step 2b]
+  D --> F([End])
+  E --> F
+\`\`\`
+(One node per step. Diamonds for decisions, rounded rectangles for start/end. Derive labels from route/component/function names observed in code.)
+
 ### [Flow Name] [INFERRED]
 ...
 
@@ -162,6 +173,17 @@ Entry point: \\\`[file path]\\\`
 
 ### [Entity/Model Name] [INFERRED]
 ...
+
+---
+
+## Domain Relationships [INFERRED]
+
+\`\`\`mermaid
+erDiagram
+  ENTITY-A ||--o{ ENTITY-B : "has many"
+  ENTITY-A }o--|| ENTITY-C : "belongs to"
+\`\`\`
+(One node per domain object above. Cardinality: ||--|| one-to-one, ||--o{ one-to-many, }o--|{ many-to-many. Label = relationship verb from code.)
 
 ---
 
@@ -182,6 +204,15 @@ Entry point: \\\`[file path]\\\`
 - States: [list of possible states]
 - Transitions: [observed state changes]
 - Source: \\\`[file path]\\\`
+
+\`\`\`mermaid
+stateDiagram-v2
+  [*] --> State1
+  State1 --> State2 : trigger / event
+  State2 --> State3 : trigger / event
+  State3 --> [*]
+\`\`\`
+(One node per state value. Edges = observed transitions in code. Label = the event/function that causes the transition.)
 
 ### [Enum/State Name] [INFERRED]
 ...
