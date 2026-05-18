@@ -72,6 +72,9 @@ export function generateWorkflowAudit(c: GovernanceConfig): string {
 > 8. **⚠️ THE AUDIT IS NOT COMPLETE UNTIL ALL THREE FILES ARE WRITTEN.** Printing the scorecard is NOT the end. You MUST write \`.kiro/audit-report.md\`, \`.kiro/dead-code.md\`, and \`.kiro/developer-actions.md\` before this audit is considered done. If you are running low on context, skip detail in earlier steps — do NOT skip the persist step.
 > 9. **GAPS MUST BE FIXED, NOT JUST REPORTED.** If Step 6 finds gaps, Step 7 MUST edit the steering files to close them. A gap that appears on two consecutive audit runs is a failure of the audit process itself. The audit's job is to leave the project with ZERO steering gaps when it finishes.
 > 10. **Code-level issues (security, architecture violations) that CANNOT be fixed by editing steering files go to developer-actions.md.** Everything else is fixed immediately in Step 7.
+> 11. **Completion contract — emit on the very last line of the run, exactly:**
+>     \`AUDIT_COMPLETE: persist-files=<N>/3 steps=<N>/12 verdict=<ALIGNED|UPDATED|ACTION_NEEDED>\`
+>     The contract is the structural signal that the audit finished. The runner greps for it; an absent contract means the run did not complete and the verdict is incomplete regardless of any prose summary above it.
 
 ---
 
@@ -383,7 +386,7 @@ PROJECT TRUTH AUDIT — ${project.appName}
 Stack: ${profile.stackDisplay} | Hook version: v${hookVer}
 Date: <today>
 
-━━━ HEALTH SCORECARD ━━━
+━━━ GOVERNANCE SCORECARD (4 categories — audit's responsibility) ━━━
 
   Governance Files    <score>/100  <Grade>
     (steering files present, hooks at correct version, front-matter correct)
@@ -396,14 +399,20 @@ Date: <today>
     (does steering cover all significant directories and patterns?)
     (deduct 10 per undocumented directory with >10 files)
 
-  Test Coverage       <score>/100  <Grade>
-    (SCENARIO A: 0 · SCENARIO B: proportional · SCENARIO C: 90-100)
-
   Dead File Risk      <score>/100  <Grade>
     (start 100, deduct 5 per dead code candidate found)
 
   OVERALL             <score>/100  Grade: <A/B/C/D>
-    (average of the 5 scored categories above)
+    (arithmetic mean of the 4 governance categories above. Test Coverage
+    is reported separately under PROJECT MATURITY and does NOT factor in.)
+
+━━━ PROJECT MATURITY (informational — not part of governance grade) ━━━
+
+  Test Coverage       <score>/100
+    (SCENARIO A: 0 · SCENARIO B: proportional · SCENARIO C: 90-100)
+
+  Note: A greenfield project with no tests yet can still have a perfect
+  Governance grade. Maturity grows as the project ages.
 
 ━━━ GRADE SCALE ━━━
   A: 90-100  B: 75-89  C: 60-74  D: <60
@@ -472,14 +481,21 @@ Format for each run entry:
 \`\`\`markdown
 ## Run [N] — <date>
 
+**Governance scorecard** (the audit's only scored concern):
+
 | Category           | Score   | Grade | vs Previous |
 |--------------------|---------|-------|-------------|
 | Governance Files   | xx/100  | X     | +N / −N / — |
 | Governance Accuracy| xx/100  | X     | +N / −N / — |
 | Steering Coverage  | xx/100  | X     | +N / −N / — |
-| Test Coverage      | xx/100  | X     | +N / −N / — |
 | Dead File Risk     | xx/100  | X     | +N / −N / — |
 | **OVERALL**        | **xx/100** | **X** | **+N / −N / —** |
+
+**Project maturity** (informational — not part of grade):
+
+| Metric             | Value   | vs Previous |
+|--------------------|---------|-------------|
+| Test Coverage      | xx/100  | +N / −N / — |
 
 **VERDICT:** ALIGNED / UPDATED — N gaps fixed / ACTION NEEDED
 **Gaps fixed this run:** [N] — [list titles]
@@ -568,6 +584,18 @@ Before writing code, spec:
 **To activate spec-first workflow:**
 Populate \`.kiro/specs/<feature-name>/\` with requirements.md, design.md, tasks.md.
 Once a feature spec exists, \`spec-first-gate.kiro.hook\` will block edits to that feature's code until the spec is reviewed.
+
+---
+
+## FINAL OUTPUT — completion contract
+
+After the scorecard and the three persist writes, emit on the very last line, exactly:
+
+\`\`\`
+AUDIT_COMPLETE: persist-files=<N>/3 steps=<N>/12 verdict=<ALIGNED|UPDATED|ACTION_NEEDED>
+\`\`\`
+
+Substitute the actual counts and verdict. No other text after it. The runner uses this line to verify the audit finished; without it the run is treated as incomplete.
 `;
 
   return JSON.stringify({

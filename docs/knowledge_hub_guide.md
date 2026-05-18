@@ -96,7 +96,8 @@ Every entry in every knowledge file carries one of three tags. This is the core 
 
 ## 3. Phase 1 — Extract Knowledge On Demand
 
-These are the write commands. You run them once to bootstrap knowledge for a feature or the whole project. Output is a markdown file in `knowledge/` — committed to git.
+These are the write 
+mands. You run them once to bootstrap knowledge for a feature or the whole project. Output is a markdown file in `knowledge/` — committed to git.
 
 ### 3.1 Claude Code: `/tech-knowledge`
 

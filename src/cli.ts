@@ -15,6 +15,7 @@ import { runMcpInit, runMcpOnboard, runMcpValidate, runMcpUpdateToken } from './
 import { runPRCheck } from './pr-check/index.js';
 import { runInitCmd } from './commands/init-cmd.js';
 import { runDoctor } from './commands/doctor.js';
+import { runMigrateState } from './commands/migrate-state.js';
 import { runWorkspaceCmd } from './commands/workspace-cmd.js';
 
 // Import adapter modules to trigger self-registration (Req 17.3, 17.4)
@@ -70,8 +71,27 @@ program
     .description('Diagnose governance setup issues')
     .option('-d, --dir <path>', 'Target directory', process.cwd())
     .option('-a, --agent <agent>', 'Target agent (claude-code|kiro)')
+    .option('--production-ready', 'Run mechanical v20 acceptance-criteria check (AC-1..AC-8)')
     .action(async (options) => {
-        await runDoctor({ dir: resolve(options.dir), agent: options.agent });
+        await runDoctor({
+            dir: resolve(options.dir),
+            agent: options.agent,
+            productionReady: options.productionReady,
+        });
+    });
+
+program
+    .command('migrate-state')
+    .description('Build governance-state.json from existing v19 markdown artifacts (lenient, non-destructive)')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .option('-a, --agent <agent>', 'Target agent (claude-code|kiro)')
+    .option('--force', 'Overwrite an existing governance-state.json')
+    .action(async (options) => {
+        await runMigrateState({
+            dir: resolve(options.dir),
+            agent: options.agent,
+            force: options.force,
+        });
     });
 
 program

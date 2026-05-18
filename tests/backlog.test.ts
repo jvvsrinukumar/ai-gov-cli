@@ -210,12 +210,30 @@ describe('generateBacklogCommand — story format', () => {
         expect(generateBacklogCommand(makeConfig('nodejs'))).toContain('/new-feature prompt');
     });
 
-    test('contains HUMAN INPUT NEEDED section', () => {
-        expect(generateBacklogCommand(makeConfig('nodejs'))).toContain('HUMAN INPUT NEEDED');
+    test('contains Priority Derivation rubric (no human-input gate)', () => {
+        const out = generateBacklogCommand(makeConfig('nodejs'));
+        expect(out).toContain('Priority Derivation');
+        expect(out).not.toContain('HUMAN INPUT NEEDED');
     });
 
-    test('human input asks for business priority P1/P2/P3', () => {
-        expect(generateBacklogCommand(makeConfig('nodejs'))).toContain('P1 / P2 / P3');
+    test('priority derivation formula references the three component scores', () => {
+        const out = generateBacklogCommand(makeConfig('nodejs'));
+        expect(out).toContain('debt_severity_score');
+        expect(out).toContain('dependency_count_score');
+        expect(out).toContain('commit_frequency_score');
+    });
+
+    test('priority buckets use the documented thresholds', () => {
+        const out = generateBacklogCommand(makeConfig('nodejs'));
+        expect(out).toContain('≥ 2.4 → P1');
+        expect(out).toContain('1.5–2.3 → P2');
+        expect(out).toContain('< 1.5 → P3');
+    });
+
+    test('emits an ASSUMPTIONS block for governance-state wiring', () => {
+        const out = generateBacklogCommand(makeConfig('nodejs'));
+        expect(out).toContain('ASSUMPTIONS entry per story');
+        expect(out).toContain('reviewRequired');
     });
 
     test('story format includes parallel-safe field', () => {
@@ -261,8 +279,11 @@ describe('generateBacklogCommand — output files', () => {
 // ─── Project-level: "does not do" boundaries ─────────────────────────────────
 
 describe('generateBacklogCommand — explicit boundaries', () => {
-    test('states it does not assign business priority', () => {
-        expect(generateBacklogCommand(makeConfig('nodejs'))).toContain('Assign business priority');
+    test('priority is derived (v20 no longer disclaims business priority)', () => {
+        // v19 used to list "Assign business priority" as a non-goal; v20 derives it.
+        // Keep a sentinel that explicitly documents this:
+        const out = generateBacklogCommand(makeConfig('nodejs'));
+        expect(out).toContain('Priority is **derived**');
     });
 
     test('states it does not add new features', () => {
@@ -288,7 +309,7 @@ describe('generateBacklogCommand — all stacks', () => {
             const out = generateBacklogCommand(makeConfig(stack));
             expect(out).toContain('# /backlog');
             expect(out).toContain('docs/assessment/');
-            expect(out).toContain('HUMAN INPUT NEEDED');
+            expect(out).toContain('Priority Derivation');
             expect(out).toContain('docs/backlog/');
         });
     }

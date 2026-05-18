@@ -105,11 +105,20 @@ Scope comes from \`$ARGUMENTS\`:
 
 **Slugification:** lowercase, spaces → hyphens. "user auth" → \`knowledge/product-user-auth.md\`.
 
+**When scope is empty (overview mode):** Before reading any source code, run \`ls ${featuresDir}\` to enumerate subdirectories. Store the list as **[FEATURE_AREAS]** — used in STEP 6 to emit a feature roster.
+
 ---
 
 ## STEP 2 — Check for Existing File
 
 Before reading any source code, check if \`knowledge/product-[scope].md\` already exists.
+
+**When scope is empty (overview mode), also check for existing scoped files:**
+- Run: \`ls knowledge/product-*.md 2>/dev/null\` (exclude \`product-overview.md\` itself)
+- Files found = **[SCOPED_FILES]** (already documented areas)
+- Derive **[UNDOCUMENTED_AREAS]** = [FEATURE_AREAS] minus areas already represented in [SCOPED_FILES]
+- In STEP 3, only scan source for [UNDOCUMENTED_AREAS] — do not re-scan areas with current scoped files
+- In STEP 6, list [SCOPED_FILES] as "already documented" and [UNDOCUMENTED_AREAS] as "not yet covered"
 
 **If it exists:**
 - Read the file and extract all entries tagged \`[CONFIRMED]\` — these must be preserved exactly.
@@ -141,6 +150,7 @@ Read files relevant to the scope. Focus on:
 3. Guards/middleware/interceptors (permissions)
 4. Enums/constants/state machines (business states)
 5. Validators/business rules (constraints)
+6. Services/use-cases/workers (business operations without a route entry point)
 
 ---
 
@@ -410,6 +420,27 @@ After generating, report:
   Re-run /product-knowledge when significant code changes occur.
   "Needs Clarification" items are WHY questions — only humans can answer them.
 \`\`\`
+
+**When scope is empty (overview mode), append a feature roster after the summary block:**
+
+\`\`\`
+━━━ FEATURE COVERAGE ━━━
+
+  Already documented (scoped files exist):
+    [list each file in [SCOPED_FILES] with its suggested /product-knowledge [slug] command]
+    — or "none yet" if [SCOPED_FILES] is empty —
+
+  Not yet covered (run these for full coverage):
+    [list each area in [UNDOCUMENTED_AREAS] with its suggested /product-knowledge [slug] command]
+    — or "all areas documented" if [UNDOCUMENTED_AREAS] is empty —
+\`\`\`
+
+**HTML export prompt — overview (batch) mode vs. single-scope mode:**
+
+- *Single-scope run* (scope was provided): use the existing STEP 5 prompt — ask once after writing.
+- *Overview (batch) run* (scope was empty): after printing the feature roster, ask once:
+
+  > Want HTML exports? Reply with scope names (e.g. \`auth payments\`), \`all\`, or \`skip\`:
 
 ---
 

@@ -7,15 +7,32 @@
 
 > The scaffolding layer for AI agent team adoption. When multiple developers use Claude Code or Kiro on the same codebase without shared rules, you get inconsistency at machine speed. This CLI fixes that.
 
-**Version:** 17.6.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Next.js · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
+**Version:** 20.0.0 · **Stacks:** Flutter · Kotlin · Node.js · React · Next.js · Angular · SwiftUI · Python · Java · **Agents:** Claude Code · Kiro
 
 ---
 
-## The problem it solves
+## The Problem It Solves
 
 When one developer uses Claude Code, the output is fast and often good. When five developers use it on the same codebase with no shared rules, you get five different interpretations of the architecture, five different commit styles, and no one noticing when Claude drifts from the spec.
 
-`ai-gov init` scans your project, detects your stack, and generates ~40 governance files that give Claude the same architectural context every session — for every developer. It optionally installs git hooks that enforce commit standards, and a CI check that runs on every pull request.
+`ai-gov init` scans your project, detects your stack, and generates ~40 governance files that give the AI agent the same architectural context every session — for every developer. It optionally installs git hooks that enforce commit standards, and a CI check that runs on every pull request.
+
+---
+
+## What's New in v20 — Production-Ready Release
+
+v20 closes the review loop. Eight acceptance criteria, mechanically verified by `/doctor production-ready`. Once it says PASSING, the framework is production-ready and further audits are informational only.
+
+| Change | What it does |
+|--------|--------------|
+| **Shared governance-state.json** | Single JSON source of truth for audit, assess, backlog, doctor. Markdown files become rendered views. Schema v1 with versioned migration. |
+| **Kiro parity for assess + backlog** | `workflow-assess` and `workflow-backlog` Kiro hooks — both agents now have full command coverage. |
+| **Zero human-input gates** | `/assess` Business Pressure derived from 6 observable git/code signals. `/backlog` priority from `severity × dependency × commit_frequency`. Pipeline never blocks. |
+| **Completion contracts** | Every command emits a grep-able line (`AUDIT_COMPLETE:`, `ASSESS_COMPLETE:`, `BACKLOG_COMPLETE:`). Absent = run incomplete. |
+| **Scanner confidence fields** | 15 key scanner attributes wrapped with `{ value, confidence, source }`. Audit delta is structured data, not prose. |
+| **`/doctor production-ready`** | Mechanical AC-1 through AC-8 evaluation. Returns PASSING or BLOCKING with exact items. No prose verdicts. |
+| **Prompt surgery** | 10× "DO NOT STOP" collapsed to one execution contract + one completion line. Test Coverage split out of governance grade (greenfield projects stop being penalized). |
+| **243 new tests** | audit.test.ts, assess.test.ts, doctor.test.ts — all at ≥30 assertion parity with backlog.test.ts. Total: 1,588 tests across 48 suites. |
 
 ---
 
@@ -23,516 +40,314 @@ When one developer uses Claude Code, the output is fast and often good. When fiv
 
 | Layer | Command | What it does |
 |-------|---------|--------------|
-| **Layer 1 — AI Steering** | `npx ai-gov init` | Generates agent steering files, hooks, and spec templates. Claude reads these automatically every session. |
-| **Layer 2 — Git Hooks** | `npx ai-gov init --git-hooks` | Generates pre-commit and commit-msg scripts. Checks file size, secrets, TODOs, debug statements, and commit message format on every `git commit`. |
-| **Layer 3 — CI + PR Check** | `npx ai-gov init --ci github` | Generates a CI pipeline that runs governance on every PR. |
+| **Layer 1 — AI Steering** | `npx ai-gov init` | Generates agent steering files, hooks, slash commands, and spec templates. The AI agent reads these automatically every session. |
+| **Layer 2 — Git Hooks** | `npx ai-gov init --git-hooks` | Generates pre-commit and commit-msg scripts. Checks file size, secrets, TODOs, debug statements, architecture boundaries, and commit message format on every `git commit`. |
+| **Layer 3 — CI + PR Check** | `npx ai-gov init --ci github` | Generates a CI pipeline that runs governance checks on every PR. |
 
 You can use Layer 1 only, or Layer 1 + 2, or all three. They are independent.
 
 ---
 
-## Prerequisites
+## Command Pipeline — How the Commands Connect
 
-- **Node.js** >= 18
-- **python3 or jq** — used by generated bash hook scripts to read config.json
+```
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────────────┐
+│   /audit     │────▶│   /assess    │────▶│   /backlog   │────▶│  /doctor prod-ready  │
+│ (truth check)│     │ (decision)   │     │ (stories)    │     │  (mechanical gate)   │
+└──────────────┘     └──────────────┘     └──────────────┘     └──────────────────────┘
+       │                    │                    │                         │
+       ▼                    ▼                    ▼                         ▼
+  Fixes steering      11 documents         Story prompts            PASSING / BLOCKING
+  files in-place      + recommendation     for /new-feature         (8 ACs evaluated)
+```
 
-| Runtime | macOS | Linux/Ubuntu | Windows |
-|---------|-------|--------------|---------|
-| **python3** | Built-in | Default on Ubuntu 20+ | `winget install Python.Python.3` or WSL2 |
-| **jq** | `brew install jq` | `sudo apt install jq` | `winget install jqlang.jq` |
+### `/audit` — Project Truth Check (12 steps, 6 phases)
 
-python3 is preferred — it is available on every macOS and standard Linux environment. When neither is present, hooks print a visible warning and exit 0 (governance is skipped, not crashed).
+Reads your actual source code, discovers what patterns/tools/layers are in use, then compares that to what steering files say. Every mismatch is fixed immediately (not just reported). Outputs a scorecard and writes 3 persistent records.
 
-> **Windows note:** The CLI runs on bare Windows. Generated bash hook scripts require Git Bash or WSL2.
+**What it checks:** governance files exist → hooks present + versioned → settings wired → directory map → code observation (reads 15-25 files per directory) → gap analysis against every steering file → fix steering in-place → spec coverage → test coverage → dead code scan → scorecard + persist.
+
+**Scoring (4 governance categories):**
+- Governance Files (are steering files present?)
+- Governance Accuracy (do they state correct facts?)
+- Steering Coverage (are all directories documented?)
+- Dead File Risk (files that could confuse the agent?)
+
+Test Coverage is reported separately as **Project Maturity** — informational only, does not affect the grade. A greenfield project with zero tests can still score A if its steering is accurate.
+
+### `/assess` — Refactor vs Rewrite Decision Framework (11 documents)
+
+Reads the entire codebase, measures 6 dimensions (file metrics, dependency health, test coverage, git archaeology, import graph, debt patterns), then scores a 7-dimension matrix to recommend one of:
+
+| Recommendation | When |
+|----------------|------|
+| **Leave It** | Debt is stable, not costing velocity |
+| **Refactor** | Architecture is limiting but fixable incrementally |
+| **Strangler Fig** | Some modules fine, others beyond refactor — need side-by-side |
+| **Rewrite** | Architecture is wrong paradigm, EOL deps, platform-level pressure |
+
+**Business Pressure** (previously required human input) is now derived from 6 observable signals: bug commit density, aged developer-actions, contributor churn, EOL dependencies, revert/hotfix density, core staleness. Every inferred value carries `evidence[]` + `confidence` + `reviewRequired` — pipeline never blocks.
+
+### `/backlog` — Rebuild Story Generator
+
+Reads `docs/assessment/` (not source code directly), extracts feature units, derives priority from `severity × dependency_count × commit_frequency`, formats stories as `/new-feature`-ready prompts. Skip-list from dead code analysis. No human gates — priority is computed, override post-generation.
+
+### `/doctor production-ready` — Mechanical Gate
+
+Evaluates 8 acceptance criteria. Returns exactly PASSING or BLOCKING with the list. No prose. No grades. No fuzzy verdicts. Once PASSING, further audits are informational.
+
+### `/new-feature` — Spec-First Development (3 gates)
+
+Enters plan mode → Requirements gate → Design gate → Tasks gate → implements layer by layer. Knowledge files read before acting. Silent capture of confirmed business rules post-approval.
+
+### `/fix`, `/hotfix`, `/refactor`, `/explore`, `/edit-feature`
+
+Each command follows the same pattern: plan mode first, structured approach, layer-aware implementation, verification step.
 
 ---
 
-## Step 1 — Initialise governance on your project
+## Quick Start
+
+### Prerequisites
+
+- **Node.js** >= 18
+- **python3 or jq** — used by generated bash hook scripts to read config
+
+### Initialize governance on your project
 
 ```bash
 # Auto-detects stack and agent
 npx ai-gov init
 
 # Force a specific stack
-npx ai-gov init --stack react       # or: next|flutter|kotlin|nodejs|angular|swiftui|python|java
+npx ai-gov init --stack react       # flutter|kotlin|nodejs|react|next|angular|swiftui|python|java
 
 # Force a specific agent
 npx ai-gov init --agent kiro        # or: claude-code
 
-# Preview everything — nothing written
-npx ai-gov init --dry-run
-
 # All three layers at once
 npx ai-gov init --git-hooks --ci github
+
+# Preview — nothing written
+npx ai-gov init --dry-run
 ```
 
-### What gets generated (Claude Code)
+### What gets generated
 
+**Claude Code (`--agent claude-code`, default):**
 ```
 your-project/
 ├── CLAUDE.md                              ← root pointer for Claude
 ├── .claude/
-│   ├── CLAUDE.md                          ← master rules (stack-tailored, read every session)
+│   ├── CLAUDE.md                          ← master rules (read every session)
 │   ├── settings.json                      ← registers all hooks
-│   ├── steering/
-│   │   ├── constitution.md                ← hard rules Claude must follow
-│   │   ├── architecture.md                ← layer flow, file structure, high-risk files
-│   │   ├── coding-standards.md            ← naming, file size limits, patterns
-│   │   ├── ai-usage-policy.md             ← what Claude can/cannot do autonomously
-│   │   ├── workflow.md                    ← feature/bug/hotfix workflow
+│   ├── governance-state.json              ← canonical state (v20+)
+│   ├── steering/                          ← 8 steering files
+│   │   ├── constitution.md                ← hard rules
+│   │   ├── architecture.md                ← layers, structure, high-risk files
+│   │   ├── coding-standards.md            ← naming, patterns, file size
+│   │   ├── ai-usage-policy.md             ← autonomy boundaries
+│   │   ├── workflow.md                    ← feature/bug/hotfix flow
 │   │   ├── spec-first-workflow.md         ← spec-before-code enforcement
-│   │   ├── feature-readme.md              ← README policy per feature
+│   │   ├── feature-readme.md              ← per-feature README policy
 │   │   └── prompt-templates.md            ← reusable task templates
-│   ├── hooks/                             ← 11 Claude Code hooks (run inside the IDE)
-│   │   ├── check-spec-exists.sh           ← blocks file writes until spec is approved
-│   │   ├── protect-files.sh               ← warns on high-risk file edits
-│   │   ├── check-secrets.sh               ← blocks hardcoded credentials
-│   │   ├── block-dangerous-commands.sh    ← blocks git push --force, rm -rf src/
-│   │   ├── check-file-size.sh             ← warns >200 lines, blocks >300 (frontend only)
-│   │   ├── format-code.sh                 ← auto-formats after every file write
-│   │   ├── analyze-code.sh                ← runs linter after every file write
-│   │   ├── check-feature-readme.sh        ← ensures README updated per feature
-│   │   ├── check-consistency.sh           ← warns when spec and code have drifted
-│   │   ├── session-continuity.sh          ← context summary at session start
-│   │   └── post-task-checklist.sh         ← reminds Claude to confirm arch, flag risks
-│   ├── commands/                          ← slash commands available in Claude Code
-│   │   ├── new-feature.md                 ← /new-feature — 3 gates, spec-first
-│   │   ├── edit-feature.md                ← /edit-feature — targeted changes
-│   │   ├── fix.md                         ← /fix — reproduce, diagnose, fix, verify
-│   │   ├── refactor.md                    ← /refactor — impact analysis + tests first
-│   │   ├── hotfix.md                      ← /hotfix — minimal urgent fix
-│   │   ├── explore.md                     ← /explore — read-only questions
-│   │   ├── audit.md                       ← /audit — full governance audit to docs/
-│   │   ├── assess.md                      ← /assess — rewrite assessment (11 docs)
-│   │   └── backlog.md                     ← /backlog — rebuild stories from assessment
-│   └── git-hooks/                         ← (created with --git-hooks, committed to repo)
-│       ├── pre-commit.sh
-│       ├── commit-msg.sh
-│       ├── config.json
-│       └── checks/
-│           ├── file-size.sh
-│           ├── secrets.sh
-│           ├── no-todos.sh
-│           ├── no-debug.sh
-│           ├── format-check.sh
-│           └── lint-check.sh
-└── specs/
-    └── _template/                         ← copy per feature before implementing
-        ├── requirements.md
-        ├── design.md
-        └── tasks.md
+│   ├── hooks/                             ← 11 IDE hooks
+│   ├── commands/                          ← 11 slash commands
+│   │   ├── audit.md, assess.md, backlog.md
+│   │   ├── new-feature.md, edit-feature.md, fix.md
+│   │   ├── refactor.md, hotfix.md, explore.md
+│   │   ├── tech-knowledge.md, product-knowledge.md
+│   │   └── detect-conflicts.md
+│   └── git-hooks/                         ← (with --git-hooks)
+├── knowledge/                             ← AI-extracted product/tech knowledge
+└── specs/_template/                       ← copy per feature
 ```
 
-### What gets generated (Kiro — `--agent kiro`)
-
+**Kiro (`--agent kiro`):**
 ```
 your-project/
 ├── .kiro/
-│   ├── .gitattributes
-│   ├── steering/                          ← Kiro reads these automatically (YAML front-matter)
-│   │   ├── constitution.md
-│   │   ├── architecture.md
-│   │   ├── coding-standards.md
-│   │   ├── ai-usage-policy.md
-│   │   ├── workflow.md
-│   │   ├── spec-first-workflow.md
-│   │   ├── feature-readme.md
-│   │   └── prompt-templates.md
-│   ├── hooks/                             ← Kiro JSON hooks (auto-discovered)
-│   │   ├── block-dangerous-commands.json
-│   │   ├── protect-files.json
-│   │   ├── check-secrets.json
-│   │   ├── check-file-size.json
-│   │   ├── session-continuity.json
-│   │   ├── require-task-type.json
-│   │   ├── post-task-checklist.json
-│   │   └── workflow-*.json (×6)           ← audit, new-feature, fix, refactor, hotfix, explore
-│   └── specs/
-│       └── _template/
-│           ├── requirements.md
-│           ├── design.md
-│           └── tasks.md
+│   ├── governance-state.json              ← canonical state (v20+)
+│   ├── steering/                          ← YAML front-matter steering files
+│   ├── hooks/                             ← 14 automated hooks + 13 workflow hooks
+│   │   ├── block-dangerous-commands.kiro.hook
+│   │   ├── protect-files.kiro.hook
+│   │   ├── workflow-audit.kiro.hook
+│   │   ├── workflow-assess.kiro.hook      ← NEW in v20
+│   │   ├── workflow-backlog.kiro.hook     ← NEW in v20
+│   │   ├── workflow-new-feature.kiro.hook
+│   │   ├── workflow-fix.kiro.hook
+│   │   └── ... (13 workflow hooks total)
+│   └── specs/_template/
 ```
-
-### Agent auto-detection
-
-The CLI detects which agent to target from existing directories:
-
-| State | Result |
-|-------|--------|
-| Only `.claude/` exists | Claude Code |
-| Only `.kiro/` exists | Kiro |
-| Neither exists | Claude Code (default) |
-| Both exist, interactive TTY | Prompts you to choose |
-| Both exist, non-interactive (CI) | Claude Code |
-
-### Conflict handling on re-run
-
-When an agent directory already exists, you are prompted:
-
-```
-  .claude/ already exists. How should ai-gov handle existing files?
-
-  g  Generate — create new files, ask permission for each changed file  [default]
-  k  Keep    — create new files only, leave all existing untouched
-  o  Overwrite — replace all files with the latest generated version
-```
-
-Use `--update-hooks` to only update hooks on an older version, leaving steering files untouched.
-
-### Commit governance files to git
-
-```bash
-git add .claude/ CLAUDE.md         # Claude Code
-# or
-git add .kiro/                     # Kiro
-
-git commit -m "chore: add ai-gov governance framework v17.6.0"
-git push
-```
-
-After this, every developer who clones the repo gets the steering rules and hook logic automatically. They still need to run `npx ai-gov onboard` once (Step 4) to wire the local `.git/hooks/` wrappers.
 
 ---
 
-## Step 2 — Add git hooks (optional)
+## Governance State (v20)
+
+All governance commands share a single JSON state file: `.claude/governance-state.json` (or `.kiro/governance-state.json`).
+
+```json
+{
+  "version": 1,
+  "project": { "name": "my-app", "stack": "nodejs", "agent": "claude-code" },
+  "scannerSnapshot": { "stateFramework": { "value": "Zustand", "confidence": "high", "source": "manifest" } },
+  "auditRuns": [{ "runNumber": 1, "scores": {...}, "verdict": "UPDATED" }],
+  "deadCode": [{ "path": "src/old.ts", "status": "PENDING" }],
+  "developerActions": [{ "action": "Set up tests", "status": "OPEN" }],
+  "assessment": { "recommendation": "Refactor", "confidence": "high" },
+  "backlog": { "stories": [...], "skipList": [...] },
+  "assumptions": [{ "field": "assessment.businessPressure", "confidence": "high" }],
+  "acceptanceCriteria": { "AC-1": { "status": "PASSING" } }
+}
+```
+
+**Migration from v19:** Run `npx ai-gov migrate-state` — reads existing markdown artifacts, hydrates JSON, never deletes markdown files.
+
+---
+
+## Workspace — Multi-Project Setup
+
+```bash
+npx ai-gov workspace --dir /path/to/workspace
+```
+
+Generates per-project governance + workspace-level cross-project rules (API contracts, shared resources, project registry).
+
+**Workspace audit** runs the full 12-step audit per project, then adds cross-project analysis: API contract discovery, mismatch detection, cross-project spec coverage, shared resource mapping.
+
+**Workspace backlog** reads all projects' `docs/assessment/`, maps API contracts between backend and frontend, orders stories into workspace phases (Phase 0=API contract, Phase 2=backend, Phase 3=frontend, Phase 4=mobile).
+
+---
+
+## Git Hooks (Layer 2)
 
 ```bash
 npx ai-gov init --git-hooks
 ```
 
-This generates pre-commit and commit-msg check scripts in `.claude/git-hooks/` (committed to your repo) and installs thin wrapper scripts in `.git/hooks/` (local to your machine, not committed).
+Generates pre-commit and commit-msg scripts. What developers see:
 
-### What developers see at commit time
-
-**All checks pass:**
 ```
   🔒 Pre-commit governance check
   ───────────────────────────────
   ✅ All checks passed.
 ```
 
-**File too large (frontend stacks only — react, next, angular, flutter, kotlin):**
-```
-  🔒 Pre-commit governance check
-  ───────────────────────────────
-  BLOCKED  file-size: LoginScreen.tsx has 340 lines (max 300)
-
-  ❌ 1 blocking issue(s). Fix and try again.
-  (bypass with: git commit --no-verify)
-```
-
-> **Note:** File size checks only apply to frontend stacks. Backend stacks (nodejs, python, java) generate a no-op stub — large service or repository files are expected.
-
-**Hardcoded secret:**
+Or:
 ```
   BLOCKED  secrets: src/config/api.ts — AWS Access Key ID (AKIA pattern)
 ```
 
-**Non-conventional commit message:**
-```
-  Governance commit-msg check
-  ───────────────────────────────
-  BLOCKED  Expected: <type>(<scope>): <description>
-  Types: feat|fix|refactor|hotfix|docs|test|chore|style|perf|ci|build
-```
+**Checks:** file-size (frontend only) · secrets · no-todos · no-debug · format-check · lint-check · architecture boundaries · conventional commits.
 
-**Warning only (commit goes through):**
-```
-  ⚠️  1 warning(s). Commit allowed — consider fixing.
-```
-
-### Configure thresholds
-
-Edit `.claude/git-hooks/config.json` and commit. Every developer gets the update on next pull.
-
-```json
-{
-  "pre-commit": {
-    "file-size":    { "enabled": true },
-    "secrets":      { "enabled": true },
-    "no-todos":     { "enabled": true },
-    "no-debug":     { "enabled": true },
-    "format-check": { "enabled": false },
-    "lint-check":   { "enabled": false }
-  },
-  "commit-msg": {
-    "conventional-commits": true,
-    "min-description-length": 10,
-    "require-ticket-ref": false
-  }
-}
-```
-
-Enable format and lint checks once your team has formatters configured. Require a Jira ticket ref:
-
-```json
-"commit-msg": { "require-ticket-ref": true, "ticket-pattern": "JIRA-[0-9]+" }
-```
-
-### Bypass for a single commit (use sparingly)
-
-```bash
-git commit --no-verify -m "chore: WIP checkpoint"
-```
-
-The CI `pr-check` still catches what `--no-verify` skips.
-
-### Integrating with Husky
-
-If your team already uses Husky, add to `.husky/pre-commit`:
-
-```bash
-bash .claude/git-hooks/pre-commit.sh
-```
-
-And to `.husky/commit-msg`:
-
-```bash
-bash .claude/git-hooks/commit-msg.sh "$1"
-```
+Configure in `.claude/git-hooks/config.json`. Bypass: `git commit --no-verify`.
 
 ---
 
-## Step 3 — Add CI check (optional)
+## CI Check (Layer 3)
 
 ```bash
-npx ai-gov init --ci github      # GitHub Actions
-npx ai-gov init --ci gitlab      # GitLab CI
-npx ai-gov init --ci bitbucket   # Bitbucket Pipelines
+npx ai-gov init --ci github      # or: gitlab | bitbucket
 ```
 
-Commit the generated file and every PR gets checked automatically. No manual token setup needed — CI platforms provide authentication automatically.
-
-### What shows on a PR
-
-```
-Governance Review
-
-Changed files: 12 | Blockers: 0 | Warnings: 2
-
-✅ Architecture      No layer boundary violations
-✅ File Size         All files within size limits
-✅ Credentials       No credentials detected
-✅ Spec Coverage     All feature files have matching specs
-⚠️  Test Coverage    2 source file(s) without tests
-✅ TODOs             No TODO/FIXME in added lines
-✅ Commit Messages   All commits follow conventional format
-```
-
-Only credentials block the merge by default. Edit `.claude/governance.json` to promote any check to blocking.
-
-### GitLab — appends to existing pipeline
-
-```bash
-npx ai-gov init --ci gitlab
-```
-
-If `.gitlab-ci.yml` already exists, the command appends a `governance-check` job to your existing stages without overwriting your pipeline.
+Runs `ai-gov pr-check` on every PR. 8 checks: architecture violations, file size, credentials (blocks by default), spec coverage, test coverage, TODOs, commit messages, PR description.
 
 ---
 
-## Step 4 — Developer onboard (each new developer runs this once)
+## Developer Workflow
 
-After cloning a repo that already has governance set up:
-
+### Team lead (once)
 ```bash
-npx ai-gov onboard
-
-# Preview what would be installed (no writes)
-npx ai-gov onboard --dry-run
-
-# Specific directory
-npx ai-gov onboard --dir ./my-project
-```
-
-This command:
-1. Detects the agent (Claude Code or Kiro) from existing directories
-2. Verifies python3 or jq is available
-3. Installs `.git/hooks/pre-commit` and `.git/hooks/commit-msg` wrappers
-4. Prints a summary of what every commit will be checked for
-
-Share with your team in Slack after the team lead completes Steps 1–3:
-
-> **Team:** clone the repo, then run `npx ai-gov onboard` once.
-
----
-
-## Step 5 — Upgrade (after ai-gov version updates)
-
-```bash
-# Re-generate hooks, commands, and CLAUDE.md — keep steering files
-npx ai-gov upgrade
-
-# Preview what would change
-npx ai-gov upgrade --dry-run
-
-# Also overwrite steering files (when architectural guidance has changed)
-npx ai-gov upgrade --force
-
-# Upgrade a specific project
-npx ai-gov upgrade --dir ./backend/api
-```
-
-**What always gets upgraded:**
-- All Claude Code hook scripts (`.claude/hooks/`)
-- Git hook scripts (`.claude/git-hooks/`)
-- All slash commands (`.claude/commands/`)
-- `.claude/CLAUDE.md` (embedded rules must stay current)
-
-**What is kept by default** (use `--force` to overwrite):
-- `.claude/steering/` — team-specific architecture, coding standards, workflow
-- `specs/` — your feature specs, never touched
-
-After upgrading, commit so all teammates get the updated hooks:
-
-```bash
-git add .claude/
-git commit -m "chore: upgrade ai-gov hooks to v17.6.0"
-git push
-```
-
-### Workspace upgrade — upgrade all projects at once
-
-```bash
-ai-gov workspace --upgrade
-
-# Also overwrite steering files
-ai-gov workspace --upgrade --force
-
-# Preview
-ai-gov workspace --upgrade --dry-run
-```
-
----
-
-## Workspace — multi-project setup
-
-```bash
-# Auto-discover all projects and generate per-project governance
-npx ai-gov workspace --dir /path/to/workspace
-
-# Preview
-npx ai-gov workspace --dir /path/to/workspace --dry-run
-
-# Only specific projects
-npx ai-gov workspace --dir /path/to/workspace --only backend/api,frontend/web
-
-# Upgrade all projects to the latest hooks
-npx ai-gov workspace --upgrade
-```
-
-### Supported layouts
-
-**Grouped:**
-```
-workspace/
-  backend/
-    api/            ← Node.js — auto-detected
-    notifications/  ← Node.js — auto-detected
-  frontend/
-    web/            ← React — auto-detected
-    mobile/         ← Flutter — auto-detected
-```
-
-**Flat:**
-```
-workspace/
-  corporate_node/   ← Node.js — auto-detected
-  corporate_react/  ← React — auto-detected
-  corporate_flutter/ ← Flutter — auto-detected
-```
-
-Group directories scanned automatically: `backend/`, `frontend/`, `mobile/`, `services/`, `apps/`, `packages/`, `libs/`
-
-### Monorepo vs multi-repo — auto-detected
-
-| Layout | Detection | Git hook install |
-|--------|-----------|-----------------|
-| **Monorepo** (single `.git/` at root) | No per-project `.git/` | One workspace hook at root `.git/hooks/pre-commit` delegates to all projects |
-| **Multi-repo** (each project has `.git/`) | Per-project `.git/` found | Per-project wrappers pointing to each project's git-hooks scripts |
-
-### What gets generated at workspace level
-
-```
-workspace/
-  .claude/
-    CLAUDE.md                     ← workspace master rules
-    steering/
-      workspace-policy.md         ← shared AI usage policy
-      cross-project-rules.md      ← API contracts, no cross-src imports
-      project-registry.md         ← table of all projects, stacks, status
-    git-hooks/
-      workspace-pre-commit.sh     ← monorepo orchestrator
-  backend/api/
-    .claude/                      ← per-project governance (Node.js rules)
-  frontend/web/
-    .claude/                      ← per-project governance (React rules)
-```
-
----
-
-## Project Init — scaffold from scratch
-
-```bash
-# Interactive wizard
-npx ai-gov project init
-
-# Non-interactive
-npx ai-gov project init --type flutter --name my_app --yes
-npx ai-gov project init --type next --name my-dashboard --yes
-
-# Preview scaffold (no governance applied)
-npx ai-gov project init --type next --name my-app --dry-run --yes
-```
-
-Unlike `ai-gov init` (which adds governance to an existing project), `project init` creates the entire project — directory structure, config files, dependencies, and governance — in one command.
-
-| Stack | Naming | What gets scaffolded |
-|-------|--------|---------------------|
-| `flutter` | snake_case (`my_app`) | Clean architecture with BLoC/Cubit, Dio, GetIt, GoRouter, FVM |
-| `next` | kebab-case (`my-app`) | Next.js with configurable router, styling, state, auth, database |
-
-**Adding a new project to an existing workspace:**
-
-```bash
-# 1. Create the project inside your workspace
-npx ai-gov project init --type next --name my-dashboard --dir ./frontend
-
-# 2. Re-run workspace to register the new project
-npx ai-gov workspace
-```
-
----
-
-## Full team setup — done once by the team lead
-
-```bash
-cd your-project
-
-# Layer 1 — AI steering
-npx ai-gov init
-
-# Layer 2 — Git hooks
-npx ai-gov init --git-hooks
-
-# Layer 3 — CI check
-npx ai-gov init --ci github
-
-# Verify setup
+npx ai-gov init --git-hooks --ci github
 npx ai-gov doctor
-
-# Commit everything
 git add .claude/ CLAUDE.md .github/
-git commit -m "chore: add ai-gov governance framework v17.6.0"
+git commit -m "chore: add ai-gov governance v20.0.0"
 git push
 ```
 
-After the team lead pushes, every developer runs once:
-
+### Each developer (once after clone)
 ```bash
 npx ai-gov onboard
 ```
+
+### Periodic governance check
+```bash
+# In Claude Code: type /audit
+# In Kiro: trigger workflow-audit from Agent Hooks panel
+```
+
+### Upgrade after ai-gov version updates
+```bash
+npx ai-gov upgrade              # updates hooks + commands, keeps steering
+npx ai-gov upgrade --force      # also overwrites steering files
+```
+
+---
+
+## Stack Detection
+
+The scanner reads manifest files and produces tailored governance:
+
+| Stack | Detected from | Key detections |
+|-------|--------------|----------------|
+| **Flutter** | `pubspec.yaml` | State (Riverpod/BLoC/Provider/GetX), DI, router, network, local DB, Mason, FVM |
+| **Kotlin** | `build.gradle.kts` | UI (Compose/XML), DI (Hilt/Koin), state (StateFlow/LiveData), ORM, multi-module |
+| **Node.js** | `package.json` | Framework (NestJS/Express/Fastify), ORM, DI, API type, auth, queues, monorepo |
+| **React** | `package.json` | State (Zustand/Redux/Jotai), router, forms, CSS approach, UI libs |
+| **Next.js** | `package.json` | App vs Pages Router, RSC, state, styling |
+| **Angular** | `package.json` | Version, Signals (v17+), state (NgRx/NGXS/Akita), SSR, Nx |
+| **SwiftUI** | `Package.swift` | TCA, DI, state (@Observable), async/await, local DB |
+| **Python** | `pyproject.toml` | Framework (FastAPI/Django/Flask), ORM, auth, cache, queue |
+| **Java** | `pom.xml` / `build.gradle` | Framework (Spring Boot/Quarkus/Micronaut), DI, ORM, Java version, OSGi, Lombok |
+
+---
+
+## Knowledge Hub
+
+Extract persistent AI context from your codebase:
+
+| Command | What it produces |
+|---------|-----------------|
+| `/tech-knowledge <scope>` | `knowledge/tech-[scope].md` — architecture, patterns, dependencies |
+| `/product-knowledge <scope>` | `knowledge/product-[scope].md` — user flows, domain objects, business rules |
+| `/detect-conflicts` | `knowledge/conflicts/` — cross-feature contradictions |
+
+Knowledge files are committed to git, cheap to read (small), expensive to regenerate (full code scan). All entries tagged `[INFERRED]` until human-promoted to `[CONFIRMED]`. Confirmed entries are protected by a pre-commit hook.
+
+---
+
+## Kiro vs Claude Code
+
+| Aspect | Claude Code | Kiro |
+|--------|-------------|------|
+| Output directory | `.claude/` | `.kiro/` |
+| Steering files | Plain markdown | Markdown + YAML front-matter |
+| Hooks | Bash scripts registered in settings.json | JSON files auto-discovered |
+| Commands | `.claude/commands/*.md` (slash commands) | `userTriggered` workflow hooks |
+| Enforcement | Hard block via `exit 2` | Agent-enforced via `askAgent` |
+| Commands available | 13 slash commands | 13 workflow hooks (full parity in v20) |
+
+---
+
+## All CLI Commands
+
+| Command | Purpose |
+|---------|---------|
+| `ai-gov init` | Generate governance for existing project |
+| `ai-gov init --git-hooks` | Add git pre-commit + commit-msg checks |
+| `ai-gov init --ci github\|gitlab\|bitbucket` | Add CI pipeline |
+| `ai-gov doctor` | Diagnose governance setup issues |
+| `ai-gov doctor production-ready` | Mechanical v20 AC verification (PASSING/BLOCKING) |
+| `ai-gov migrate-state` | Hydrate governance-state.json from v19 markdown |
+| `ai-gov onboard` | New developer setup (wires git hooks locally) |
+| `ai-gov upgrade` | Update hooks + commands, preserve steering |
+| `ai-gov workspace` | Multi-project governance |
+| `ai-gov pr-check` | Run 8 governance checks against branch diff |
+| `ai-gov mcp init` | Configure team MCP tools |
+| `ai-gov mcp onboard` | Developer token setup |
+| `ai-gov project init` | Scaffold a new project from scratch |
+| `ai-gov uninstall` | Remove governance files |
 
 ---
 
@@ -541,319 +356,43 @@ npx ai-gov onboard
 Configure team tools (Jira, Figma, PostgreSQL, GitHub, Linear, Notion, Slack, Sentry) without committing tokens to git.
 
 ```bash
-# Team lead (once): select tools, set org vars, write .mcp.json
-npx ai-gov mcp init
-
-# Preview without writing
-npx ai-gov mcp init --dry-run
-
-# Each developer: set personal tokens
-npx ai-gov mcp onboard
-
-# Preview what would be written
-npx ai-gov mcp onboard --dry-run
-
-# CI: verify all tokens are present
-npx ai-gov mcp validate
-
-# Rotate a single tool's token
-npx ai-gov mcp update-token --tool jira
+npx ai-gov mcp init          # Team lead: select tools, write .mcp.json
+npx ai-gov mcp onboard       # Each dev: set personal tokens
+npx ai-gov mcp validate      # CI: verify all tokens present
 ```
 
-Two-level token storage:
-- **Global** (`~/.config/ai-gov/.env.mcp.global`) — set once, shared across all projects (Jira, Figma, GitHub, etc.)
-- **Project** (`.env.mcp`) — per-repo tokens (DATABASE_URL, etc.)
-
-OAuth tools (Notion, Slack, Sentry) require no tokens — authenticate via browser.
-
-See [docs/mcp-governance-guide.md](docs/mcp-governance-guide.md) for the full walkthrough.
+Two-level token storage: global (`~/.config/ai-gov/.env.mcp.global`) for cross-project tokens, project (`.env.mcp`) for repo-specific secrets.
 
 ---
 
-## All commands reference
+## When to Use This
 
-### `ai-gov init`
+**Worth it when:**
+- Teams of 3+ using Claude Code or Kiro on the same codebase
+- Production codebases where architecture consistency matters
+- Regulated environments needing an audit trail
+- Mixed-stack workspaces (Node.js + React + Flutter)
+- Evaluating legacy apps for rewrite decisions (`/assess` → `/backlog` pipeline)
 
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-s, --stack <stack>` | `flutter\|kotlin\|nodejs\|react\|next\|angular\|swiftui\|python\|java` | auto-detect |
-| `-a, --agent <agent>` | `claude-code\|kiro` | auto-detect |
-| `--overwrite` | Replace all existing files silently | false |
-| `--dry-run` | Preview — nothing written | false |
-| `--update-hooks` | Update only stale hooks | false |
-| `-d, --dir <path>` | Target directory | cwd |
-| `--git-hooks` | Generate git pre-commit + commit-msg hooks | false |
-| `--ci <platform>` | `github\|gitlab\|bitbucket` | — |
-| `--force` | Overwrite existing `.git/hooks/` | false |
+**Not worth it when:**
+- Solo dev prototyping
+- Small utilities (<500 lines)
+- Teams not using Claude Code or Kiro
 
-### `ai-gov doctor`
+**What it will not do:**
+- Make Claude deterministic — steering gives a better starting point, not absolute control
+- Replace engineering discipline — `--no-verify` exists
+- Maintain itself — `architecture.md` needs human editing as the project evolves (or run `/audit` periodically)
+
+---
+
+## Test Suite
 
 ```bash
-npx ai-gov doctor
-npx ai-gov doctor --dir ./my-project
+npm test                    # 1,588 tests across 48 suites
+npm run lint                # ESLint 9 flat config
+npm run typecheck           # TypeScript strict mode
 ```
-
-Checks: CLAUDE.md exists, settings.json valid, all hooks present, python3 or jq installed, git hooks wired, config.json schema valid. Exits with code 1 if neither python3 nor jq is available.
-
-### `ai-gov onboard`
-
-```bash
-npx ai-gov onboard
-npx ai-gov onboard --dry-run
-npx ai-gov onboard --dir ./my-project
-```
-
-### `ai-gov upgrade`
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-d, --dir <path>` | Project directory | cwd |
-| `-s, --stack <stack>` | Override stack detection | auto-detect |
-| `-a, --agent <agent>` | Target agent | auto-detect |
-| `--force` | Also overwrite steering files | false |
-| `--dry-run` | Preview — nothing written | false |
-
-### `ai-gov workspace`
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-d, --dir <path>` | Workspace root | cwd |
-| `--dry-run` | Preview — nothing written | false |
-| `--overwrite` | Replace all existing governance files | false |
-| `--only <projects>` | Comma-separated relative paths | all discovered |
-| `--upgrade` | Upgrade hooks in all existing projects | false |
-| `--force` | With `--upgrade`: also overwrite steering files | false |
-
-### `ai-gov pr-check`
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--base <branch>` | Base branch for diff | `main` |
-| `--format <format>` | `terminal\|github\|gitlab\|json` | `terminal` |
-| `-d, --dir <path>` | Project directory | cwd |
-
-```bash
-npx ai-gov pr-check
-npx ai-gov pr-check --base develop
-npx ai-gov pr-check --format json | jq '.summary'
-```
-
-**8 checks on every PR:**
-
-| Check | Blocks by default |
-|-------|:-----------------:|
-| Architecture violations | — |
-| File size > 300 lines | — |
-| Credentials (AWS AKIA, tokens) | Yes |
-| Spec coverage | — |
-| Test coverage | — |
-| TODOs / FIXME / HACK | — |
-| Commit message format | — |
-| PR description presence | — |
-
-### `ai-gov mcp`
-
-| Subcommand | Who runs it | Flags |
-|------------|-------------|-------|
-| `mcp init` | Team lead (once) | `--dry-run`, `--overwrite` |
-| `mcp onboard` | Each developer | `--dry-run` |
-| `mcp validate` | Developer or CI | — |
-| `mcp update-token --tool <id>` | Developer | — |
-
-### `ai-gov project init`
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `-t, --type <stack>` | `flutter\|next` | interactive |
-| `-n, --name <name>` | App name (max 214 chars) | interactive |
-| `-y, --yes` | Skip confirmation summary | false |
-| `--dry-run` | Scaffold without governance | false |
-| `-d, --dir <path>` | Parent directory | cwd |
-
-### `ai-gov uninstall`
-
-```bash
-npx ai-gov uninstall --git-hooks          # Remove .git/hooks/ wrappers
-npx ai-gov uninstall --ci github          # Remove CI workflow
-npx ai-gov uninstall --all                # Remove everything
-npx ai-gov uninstall --all --dry-run      # Preview
-```
-
----
-
-## Slash commands (Claude Code)
-
-| Command | Use when | Gates |
-|---------|----------|-------|
-| `/new-feature <name>` | Building something new | 3 (Requirements → Design → Tasks) |
-| `/edit-feature <name>` | Changing an existing feature | 1 |
-| `/fix <description>` | Something is broken | 1 (Root cause) |
-| `/hotfix <description>` | Production is broken right now | 1 (Emergency diagnosis) |
-| `/refactor <description>` | Code works but structure is bad | 1 (Impact analysis) |
-| `/explore <question>` | Understanding the codebase | 0 (read-only) |
-| `/audit` | Periodic governance health check | 0 |
-| `/assess` | Evaluating a legacy app for rewrite | 0 |
-| `/backlog` | Generate rebuild stories from `/assess` | 0 |
-
-**Command routing:**
-
-```
-Production down right now              →  /hotfix
-Something broken (not urgent)          →  /fix
-Building something new                 →  /new-feature
-Changing or extending something        →  /edit-feature
-Code works, structure is bad           →  /refactor
-Understanding the codebase             →  /explore
-Governance health check                →  /audit
-Evaluating legacy app for rewrite      →  /assess
-Generate rebuild stories               →  /backlog
-```
-
----
-
-## Stack detection
-
-The scanner reads manifest files and produces tailored governance for each stack:
-
-| Stack | Detected from | Key detections |
-|-------|--------------|----------------|
-| **Flutter** | `pubspec.yaml` | State (Riverpod/BLoC/Provider/GetX), DI, router, network, local DB, Mason, FVM |
-| **Kotlin** | `build.gradle.kts` | UI (Compose/XML), DI (Hilt/Koin), state (StateFlow/LiveData), ORM, multi-module |
-| **Node.js** | `package.json` | Framework (NestJS/Express/Fastify), ORM, DI, API type, auth, queues, monorepo |
-| **React** | `package.json` | State (Zustand/Redux/Jotai), router (TanStack/React Router), forms, CSS, UI libs |
-| **Next.js** | `package.json` | App vs Pages Router, RSC, state, styling — uses React scanner |
-| **Angular** | `package.json` | Version, Signals (v17+), state (NgRx/NGXS/Akita), SSR, UI libs, Nx |
-| **SwiftUI** | `Package.swift` | TCA, DI, state (@Observable), async/await, local DB |
-| **Python** | `pyproject.toml` | Framework (FastAPI/Django/Flask), ORM, auth, cache, queue, package manager |
-| **Java** | `pom.xml` / `build.gradle` | Framework (Spring Boot/Quarkus/Micronaut), DI, ORM, Java version, Lombok |
-
-**File size enforcement by stack:**
-
-| Stack type | File size hook |
-|-----------|----------------|
-| Frontend: react, next, angular, flutter, kotlin | Active — warns >200 lines, blocks >300 |
-| Backend: nodejs, python, java | No-op — large files are expected |
-| swiftui | No-op |
-
----
-
-## Kiro vs Claude Code — key differences
-
-| Aspect | Claude Code | Kiro |
-|--------|-------------|------|
-| Output directory | `.claude/` | `.kiro/` |
-| Steering files | Plain markdown | Markdown with YAML front-matter |
-| Hooks | Bash scripts in `settings.json` | JSON files auto-discovered by Kiro |
-| Commands | `.claude/commands/*.md` (slash commands) | `userTriggered` JSON workflow hooks |
-| Spec templates | `specs/_template/` | `.kiro/specs/_template/` |
-| Enforcement | Hard block via `exit 2` | Agent-enforced via `askAgent` DENY |
-
-> **Enforcement caveat:** Claude Code hooks use `exit 2` — a process-level hard block. Kiro hooks use `askAgent` with DENY instructions — cooperative enforcement. Both are effective in practice.
-
----
-
-## Telemetry (optional)
-
-If your team runs an [AI Governance Hub](https://vgit.techvedika.com/tvdatascience/ai-governance/ai-governance-hub), governance metrics are reported automatically on each `git push` — commit count, compliance percentage, violation counts.
-
-Configure in `.ai-gov/config.json`:
-
-```json
-{
-  "hub": "https://your-hub.example.com",
-  "project": "my-app",
-  "team": "platform",
-  "platform": "github"
-}
-```
-
-**Privacy:** No source code or commit messages are sent. Developer emails are SHA-256 hashed before transmission.
-
-**Opt out:**
-
-```bash
-export AI_GOV_TELEMETRY=off
-```
-
----
-
-## Project structure (CLI source)
-
-```
-ai-governance/
-├── src/
-│   ├── cli.ts                             ← Commander registration (~286 lines)
-│   ├── types.ts                           ← all interfaces and types
-│   ├── detect-stack.ts                    ← auto-detection from manifest files
-│   ├── profiles.ts                        ← defaults per stack (9 profiles)
-│   ├── content-blocks.ts                  ← template variable computation
-│   ├── scanners/                          ← 9 stack scanners
-│   ├── agents/
-│   │   ├── detect-agent.ts                ← shared auto-detect utility
-│   │   ├── types.ts                       ← AgentAdapter interface + registry
-│   │   ├── claude-code/                   ← Claude Code hooks + commands generators
-│   │   └── kiro/                          ← Kiro steering + hooks generators
-│   ├── generators/
-│   │   ├── index.ts                       ← dispatcher → agent registry
-│   │   ├── architecture.ts, constitution.ts, ...
-│   │   ├── git-hooks/                     ← pre-commit, commit-msg, pre-push generators
-│   │   └── ci/                            ← github, gitlab, bitbucket generators
-│   ├── commands/
-│   │   ├── init-cmd.ts                    ← init command handler
-│   │   ├── doctor.ts                      ← doctor command handler
-│   │   ├── workspace-cmd.ts               ← workspace routing
-│   │   ├── init-ci.ts                     ← CI file writing (HTTPS-validated hub URL)
-│   │   ├── workspace-init.ts              ← workspace discovery + mono/multi-repo detection
-│   │   ├── upgrade.ts                     ← re-generate hooks, preserve steering
-│   │   ├── onboard.ts                     ← new developer setup
-│   │   ├── mcp.ts                         ← MCP governance subcommands
-│   │   ├── project-init.ts               ← project scaffold orchestrator
-│   │   └── uninstall.ts
-│   ├── utils/
-│   │   ├── collect-project-info.ts        ← reads project name from manifests
-│   │   ├── validate-git-hooks-config.ts   ← config.json schema validation
-│   │   ├── gitignore-manager.ts           ← .gitignore entry management
-│   │   ├── display-hub-disclosure.ts      ← telemetry transparency notice
-│   │   ├── hub-config.ts                  ← reads .ai-gov/config.json
-│   │   ├── safe-write.ts                  ← write with dry-run/diff/version-check
-│   │   ├── logger.ts                      ← colored console output
-│   │   └── tty.ts                         ← TTY detection + line reading
-│   ├── stacks/
-│   │   ├── registry.ts                    ← adapter registry (self-registration)
-│   │   ├── flutter/                       ← Flutter adapter + templates
-│   │   └── next/                          ← Next.js adapter + templates
-│   ├── pr-check/                          ← 8 checks + 4 output formatters
-│   └── mcp/                               ← MCP catalog, env files, global env
-├── tests/                                 ← 1178 tests across 40 suites
-├── docs/                                  ← supplementary guides
-├── package.json
-└── jest.config.cjs
-```
-
----
-
-## When to use this (and when not to)
-
-### Worth it when
-
-- **Teams of 3+ using Claude Code or Kiro** — prevents "Claude rewrote the auth module because someone said fix the login bug"
-- **Production codebases** where architecture consistency matters
-- **Regulated environments** needing an audit trail — spec files document what was planned vs. built
-- **Onboarding new devs** — steering files give Claude your project's patterns from their first session
-- **Mixed-stack workspaces** — Node.js + React + Flutter each get stack-specific governance, with shared cross-project rules
-
-### Not worth it when
-
-- **Solo dev prototyping** — spec-first requires three markdown files before writing any code
-- **Small utilities** — a 200-line script does not need 40 governance files
-- **Teams not using Claude Code or Kiro** — every feature is built on the agent hook system
-
-### What it will not do
-
-- **Make Claude deterministic** — steering files give Claude a better starting point. Claude still makes its own decisions.
-- **Govern code quality** — hooks check file size, secrets, commit format, TODOs. Not whether the code is correct.
-- **Maintain itself** — the generated `architecture.md` is a starting point. It needs human editing as the project evolves.
-- **Replace engineering discipline** — `--no-verify` exists. A team that doesn't take governance seriously will route around every control.
 
 ---
 

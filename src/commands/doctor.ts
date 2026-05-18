@@ -3,9 +3,14 @@ import { join } from 'path';
 import { detectAgent } from '../agents/detect-agent.js';
 import { validateGitHooksConfig } from '../utils/validate-git-hooks-config.js';
 import { log } from '../utils/logger.js';
+import { runProductionReady } from './doctor-production-ready.js';
 
-export async function runDoctor(options: { dir: string; agent?: string }): Promise<void> {
+export async function runDoctor(options: { dir: string; agent?: string; productionReady?: boolean }): Promise<void> {
     const { dir } = options;
+    if (options.productionReady) {
+        await runProductionReady({ dir, agent: options.agent });
+        return;
+    }
     const agent = detectAgent(dir, options.agent);
     let issues = 0;
     const check = (label: string, ok: boolean) => {

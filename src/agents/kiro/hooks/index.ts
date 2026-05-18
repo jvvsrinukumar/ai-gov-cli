@@ -16,6 +16,8 @@ import { generateRequireTaskType } from './require-task-type.js';
 import { generateHooksReadme } from './hooks-readme.js';
 import { generatePreWriteSecretsGate } from './pre-write-secrets-gate.js';
 import { generateWorkflowAudit } from './workflow-audit.js';
+import { generateWorkflowAssess } from './workflow-assess.js';
+import { generateWorkflowBacklog } from './workflow-backlog.js';
 import { generateWorkflowNewFeature } from './workflow-new-feature.js';
 import { generateWorkflowFix } from './workflow-fix.js';
 import { generateWorkflowRefactor } from './workflow-refactor.js';
@@ -61,6 +63,8 @@ export function generateAllKiroHooks(config: GovernanceConfig, opts: WriteOption
 
     // userTriggered workflow hooks
     w('workflow-audit.kiro.hook', generateWorkflowAudit(config));
+    w('workflow-assess.kiro.hook', generateWorkflowAssess(config));
+    w('workflow-backlog.kiro.hook', generateWorkflowBacklog(config));
     w('workflow-new-feature.kiro.hook', generateWorkflowNewFeature(config));
     w('workflow-fix.kiro.hook', generateWorkflowFix(config));
     w('workflow-refactor.kiro.hook', generateWorkflowRefactor(config));

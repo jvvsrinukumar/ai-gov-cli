@@ -17,6 +17,7 @@ import { collectProjectInfo } from '../utils/collect-project-info.js';
 import { addToGitignore, addUsageLogsToGitignore, addKnowledgeHubToGitFiles } from '../utils/gitignore-manager.js';
 import { displayTransparencyDisclosure } from '../utils/display-hub-disclosure.js';
 import { HOOK_VERSION } from '../constants.js';
+import { writeInitialState } from '../utils/state-writer.js';
 
 export interface InitCmdOptions {
     dir: string;
@@ -100,6 +101,7 @@ export async function runInitCmd(options: InitCmdOptions): Promise<void> {
 
     try {
         runGovernance(config);
+        writeInitialState(config);
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         console.error(`\n  Error: ${msg}`);

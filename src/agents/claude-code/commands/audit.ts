@@ -70,6 +70,9 @@ export function generateAuditCommand(c: GovernanceConfig): string {
 > 9. **DO NOT STOP between phases.** Phase headings (## PHASE N) are section labels — not stopping points. After every step transition marker below, continue to the next step immediately without waiting for user input or confirmation.
 > 10. **ALL 12 steps AND all 3 persist operations MUST complete in a single run.** The audit is not complete until audit-report.md, dead-code.md, and developer-actions.md have all been written.
 > 11. **For large or multi-module projects:** summarize observations per module/zone rather than per file — but complete ALL steps. Project size is not a reason to skip any step.
+> 12. **Completion contract — emit on the very last line of the run, exactly:**
+>     \`AUDIT_COMPLETE: persist-files=<N>/3 steps=<N>/12 verdict=<ALIGNED|UPDATED|ACTION_NEEDED>\`
+>     The contract is the structural signal that the audit finished. The runner greps for it; an absent contract means the run did not complete and the verdict is incomplete regardless of any prose summary above it.
 
 ---
 
@@ -125,7 +128,7 @@ Read \`.claude/settings.json\`. Confirm:
 - Stop hooks registered (post-task-checklist)
 - check-spec-exists.sh: present AND registered only if \`specs/\` has active feature dirs
 
-> **After Step 3:** Say exactly: "Governance scaffolding checked — proceeding to project discovery (Step 4)." Then begin Step 4 immediately. DO NOT stop. DO NOT output a verdict. DO NOT wait for developer input.
+> **After Step 3:** Say exactly: "Governance scaffolding checked — proceeding to project discovery (Step 4)." Then begin Step 4 (no verdict yet — per rule #2).
 
 ---
 
@@ -157,7 +160,7 @@ Note:
 - Any directory that looks like a second architecture zone (different patterns)
 - If monorepo: which package is the focus of this audit
 
-> **After Step 4:** Say exactly: "Directory map complete — proceeding to code observation (Step 5)." Then begin Step 5 immediately. DO NOT stop. DO NOT wait.
+> **After Step 4:** Say exactly: "Directory map complete — proceeding to code observation (Step 5)." Then begin Step 5.
 
 ### Step 5 — Code observation
 
@@ -184,7 +187,7 @@ Multi-zone:        [if different directories use clearly different patterns — 
 File size range:   [smallest to largest source file, flag any >300 lines (frontend) / >500 lines (backend)]
 \`\`\`
 
-> **After Step 5:** Say exactly: "Project reality mapped — proceeding to gap analysis (Step 6)." Then begin Step 6 immediately. DO NOT output a verdict. DO NOT wait.
+> **After Step 5:** Say exactly: "Project reality mapped — proceeding to gap analysis (Step 6)." Then begin Step 6 (still no verdict — per rule #2).
 
 ---
 
@@ -294,8 +297,8 @@ GAP: workflow.md shows FEATURES_DIR=src/modules/ but actual directory is src/fea
 \`\`\`
 
 > **After Step 6:**
-> - If NO gaps found → say exactly: "No governance gaps — proceeding to spec coverage (Step 8)." Begin Step 8 immediately. DO NOT stop.
-> - If gaps found → say exactly: "Found [N] gap(s) — fixing steering files now (Step 7)." Begin Step 7 immediately. DO NOT produce a list of "gaps to fix." DO NOT ask for permission. The first action of Step 7 is to open the first affected file and write the correction.
+> - If NO gaps found → say exactly: "No governance gaps — proceeding to spec coverage (Step 8)." Begin Step 8.
+> - If gaps found → say exactly: "Found [N] gap(s) — fixing steering files now (Step 7)." Begin Step 7 by opening the first affected file and writing the correction. Do not produce a "gaps to fix" list as a substitute; do not ask for permission (per rule #7).
 
 ---
 
@@ -328,7 +331,7 @@ Fix every gap identified in Step 6. Update directly — do not ask for permissio
 After writing all fixes, re-read each modified file to confirm the gap text no longer appears.
 If a gap from Step 6 still exists after Step 7, you have a bug — fix it before proceeding.
 
-> **After Step 7:** Say exactly: "All steering fixes applied and verified — proceeding to spec coverage (Step 8)." Begin Step 8 immediately. DO NOT stop.
+> **After Step 7:** Say exactly: "All steering fixes applied and verified — proceeding to spec coverage (Step 8)." Begin Step 8.
 
 **Categorizing gaps — what goes WHERE:**
 - **Steering mismatch** (docs say X, code does Y) → FIX THE STEERING FILE in Step 7. Done.
@@ -406,7 +409,7 @@ List every feature-sized directory in \`${featuresDir}\`. For each:
 
 If spec-first is active (check-spec-exists.sh in settings.json), flag features with code but no spec as ACTION NEEDED — Claude will be blocked when trying to edit those files.
 
-> **After Step 8:** Continue immediately to Step 9 (test coverage). DO NOT stop.
+> **After Step 8:** Continue to Step 9 (test coverage).
 
 ### Step 9 — Test coverage
 
@@ -417,7 +420,7 @@ ${testCoverage}
 <feature>: TESTED / PARTIAL [missing: which layers] / UNTESTED / SCAFFOLD-ONLY
 \`\`\`
 
-> **After Step 9:** Continue immediately to Step 10 (dead file scan). DO NOT stop.
+> **After Step 9:** Continue to Step 10 (dead file scan).
 
 ### Step 10 — Dead file scan
 
@@ -432,7 +435,7 @@ DEAD CODE CANDIDATE: <path>
   Risk: <could this confuse Claude? e.g. "Claude might try to import this model that no longer has a matching endpoint">
 \`\`\`
 
-> **After Step 10:** Continue immediately to Step 11 (governance gap summary). DO NOT stop.
+> **After Step 10:** Continue to Step 11 (governance gap summary).
 
 ---
 ${generateKnowledgeHealthCheck()}
@@ -464,7 +467,7 @@ Fix applied:
 
 If no gaps were found: "Governance was accurate. No changes needed."
 
-> **After Step 11:** Continue immediately to Step 12 (scorecard and persist). DO NOT stop. DO NOT wait for input.
+> **After Step 11:** Continue to Step 12 (scorecard and persist).
 
 ### Step 12 — Final scorecard and persist records
 
@@ -475,7 +478,7 @@ PROJECT TRUTH AUDIT — ${project.appName}
 Stack: ${profile.stackDisplay} | Hook version: v${hookVer}
 Date: <today>
 
-━━━ HEALTH SCORECARD ━━━
+━━━ GOVERNANCE SCORECARD (4 categories — audit's responsibility) ━━━
 
   Governance Files    <score>/100  <Grade>
     Start: 100
@@ -499,17 +502,25 @@ Date: <today>
     −5 per directory with 5–10 files found in Step 4 that has no mention in architecture.md
     Floor: 0
 
-  Test Coverage       <score>/100  <Grade>
+  Dead File Risk      <score>/100  <Grade>
+    Start: 100 · −5 per dead code candidate found in Step 10 · Floor: 0
+
+  OVERALL             <score>/100  Grade: <A/B/C/D>
+    Arithmetic mean of the 4 categories above. Test Coverage and other maturity
+    signals are reported separately (PROJECT MATURITY block below) and do NOT
+    factor into governance accuracy.
+
+━━━ PROJECT MATURITY (informational — not part of governance grade) ━━━
+
+  Test Coverage       <score>/100
     SCENARIO A (no test infrastructure found in Step 9): 0
     SCENARIO B (partial): score = round((features/modules with ≥1 test file ÷ total active features/modules) × 100)
       PARTIAL features (some layers tested, not all) count as 50% of full credit
     SCENARIO C (comprehensive, real assertions confirmed in spot-check): 95
 
-  Dead File Risk      <score>/100  <Grade>
-    Start: 100 · −5 per dead code candidate found in Step 10 · Floor: 0
-
-  OVERALL             <score>/100  Grade: <A/B/C/D>
-    Arithmetic mean of the 5 category scores above, rounded to nearest whole number
+  Note: A greenfield project with no tests yet can still have a perfect
+  Governance grade. Maturity grows as the project ages; governance accuracy
+  is the audit's only scored concern.
 
 ━━━ GRADE SCALE ━━━
   A: 90-100  B: 75-89  C: 60-74  D: <60
@@ -581,14 +592,21 @@ Format for each run entry:
 \`\`\`markdown
 ## Run [N] — <date>
 
+**Governance scorecard** (the audit's only scored concern):
+
 | Category           | Score   | Grade | vs Previous |
 |--------------------|---------|-------|-------------|
 | Governance Files   | xx/100  | X     | +N / −N / — |
 | Governance Accuracy| xx/100  | X     | +N / −N / — |
 | Steering Coverage  | xx/100  | X     | +N / −N / — |
-| Test Coverage      | xx/100  | X     | +N / −N / — |
 | Dead File Risk     | xx/100  | X     | +N / −N / — |
 | **OVERALL**        | **xx/100** | **X** | **+N / −N / —** |
+
+**Project maturity** (informational — not part of grade):
+
+| Metric             | Value   | vs Previous |
+|--------------------|---------|-------------|
+| Test Coverage      | xx/100  | +N / −N / — |
 
 **VERDICT:** ALIGNED / UPDATED — N gaps fixed / ACTION NEEDED
 **Gaps fixed this run:** [N] — [list titles, e.g. "architecture.md missing Zone Rules", "constitution.md ghost file entry"]
@@ -695,5 +713,17 @@ ${specActivationCmd}
 # Fill requirements.md, design.md, tasks.md
 # Once specs/<feature>/ exists, check-spec-exists.sh activates on next ai-gov init
 \`\`\`
+
+---
+
+## FINAL OUTPUT — completion contract
+
+After the scorecard and the three persist writes, emit on the very last line, exactly:
+
+\`\`\`
+AUDIT_COMPLETE: persist-files=<N>/3 steps=<N>/12 verdict=<ALIGNED|UPDATED|ACTION_NEEDED>
+\`\`\`
+
+Substitute the actual counts and verdict. No other text after it. The runner uses this line to verify the audit finished; without it the run is treated as incomplete.
 `;
 }

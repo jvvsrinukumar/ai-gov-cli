@@ -7,6 +7,58 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [20.0.0] — 2026-05-18
+
+### Production-Ready Release — Review Loop Closed
+
+v20 is defined by 8 acceptance criteria (AC-1 through AC-8), mechanically verified by `/doctor production-ready`. Once it says PASSING, the framework ships and further audits are informational only.
+
+### Added
+
+- **`src/schemas/governance-state.schema.ts`** — canonical JSON schema (v1) shared by audit, assess, backlog, and doctor. TypeScript types + JSON Schema Draft 07. Includes: `AuditRun`, `DeadCodeEntry`, `DeveloperAction`, `AssessmentState`, `BacklogStory`, `Assumption`, `ParseGap`, `AcceptanceCriterion`, `ScannerSnapshot` with confidence fields. (AC-2)
+- **`src/utils/state-writer.ts`** — writes initial `governance-state.json` at init time. Preserves existing audit runs, dead code, and developer actions on re-init. Refreshes scanner snapshot and project metadata only.
+- **`src/utils/state-migration.ts`** — lenient markdown → JSON migration. Reads v19 `audit-report.md`, `dead-code.md`, `developer-actions.md`, parses tables and run blocks, hydrates JSON. Anything unparseable becomes a `parseGap` — never a thrown error. Markdown files are never deleted. (AC-2)
+- **`src/commands/migrate-state.ts`** — `ai-gov migrate-state` CLI command. Idempotent, non-destructive. Requires `--force` to overwrite existing state file.
+- **`src/commands/doctor-production-ready.ts`** — `/doctor production-ready` mechanical AC verification. Evaluates 8 acceptance criteria against project state. Returns exactly PASSING or BLOCKING with the item list. No prose verdicts. (AC-5)
+- **`src/utils/scanner-snapshot.ts`** — wraps 15 scanner fields (stateFramework, diFramework, ORM, testFramework, linter, formatter, router, httpClient, archPattern, serviceStyle, featuresDir, sourceDir, layerNames, localStorageName, scaffoldTool) with `{ value, confidence, source }`. Confidence: high (manifest/file-pattern), medium (heuristic), low (profile default), unknown (blank). Includes `diffSnapshot()` for structured audit deltas. (AC-7)
+- **`src/generators/assess-content.ts`** — shared assess prompt body consumed by both Claude Code (`/assess`) and Kiro (`workflow-assess`). Single source of truth — drift between agents becomes a CI failure. (AC-1, AC-3)
+- **`src/generators/backlog-content.ts`** — shared backlog prompt body consumed by both agents. Same drift-prevention pattern. (AC-1, AC-4)
+- **`src/agents/kiro/hooks/workflow-assess.ts`** — Kiro workflow hook for assess. Wraps shared content with `.kiro/` paths and Kiro-native JSON envelope. Registered in hooks/index.ts. (AC-1)
+- **`src/agents/kiro/hooks/workflow-backlog.ts`** — Kiro workflow hook for backlog. Same pattern. (AC-1)
+- **`tests/audit.test.ts`** — 49 assertions covering prompt structure, scorecard surgery, DO NOT STOP collapse, completion contract, Kiro parity, and cross-stack generation. (AC-6)
+- **`tests/assess.test.ts`** — 51 assertions covering structure, Business Pressure rubric signals, ASSUMPTIONS block schema, completion contract, no human-input gates, Kiro parity, and cross-stack. (AC-6)
+- **`tests/doctor.test.ts`** — 43 assertions covering each AC check (PASSING and BLOCKING conditions), overall verdict logic, exit code behavior. (AC-6)
+- **Completion contracts** — audit emits `AUDIT_COMPLETE: persist-files=N/3 steps=N/12 verdict=<V>`, assess emits `ASSESS_COMPLETE: docs-written=N/11 recommendation=<R> confidence=<C>`, backlog emits `BACKLOG_COMPLETE: stories=N skip-list=M p1=N p2=N p3=N`. Runner greps for these — absent = run incomplete. (AC-8)
+
+### Changed
+
+- **`/assess` Business Pressure** — replaced `<!-- HUMAN INPUT REQUIRED -->` placeholder with evidence-based rubric: 6 observable signals (bug commits, aged developer-actions, contributor churn, EOL deps, revert/hotfix density, core staleness), composite → bucket → score 1-4. Confidence = High (≥3 signals) / Medium (2) / Low (≤1). Pipeline never blocks. Low-confidence outputs flagged `reviewRequired: true`. (AC-3)
+- **`/backlog` priority derivation** — replaced `⚠️ HUMAN INPUT NEEDED` priority checklist with computed priority: `0.4 × debt_severity + 0.3 × dependency_count + 0.3 × commit_frequency`. Buckets: ≥2.4→P1, 1.5-2.3→P2, <1.5→P3. Skip-list reads developer-actions.md (excludes KEPT, surfaces OPEN). Net-new features default to "parity rebuild" with logged assumption. (AC-4)
+- **`/audit` scorecard surgery** — Test Coverage split out of OVERALL into separate PROJECT MATURITY block (informational only). OVERALL is now the mean of 4 governance categories. Greenfield projects stop being penalized for having no tests.
+- **`/audit` DO NOT STOP collapse** — reduced from 10× repetition to one canonical execution rule (#9) + one completion contract line. Stronger signal with less token cost.
+- **`/audit` completion contract** — Rule #12 added. Final line must be `AUDIT_COMPLETE: persist-files=<N>/3 steps=<N>/12 verdict=<ALIGNED|UPDATED|ACTION_NEEDED>`.
+- **Kiro hooks/index.ts** — registered `generateWorkflowAssess` and `generateWorkflowBacklog`. Both write `.kiro/hooks/workflow-assess.kiro.hook` and `workflow-backlog.kiro.hook`.
+- **`package.json` version** bumped to 20.0.0.
+
+### Migration
+
+- **Existing v19 projects:** Run `npx ai-gov migrate-state` to hydrate `governance-state.json` from existing markdown artifacts. Non-destructive — markdown files preserved as rendered views.
+- **Existing v19 projects (alternative):** Run `npx ai-gov init` — the state-writer detects absence and creates a fresh state file. Existing audit history from markdown is not auto-migrated; use `migrate-state` for that.
+- **Scoring change:** If your project previously scored poorly on OVERALL due to low test coverage, your governance grade will likely improve in v20 (Test Coverage no longer penalizes the governance score).
+
+### Deferred to v21 (Non-Goals)
+
+- Knowledge → audit feedback loop
+- Workspace-level Kiro commands
+- Dead-code visual dedup across audit/assess
+- Full ScannerSnapshot confidence wrapping for remaining 55+ ScanResult fields
+- Prompt-token optimization beyond Phase D
+- Real-time `/doctor` daemon
+- Localized prompts
+- Cursor/Aider/other agent support
+
+---
+
 ## [19.1.0] — 2026-05-18
 
 ### Added — Knowledge Hub hardening
