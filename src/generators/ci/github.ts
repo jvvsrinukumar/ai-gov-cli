@@ -1,4 +1,15 @@
-export function generateGithubCI(): string {
+export function generateGithubCI({ hubUrl }: { hubUrl?: string } = {}): string {
+  const hubStep = hubUrl ? `
+      - name: Report to Governance Hub
+        if: always()
+        run: |
+          developer_hash=$(echo -n "\${{ github.actor }}" | sha256sum | awk '{print $1}')
+          curl -sf -X POST ${hubUrl}/api/pr-reports \\
+            -H "Authorization: Bearer \${{ secrets.AI_GOV_SECRET }}" \\
+            -H "Content-Type: application/json" \\
+            -d "{\\"developer_hash\\":\\"$developer_hash\\",\\"repo\\":\\"\${{ github.repository }}\\",\\"pr\\":\\"\${{ github.event.pull_request.number }}\\"}" || true
+` : '';
+
   return `name: Governance Check
 on:
   pull_request:
@@ -24,7 +35,7 @@ jobs:
         run: sudo apt-get install -y jq
 
       - name: Install governance CLI
-        run: npm install -g ai-gov@19.0.0
+        run: npm install -g ai-gov@19.1.0
 
       - name: Run governance check
         run: ai-gov pr-check --base \${{ github.event.pull_request.base.ref }} --format github > /tmp/governance-report.md
@@ -52,5 +63,5 @@ jobs:
                 issue_number: context.issue.number, body: report
               });
             }
-`;
+${hubStep}`;
 }
