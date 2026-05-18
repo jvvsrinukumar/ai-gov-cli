@@ -1,9 +1,26 @@
 # Knowledge Hub Guide
-## Claude Code + Kiro — All 5 Phases
+## Claude Code + Kiro — All 5 Phases + v19.1 Hardening
 
 **Audience:** Developers, team leads
-**Version:** v17.2.0 · **Date:** 2026-05-07
-**Status:** Shipped — all phases active
+**Version:** v19.1.0 · **Date:** 2026-05-18
+**Status:** Shipped — all phases active, hardened
+
+---
+
+## What's new since v17.2.0
+
+**v19.0 (knowledge commands + ergonomics):**
+- New read-only `/knowledge [scope]` command — viewer for developers who don't have write access.
+- HTML export from `/tech-knowledge` and `/product-knowledge` with Mermaid diagrams.
+- `merge=union` set on `knowledge/*.md` in `.gitattributes` — parallel team edits don't conflict.
+- `/fix` and `/hotfix` now silently capture business rules into `knowledge/product-*.md` (in addition to `/new-feature` and `/edit-feature`).
+
+**v19.1 (hardening):**
+- **Pre-commit guard on `[CONFIRMED]`.** Removing a `[CONFIRMED]` line from `knowledge/*.md` is blocked at commit time. Bypass: `AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit -m '<message>'`. See section 11.
+- **`/fix` DO-NOT-CAPTURE blocklist.** Default is now "no business rules extracted." Captures only when the root cause is a misunderstood requirement, an unenforced constraint, or a missing role check.
+- **Mechanical drift detection.** Replaces fuzzy "many commits passed" with `git diff --stat OLD_HASH..HEAD` against covered paths. Threshold: > 10 files OR > 200 lines → flagged as significant drift.
+- **Honest Mermaid wording.** HTML export now says "requires internet to render diagrams" — the export depends on the Mermaid CDN, it is not truly self-contained.
+- **Dynamic onboard listing.** `npx ai-gov onboard` groups every `knowledge/*.md` file by prefix instead of hard-coding `tech-` and `product-`.
 
 ---
 
@@ -14,10 +31,11 @@
 3. [Phase 1 — Extract Knowledge On Demand](#3-phase-1--extract-knowledge-on-demand)
    - 3.1 [Claude Code: /tech-knowledge](#31-claude-code-tech-knowledge)
    - 3.2 [Claude Code: /product-knowledge](#32-claude-code-product-knowledge)
-   - 3.3 [Kiro: Tech Knowledge workflow](#33-kiro-tech-knowledge-workflow)
-   - 3.4 [Kiro: Product Knowledge workflow](#34-kiro-product-knowledge-workflow)
+   - 3.3 [Claude Code: /knowledge (read-only viewer)](#33-claude-code-knowledge-read-only-viewer)
+   - 3.4 [Kiro: Tech Knowledge workflow](#34-kiro-tech-knowledge-workflow)
+   - 3.5 [Kiro: Product Knowledge workflow](#35-kiro-product-knowledge-workflow)
 4. [Phase 2 — Context Builder (Read Before Acting)](#4-phase-2--context-builder)
-5. [Phase 3 — Silent Capture (Write After Gate 1)](#5-phase-3--silent-capture)
+5. [Phase 3 — Silent Capture (Write After Gate 1 or Fix)](#5-phase-3--silent-capture)
 6. [Phase 4 — Drift Detection in /audit](#6-phase-4--drift-detection)
 7. [Phase 5 — Conflict Detection](#7-phase-5--conflict-detection)
    - 7.1 [Claude Code: /detect-conflicts](#71-claude-code-detect-conflicts)
@@ -25,6 +43,7 @@
 8. [The knowledge/ Directory Layout](#8-the-knowledge-directory-layout)
 9. [Team Workflow — Day-to-Day Usage](#9-team-workflow--day-to-day-usage)
 10. [Stack-Specific Examples](#10-stack-specific-examples)
+11. [Pre-commit Guard & Bypass (v19.1)](#11-pre-commit-guard--bypass-v191)
 
 ---
 
@@ -298,7 +317,55 @@ Entry point: `src/payments/payments.controller.ts:findAll`
 
 ---
 
-### 3.3 Kiro: Tech Knowledge Workflow
+### 3.3 Claude Code: `/knowledge` (read-only viewer)
+
+**When:** Any developer wants to see what knowledge already exists, without re-scanning code.
+
+**What it does:** Reads and displays committed `knowledge/*.md` files. **Zero writes. Zero code scanning.** Available to everyone on the team — even developers who don't have permission to run `/tech-knowledge` or `/product-knowledge`.
+
+**Usage:**
+
+```
+/knowledge              → list all knowledge files, then show overview files
+/knowledge auth         → show knowledge/tech-auth.md + knowledge/product-auth.md
+/knowledge tech         → show all knowledge/tech-*.md files
+/knowledge product      → show all knowledge/product-*.md files
+/knowledge all          → show every file in knowledge/
+```
+
+**Example session:**
+
+```
+You: /knowledge auth
+
+Claude: ━━━ knowledge/tech-auth.md ━━━
+
+  [contents shown verbatim]
+
+  ━━━ knowledge/product-auth.md ━━━
+
+  [contents shown verbatim]
+
+  ━━━ CONTEXT LOADED ━━━
+    Files shown: 2 (tech-auth.md, product-auth.md)
+    [CONFIRMED] entries are human-verified. [INFERRED] entries are AI-extracted — verify before relying on them.
+    Stale? Team lead re-runs /tech-knowledge or /product-knowledge when code changes significantly.
+```
+
+**When `knowledge/` doesn't exist:**
+
+```
+━━━ NO KNOWLEDGE BASE FOUND ━━━
+
+  The knowledge/ directory does not exist in this project.
+
+  Team lead: run /tech-knowledge and /product-knowledge, then commit and push.
+  Developer: ask your team lead to generate and push knowledge files.
+```
+
+---
+
+### 3.4 Kiro: Tech Knowledge Workflow
 
 In Kiro, the same extraction runs as a **userTriggered workflow hook**. You trigger it from Kiro's workflow panel, not the terminal.
 
@@ -350,7 +417,7 @@ Kiro: [reads codebase, writes knowledge/tech-auth.md]
 
 ---
 
-### 3.4 Kiro: Product Knowledge Workflow
+### 3.5 Kiro: Product Knowledge Workflow
 
 Identical pattern to Tech Knowledge. Hook: `.kiro/hooks/workflow-product-knowledge.kiro.hook`.
 
@@ -429,7 +496,13 @@ After getting scope from the user, check knowledge/:
 
 ## 5. Phase 3 — Silent Capture
 
-**What:** When a developer approves Gate 1 in `/new-feature` or `/edit-feature`, the AI **automatically** extracts product knowledge from the approved requirements and writes `[CONFIRMED]` entries to the knowledge file — with no developer action required.
+**What:** When a developer approves Gate 1 in `/new-feature` or `/edit-feature` (or finishes a `/fix` / `/hotfix`), the AI **automatically** extracts product knowledge and writes entries to `knowledge/product-[slug].md` — with no developer action required.
+
+| Source command | Confidence | Trigger |
+|---|---|---|
+| `/new-feature` | `[CONFIRMED]` | Gate 1 approval |
+| `/edit-feature` | `[CONFIRMED]` (only on `<!-- NEW -->` / `<!-- CHANGED -->` items) | Gate 1 approval |
+| `/fix`, `/hotfix` | `[INFERRED]` | After fix applied — only when the fix has business meaning |
 
 **Gate 1** is the requirements review gate: the AI presents requirements, the developer says `ok` / `approved` / `yes` / `lgtm` / `proceed`.
 
@@ -504,6 +577,24 @@ Note the upgrades: `REFUNDED` was `[INFERRED]`. After Gate 1 approval confirming
 
 **`/edit-feature` difference:** Only extracts from lines marked `<!-- NEW -->` or `<!-- CHANGED: ... -->` in the diff view — does not re-capture existing unchanged requirements.
 
+**`/fix` and `/hotfix` — DO-NOT-CAPTURE blocklist (v19.1):** Bug fixes do not always reveal business rules. The default after a fix is **"no business rules extracted."** Capture only happens when the root cause is a misunderstood requirement, an unenforced business constraint, or a missing role/permission check.
+
+Explicit blocklist — never capture from these fix types:
+
+- null/undefined check, off-by-one, typo, missing await, type coercion
+- wrong import path, wrong constant value with no business meaning
+- test-only change, log/format change, lint cleanup
+- dependency upgrade, config tweak, build fix
+- race condition fix with no domain-level implication
+
+When a fix matches the blocklist, the AI outputs:
+
+```
+↳ Knowledge capture: fix was technical — no business rules extracted.
+```
+
+When a fix is captured (e.g. it enforced a missing role check), entries are tagged `[INFERRED]` with source `bug fix · /fix · [date]` and appended under a `## Business Rules` section.
+
 **Kiro difference:** Same logic runs inside `workflow-new-feature.kiro.hook` and `workflow-edit-feature.kiro.hook` at the equivalent Gate 1 position.
 
 ---
@@ -513,6 +604,16 @@ Note the upgrades: `REFUNDED` was `[INFERRED]`. After Gate 1 approval confirming
 **What:** `/audit` (and Kiro `workflow-audit`) includes a knowledge health check. It reads every entry in every knowledge file, finds the corresponding code, and classifies each entry as Current / [STALE] / [UNVERIFIABLE].
 
 **This is read-only.** The audit does not modify knowledge files. It reports what is wrong.
+
+**Mechanical drift check (v19.1):** In addition to entry-level classification, the audit now extracts the `Generated: ... (git: [OLD_HASH])` line from each knowledge file and runs:
+
+```
+git diff --stat OLD_HASH..HEAD -- [paths covered by this knowledge file]
+```
+
+If > 10 files changed OR > 200 lines added/removed in covered paths → the file is flagged as **"significant drift likely — [N] files changed, [N] lines delta since last generation."**
+
+This replaces the prior fuzzy "many commits have passed" judgment with a concrete number. The same mechanical check now runs on every `/tech-knowledge` and `/product-knowledge` re-execution.
 
 **Example audit output section:**
 
@@ -692,6 +793,7 @@ knowledge/
 ├── tech-overview.md          ← whole-project tech extraction
 ├── tech-auth.md              ← auth feature tech extraction
 ├── tech-payments.md          ← payments feature tech extraction
+├── tech-auth.html            ← (optional) HTML export — gitignored
 ├── product-overview.md       ← whole-product extraction
 ├── product-auth.md           ← auth feature product extraction
 ├── product-payments.md       ← payments feature product extraction
@@ -706,6 +808,20 @@ knowledge/
 - No secrets, PII, or credentials — ever
 - `conflicts/` subdirectory is created automatically by `/detect-conflicts`
 - Tech and product files are overwritten on re-run (Phase 1). Conflict files are appended (Phase 5).
+
+**git config (v19.0, written automatically by `npx ai-gov init`):**
+
+```gitignore
+# .gitignore
+knowledge/*.html
+```
+
+```gitattributes
+# .gitattributes
+knowledge/*.md merge=union
+```
+
+`merge=union` means parallel additions from different branches are both kept on merge — no conflicts. HTML exports are local sharing artifacts only and are gitignored.
 
 ---
 
@@ -738,6 +854,24 @@ git commit -m "chore: bootstrap Knowledge Hub"
 # After Gate 1 approval in /new-feature or /edit-feature:
 # ↳ Knowledge captured: knowledge/product-payments.md (2 entries added)
 # This happens silently — no developer action needed.
+
+# To browse existing knowledge without re-scanning code:
+/knowledge auth
+/knowledge product
+/knowledge all
+```
+
+**Resolving stale `[CONFIRMED]` entries (team lead):**
+
+```bash
+# Discovered by /audit knowledge health, or surfaced during regeneration.
+# Step 1: re-run extraction to refresh the file with current code
+/tech-knowledge auth
+
+# Step 2: the regenerated file will retain the stale [CONFIRMED] under "Drift Detected"
+# Step 3: edit the file — remove the now-incorrect [CONFIRMED] line manually
+# Step 4: commit with the bypass (the guard would otherwise block the removal)
+AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit -m "chore(auth): regenerate after token-storage refactor"
 ```
 
 **Weekly audit (team lead):**
@@ -850,3 +984,63 @@ git commit -m "chore: bootstrap Knowledge Hub"
 **The key difference:** Claude Code slash commands run in your current session — you see the AI's reasoning inline. Kiro workflow hooks spin up a fresh `askAgent` session — the prompt is fully self-contained, which is why Kiro hooks include `> This is a new session — you have no conversation history.` at the top.
 
 Both agents produce identical output files. If your team uses both (e.g. Kiro for development, Claude Code for reviews), the `knowledge/` directory is shared — there is no duplication or conflict between the two.
+
+---
+
+## 11. Pre-commit Guard & Bypass (v19.1)
+
+`[CONFIRMED]` entries are human-verified. A pre-commit hook now blocks any commit that **removes** a `[CONFIRMED]` line from a `knowledge/*.md` file.
+
+**Why it blocks:**
+
+```
+  ⛔ Knowledge guard: 1 [CONFIRMED] entry/entries removed
+    ✗ knowledge/product-auth.md: removed — - Users must verify email before login [CONFIRMED]
+
+  [CONFIRMED] entries are human-verified — removal requires explicit override.
+  To bypass: AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit -m 'your message'
+```
+
+**What is allowed without bypass:**
+
+- Adding new `[CONFIRMED]` entries
+- Modifying `[INFERRED]` entries (any direction)
+- Adding new knowledge files (no `HEAD` version yet)
+- Adding new sections, lines, anything that does not remove an existing `[CONFIRMED]` line
+
+**When to bypass:**
+
+Legitimate reasons to remove a `[CONFIRMED]` line:
+
+- Regeneration via `/tech-knowledge` or `/product-knowledge` resolved drift and the `[CONFIRMED]` claim is now wrong
+- Schema change made the entry obsolete (e.g. a field was removed from the domain object)
+- Team decided to retire a feature
+
+**How to bypass:**
+
+```bash
+AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit -m "refactor(auth): regenerate after schema change"
+```
+
+The env var also accepts `true`, `TRUE`, or `True`. Any other value (or absence) means the guard runs normally.
+
+> ⚠ The pre-commit hook runs **before** git writes the commit message, so a `Knowledge-override:` trailer cannot work. The env-var bypass is the only reliable mechanism at pre-commit time.
+
+**Why an env var and not `--no-verify`:**
+
+- `git commit --no-verify` disables **all** governance checks (secrets, file size, architecture, knowledge guard).
+- `AI_GOV_KNOWLEDGE_OVERRIDE=1` disables **only** the knowledge guard — every other governance check still runs.
+
+Prefer the targeted bypass.
+
+---
+
+## 12. Configuration Reference
+
+| File | Purpose | Where |
+|---|---|---|
+| `.gitattributes` | `knowledge/*.md merge=union` | Project root |
+| `.gitignore` | `knowledge/*.html` (local HTML exports) | Project root |
+| `.claude/git-hooks/checks/knowledge-confirmed.sh` | The pre-commit guard | Generated by `ai-gov init --git-hooks` |
+| `.claude/git-hooks/config.json` | Per-check enable/disable | Set `"pre-commit"."knowledge-confirmed".enabled = false` to disable the guard team-wide |
+| `AI_GOV_KNOWLEDGE_OVERRIDE` | Env var bypass for the guard | Per-commit, by the developer |

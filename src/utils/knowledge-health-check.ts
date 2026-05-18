@@ -1,5 +1,5 @@
 export function generateKnowledgeHealthCheck(): string {
-    return `
+  return `
 ---
 
 ## KNOWLEDGE HEALTH CHECK
@@ -7,11 +7,14 @@ export function generateKnowledgeHealthCheck(): string {
 If \`knowledge/\` exists at the project root:
 
 1. List all files in \`knowledge/\`
-2. For each knowledge file, read it and check every \`[CONFIRMED]\` and \`[INFERRED]\` entry:
+2. For each knowledge file, read its \`Generated:\` line and extract the git hash (\`[OLD_HASH]\`).
+   Run: \`git diff --stat [OLD_HASH]..HEAD -- [source paths the file covers]\`
+   If > 10 files changed or > 200 lines added/removed → flag the file as "significant drift likely."
+3. For each entry tagged \`[CONFIRMED]\` or \`[INFERRED]\`:
    - Identify the claim (a flow, object, pattern, permission, state, or convention)
    - Use the file's slug to narrow which code to read (e.g. \`knowledge/tech-auth.md\` → read auth-related code)
    - Find the corresponding code and compare
-3. Classify each entry:
+4. Classify each entry:
    - **Current** — code matches the entry. No action needed.
    - **[STALE]** — code contradicts the entry (the thing changed or was removed)
    - **[UNVERIFIABLE]** — no code found to verify the entry (may have been deleted or moved)
@@ -23,6 +26,7 @@ Report this section:
 
   Files checked:    [N]
   Entries checked:  [N]
+  Drift summary:    [N] file(s) with significant drift (>10 files or >200 lines changed since generation)
 
   ✓ Current:        [N]
   ⚠ Stale:          [N]
@@ -61,6 +65,7 @@ If \`knowledge/\` doesn't exist or is empty:
 - [STALE] is higher urgency than [UNVERIFIABLE] — stale entries are actively wrong.
 - [UNVERIFIABLE] may still be correct — it just can't be traced to current code. Requires human judgment.
 - Use the file slug to scope code reading — do not read the entire codebase for every entry.
+- Use \`git diff --stat\` with the file's generation hash for numeric drift assessment — do not guess.
 
 ---
 `;

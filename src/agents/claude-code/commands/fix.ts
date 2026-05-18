@@ -1,5 +1,6 @@
 import type { GovernanceConfig } from '../../../types.js';
 import { generateKnowledgePreambleCommand } from '../../../utils/knowledge-preamble.js';
+import { generateSilentCaptureInstructionFix } from '../../../utils/knowledge-capture.js';
 
 export function generateFixCommand(c: GovernanceConfig): string {
   const { profile } = c;
@@ -78,9 +79,7 @@ Wrong type? Redirect:
 Call \`ExitPlanMode\`. Then apply the fix — minimum change only.
 
 Do not clean up surrounding code. Do not refactor. Fix only what is broken.
-
----
-
+${generateSilentCaptureInstructionFix()}
 ## STEP 6 — Verify
 
 \`\`\`

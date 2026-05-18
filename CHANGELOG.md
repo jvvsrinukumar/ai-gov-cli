@@ -7,6 +7,30 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [19.1.0] — 2026-05-18
+
+### Added — Knowledge Hub hardening
+
+- **Pre-commit guard on `[CONFIRMED]` entries.** New `knowledge-confirmed.sh` check (wired into pre-commit, default block). Blocks commits that remove `[CONFIRMED]` lines from `knowledge/*.md`. Skips files with no `HEAD` version (first-time adds). Bypass: `AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit -m '<message>'` — env var is the only reliable mechanism at pre-commit time, because git writes the commit message after pre-commit runs.
+- **Mechanical drift detection.** `/tech-knowledge`, `/product-knowledge`, and the `/audit` knowledge-health section now run `git diff --stat OLD_HASH..HEAD` against the paths covered by each knowledge file. Thresholds: > 10 files changed OR > 200 lines delta → flagged as significant drift. Replaces the prior fuzzy "many commits passed" judgment.
+- **`/fix` silent-capture DO-NOT-CAPTURE blocklist.** Default is now "no business rules extracted." Captures only when the root cause is a misunderstood requirement, an unenforced constraint, or a missing role check. Explicit blocklist covers null checks, off-by-one, typo, missing await, type coercion, wrong import, test-only change, log/format change, lint cleanup, dependency upgrade, config tweak.
+- **Shared HTML export scaffold.** New `src/utils/knowledge-html-template.ts` exposes `KNOWLEDGE_HTML_CSS` and `wrapKnowledgePage()`. Both `/tech-knowledge` and `/product-knowledge` source CSS from the shared util — single source of truth.
+- **Slug normalization util.** New `src/utils/knowledge-slug.ts` exports `normalizeSlug()` — single source of truth for the lowercase / hyphenate / strip-punctuation / cap-at-40 rule.
+- **Dynamic onboard listing.** `npx ai-gov onboard` now groups every `knowledge/*.md` file by prefix instead of hard-coding `tech-` and `product-`. New file types (e.g. `decision-*`, `runbook-*`) appear automatically.
+- **Honest Mermaid wording.** HTML export now says "requires internet to render diagrams" instead of "self-contained" — the export depends on the Mermaid CDN.
+
+### Changed
+
+- `VERSION` and `HOOK_VERSION` bumped to `19.1.0`. CI install steps for GitHub Actions, GitLab CI, and Bitbucket Pipelines reference `ai-gov@19.1.0`.
+
+### Deferred to v19.2
+
+- `/knowledge dedupe` for `merge=union` duplicates — waiting for real-world accumulation evidence.
+- `slugHintsFromScan()` — waiting for evidence of cross-capture slug drift.
+- `--vendor-mermaid` flag for offline HTML export.
+
+---
+
 ## [17.2.0] — 2026-05-07
 
 ### Added — Knowledge Hub (5 phases)

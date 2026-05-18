@@ -25,6 +25,7 @@ import { generateWorkflowEditFeature } from './workflow-edit-feature.js';
 import { generateWorkflowTechKnowledge } from './workflow-tech-knowledge.js';
 import { generateWorkflowProductKnowledge } from './workflow-product-knowledge.js';
 import { generateWorkflowDetectConflicts } from './workflow-detect-conflicts.js';
+import { generateWorkflowJiraSync } from './workflow-jira-sync.js';
 
 export function generateAllKiroHooks(config: GovernanceConfig, opts: WriteOptions): void {
     const hooksDir = join(config.projectDir, '.kiro', 'hooks');
@@ -69,6 +70,7 @@ export function generateAllKiroHooks(config: GovernanceConfig, opts: WriteOption
     w('workflow-tech-knowledge.kiro.hook', generateWorkflowTechKnowledge(config));
     w('workflow-product-knowledge.kiro.hook', generateWorkflowProductKnowledge(config));
     w('workflow-detect-conflicts.kiro.hook', generateWorkflowDetectConflicts(config));
+    w('workflow-jira-sync.kiro.hook', generateWorkflowJiraSync(config));
 
     // README
     w('README.md', generateHooksReadme(config));

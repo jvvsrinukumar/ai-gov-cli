@@ -72,6 +72,7 @@ run_check "secrets"       "secrets.sh"        "block"
 run_check "no-todos"      "no-todos.sh"       "warn"
 run_check "no-debug"      "no-debug.sh"       "warn"
 run_check "architecture"  "architecture.sh"   "block"
+run_check "knowledge-confirmed" "knowledge-confirmed.sh" "block"
 
 # These are off by default — team enables in config.json
 run_check "format-check"  "format-check.sh"   "warn"

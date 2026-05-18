@@ -1,5 +1,5 @@
 export function generateSilentCaptureInstructionNewFeature(): string {
-    return `
+   return `
 ---
 
 ## SILENT KNOWLEDGE CAPTURE — After Gate 1 Approval
@@ -49,8 +49,69 @@ Proceed to Gate 2.
 `;
 }
 
+export function generateSilentCaptureInstructionFix(): string {
+   return `
+---
+
+## SILENT KNOWLEDGE CAPTURE — After Fix Applied
+
+After the fix is written (ExitPlanMode already called):
+
+**DO NOT CAPTURE if the fix is any of:**
+- null/undefined check, off-by-one, typo, missing await, type coercion
+- wrong import path, wrong constant value with no business meaning
+- test-only change, log/format change, lint cleanup
+- dependency upgrade, config tweak, build fix
+- race condition fix with no domain-level implication
+
+**Default to "no business rules extracted."** Only capture when the root cause is a
+misunderstood requirement, an unenforced business constraint, or a missing role/permission check.
+
+If the fix falls into the DO-NOT-CAPTURE list above, skip directly to step 6 and output:
+   \`↳ Knowledge capture: fix was technical — no business rules extracted.\`
+
+Otherwise, proceed:
+
+1. Derive slug from the primary fixed file path — use the feature folder name.
+   Example: \`src/features/payments/payment.service.ts\` → slug = \`payments\`
+   If the fix spans multiple features, use the feature most responsible for the broken behaviour.
+2. Target file: \`knowledge/product-[slug].md\`
+3. Extract from the root cause + what the fix enforces:
+   - **Business rule** — what the correct behaviour is (what this fix now enforces)
+   - **Constraint** — any threshold, role requirement, or condition the bug exposed
+   - **Edge case** — the specific scenario that was broken and is now handled
+   Tag everything \`[INFERRED]\`. Source line: \`bug fix · /fix · [today's date]\`
+4. Merge with \`knowledge/product-[slug].md\` if it exists:
+   - \`[CONFIRMED]\` entries — never overwrite. Skip.
+   - \`[INFERRED]\` entries already present that match — skip (no duplicates).
+   - New entries — append under a \`## Business Rules\` section (create section if missing).
+   - File does not exist — create a minimal file:
+     \`\`\`
+     # Product Knowledge — [feature] | [stack]
+
+     > ⚠ Auto-generated [INFERRED]. Do not add secrets, PII, or credentials.
+
+     Generated: [today's date]
+
+     ---
+
+     ## Business Rules
+     \`\`\`
+5. Create the \`knowledge/\` directory if it does not exist.
+6. Write the file. Output exactly one line:
+   \`↳ Knowledge captured: knowledge/product-[slug].md ([N] rule(s) added from bug fix)\`
+
+If the fix is purely technical (null pointer, off-by-one, typo) with no business meaning:
+   \`↳ Knowledge capture: fix was technical — no business rules extracted.\`
+
+Do not ask the developer for input. Do not explain the process. One status line only.
+
+---
+`;
+}
+
 export function generateSilentCaptureInstructionEditFeature(): string {
-    return `
+   return `
 ---
 
 ## SILENT KNOWLEDGE CAPTURE — After Gate 1 Approval

@@ -11,6 +11,7 @@ import { generateWorkspaceFiles, type WorkspaceProject, type WorkspaceConfig } f
 import { generateWorkspacePreCommit } from '../generators/git-hooks/workspace-pre-commit.js';
 import { log } from '../utils/logger.js';
 import { HOOK_VERSION } from '../constants.js';
+import { addKnowledgeHubToGitFiles } from '../utils/gitignore-manager.js';
 
 // Directories treated as group containers (Image 1 pattern)
 const GROUP_DIRS = ['backend', 'frontend', 'mobile', 'services', 'apps', 'packages', 'libs'];
@@ -130,6 +131,7 @@ export function runWorkspaceInit(options: WorkspaceInitOptions): void {
 
     // 3. Generate workspace-level files
     if (!dryRun) addToGitignore(dir);
+    if (!dryRun) addKnowledgeHubToGitFiles(dir);
     log.header(`Workspace: ${workspaceName}`);
 
     const wsOpts = {

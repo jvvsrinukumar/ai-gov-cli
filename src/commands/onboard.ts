@@ -10,7 +10,7 @@
  *   npx ai-gov onboard --dir ./my-project
  */
 
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, readdirSync } from 'fs';
 import { join, resolve } from 'path';
 import { execSync } from 'child_process';
 import { log } from '../utils/logger.js';
@@ -123,7 +123,19 @@ export function runOnboard(options: OnboardOptions): void {
         warn(`${agentDir}/git-hooks/config.json not found — run: npx ai-gov init --git-hooks`);
     }
 
-    // 6. Summary
+    // 6. Knowledge hub status
+    const knowledgeDir = join(projectDir, 'knowledge');
+    const knowledgeExists = existsSync(knowledgeDir);
+    const byPrefix: Record<string, string[]> = {};
+    if (knowledgeExists) {
+        const allFiles = readdirSync(knowledgeDir).filter(f => f.endsWith('.md'));
+        for (const f of allFiles) {
+            const prefix = f.split('-')[0] || 'other';
+            (byPrefix[prefix] ??= []).push(f);
+        }
+    }
+
+    // 7. Summary
     console.log('');
     if (issues === 0) {
         log.header('Onboard complete — governance is active');
@@ -137,6 +149,19 @@ export function runOnboard(options: OnboardOptions): void {
             console.log('  Kiro hooks are active (from .kiro/hooks/*.kiro.hook files in git).');
         } else {
             console.log('  Claude Code hooks are active (from .claude/hooks/ in git).');
+        }
+        console.log('');
+        console.log('  Knowledge hub:');
+        const totalFiles = Object.values(byPrefix).flat().length;
+        if (!knowledgeExists || totalFiles === 0) {
+            console.log('    ⚠  No knowledge files found in knowledge/');
+            console.log('    Ask your team lead to run /tech-knowledge and /product-knowledge');
+            console.log('    then commit and push knowledge/*.md to git.');
+        } else {
+            for (const [prefix, files] of Object.entries(byPrefix).sort()) {
+                console.log(`    ✓ ${prefix}: ${files.join(', ')}`);
+            }
+            console.log('    Use /knowledge to view the current knowledge base.');
         }
         console.log('');
         console.log('  To bypass a specific commit (use sparingly):');

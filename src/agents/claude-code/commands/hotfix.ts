@@ -1,4 +1,6 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleHook } from '../../../utils/knowledge-preamble.js';
+import { generateSilentCaptureInstructionFix } from '../../../utils/knowledge-capture.js';
 
 export function generateHotfixCommand(c: GovernanceConfig): string {
     const { profile } = c;
@@ -18,9 +20,7 @@ export function generateHotfixCommand(c: GovernanceConfig): string {
 ## STEP 1 — Enter Plan Mode
 
 Call \`EnterPlanMode\` immediately. Read fast — max 5 files.
-
----
-
+${generateKnowledgePreambleHook()}
 ## STEP 2 — Diagnose (in plan mode — max 60 seconds of reading)
 
 Read the minimum files needed:
@@ -57,9 +57,7 @@ Call \`ExitPlanMode\`. Apply the minimal change immediately.
 Minimum change: change only what is broken. Do not clean up, refactor, or improve surrounding code.
 
 If the fix requires more than 5 files: stop — this is not a hotfix. Reclassify as \`/refactor\`.
-
----
-
+${generateSilentCaptureInstructionFix()}
 ## STEP 4 — Verify
 
 \`\`\`bash

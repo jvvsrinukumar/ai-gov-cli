@@ -14,7 +14,7 @@ import { installGitHookWrappers } from './init-git-hooks.js';
 import { generateCIConfig } from './init-ci.js';
 import { detectAgent } from '../agents/detect-agent.js';
 import { collectProjectInfo } from '../utils/collect-project-info.js';
-import { addToGitignore, addUsageLogsToGitignore } from '../utils/gitignore-manager.js';
+import { addToGitignore, addUsageLogsToGitignore, addKnowledgeHubToGitFiles } from '../utils/gitignore-manager.js';
 import { displayTransparencyDisclosure } from '../utils/display-hub-disclosure.js';
 import { HOOK_VERSION } from '../constants.js';
 
@@ -118,6 +118,7 @@ export async function runInitCmd(options: InitCmdOptions): Promise<void> {
 
     if (!options.dryRun) {
         addUsageLogsToGitignore(projectDir);
+        addKnowledgeHubToGitFiles(projectDir);
         displayTransparencyDisclosure(projectDir);
     }
 
