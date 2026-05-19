@@ -105,19 +105,35 @@ describe('generateWorkspaceJiraCommand — spec paths', () => {
 describe('generateWorkspaceJiraCommand — reuses shared body', () => {
     const out = generateWorkspaceJiraCommand(makeWsConfig());
 
-    it('keeps all 6 Jira-sync steps', () => {
+    it('keeps all steps including 5b and 7', () => {
         expect(out).toContain('### Step 1 —');
         expect(out).toContain('### Step 2 —');
         expect(out).toContain('### Step 3 —');
         expect(out).toContain('### Step 4 —');
         expect(out).toContain('### Step 5 —');
+        expect(out).toContain('### Step 5b —');
         expect(out).toContain('### Step 6 —');
+        expect(out).toContain('### Step 7 —');
     });
 
     it('preserves Jira API call references', () => {
         expect(out).toContain('jira_get');
         expect(out).toContain('jira_create');
         expect(out).toContain('jira_add_comment');
+        expect(out).toContain('jira_post');
+    });
+
+    it('Step 5 sets timetracking.originalEstimate', () => {
+        expect(out).toContain('timetracking.originalEstimate');
+    });
+
+    it('Step 5b references the worklog endpoint', () => {
+        expect(out).toContain('/rest/api/3/issue/');
+        expect(out).toContain('/worklog');
+    });
+
+    it('Step 7 references the transitions endpoint', () => {
+        expect(out).toContain('/transitions');
     });
 
     it('preserves the .jira metadata file convention', () => {
@@ -196,8 +212,23 @@ describe('generateWsWorkflowJiraSync — prompt body', () => {
         expect(prompt).toMatch(/\|\s*Source\s*\|\s*Spec\s*\|/);
     });
 
-    it('preserves the 6-step structure', () => {
+    it('preserves the full step structure including 5b and 7', () => {
         for (let i = 1; i <= 6; i++) expect(prompt).toContain(`## Step ${i}`);
+        expect(prompt).toContain('## Step 5b');
+        expect(prompt).toContain('## Step 7');
+    });
+
+    it('Step 5 sets timetracking.originalEstimate', () => {
+        expect(prompt).toContain('timetracking.originalEstimate');
+    });
+
+    it('Step 5b references the worklog endpoint', () => {
+        expect(prompt).toContain('/rest/api/3/issue/');
+        expect(prompt).toContain('/worklog');
+    });
+
+    it('Step 7 references the transitions endpoint', () => {
+        expect(prompt).toContain('/transitions');
     });
 });
 

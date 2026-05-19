@@ -18,6 +18,7 @@ export function generatePostTaskChecklist(c: GovernanceConfig): string {
 4. **File size** — Are all modified files under 200 lines?
 5. **Spec updated** — Mark the completed task as [x] in the spec's tasks.md
 6. **Risk flags** — Any security concerns, performance issues, or tech debt introduced?
+7. **Jira** — If a \`.jira\` metadata file exists in this spec, remind the developer to run the Jira Sync workflow to log worked hours for the completed task and update the ticket status.
 
 Report any issues found. If all checks pass, confirm completion briefly.`,
         },

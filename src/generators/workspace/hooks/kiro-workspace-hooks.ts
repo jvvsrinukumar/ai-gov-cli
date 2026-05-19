@@ -734,10 +734,10 @@ export function generateWsWorkflowJiraSync(
 Scan the following paths for subdirectories containing a \`tasks.md\` file:
 ${pathsList}
 
-For each discovered spec, count the number of open task lines (\`- [ ]\`) and sum all time estimates (\`[~Xmin]\` and \`[~Xh]\` markers). Present results as a numbered table grouped by source (workspace root vs project):
+For each discovered spec, count open task lines (\`- [ ]\`), completed task lines (\`- [x]\`), and sum all time estimates (\`[~Xmin]\` and \`[~Xh]\` markers). Present results as a numbered table grouped by source (workspace root vs project):
 
-| # | Source | Spec | Open tasks | Total estimate |
-|---|--------|------|-----------|----------------|
+| # | Source | Spec | Open tasks | Completed tasks | Total estimate |
+|---|--------|------|-----------|-----------------|----------------|
 
 If no specs with tasks.md are found, display: "No specs with tasks found across workspace or projects. Create a spec with tasks.md first." Stop.
 
@@ -767,8 +767,8 @@ Call \`jira_get\` with the chosen ticket ID. If it fails, offer:
 ## Step 4 — Select phases to sync
 
 For each selected spec, parse its \`tasks.md\` to identify phases (## Task N: / ## Phase N: headings). Show per-spec phase status:
-- ✓ all tasks already in \`.jira\` subtasks
-- ◑ some tasks already created
+- ✓ all tasks created and all checked \`[x]\` — done
+- ◑ has completed tasks \`[x]\` or some tasks created — selectable to log work or create remaining
 - ○ no tasks created yet
 
 Let the developer choose which phases (across which specs) to sync now.
@@ -777,16 +777,44 @@ Let the developer choose which phases (across which specs) to sync now.
 
 ## Step 5 — Create sub-tasks
 
-For each uncreated task in the selected phases:
-1. Call \`jira_create\` with parent = story ticket ID. Summary includes the spec name as prefix when multiple specs sync into one story:
+For each **uncreated** task (\`- [ ]\`) in the selected phases:
+1. Parse the time estimate from the task description (e.g. \`[~2h]\` → \`"2h"\`, \`[~30min]\` → \`"30m"\`, \`[~1d]\` → \`"1d"\`).
+2. Call \`jira_create\` with parent = story ticket ID. Set \`timetracking.originalEstimate\` to the parsed estimate. Summary includes spec name prefix when multiple specs sync into one story:
    - Single spec: \`Write token validation middleware [~2h]\`
    - Multi-spec:  \`[auth-service] Write token validation middleware [~2h]\`
-2. Append the new sub-task ID to the relevant spec's \`.jira\` metadata immediately.
+3. Append the new sub-task ID to the relevant spec's \`.jira\` metadata immediately.
 
 Show a final table:
 
-| Spec | Sub-task | Title | Status |
-|------|----------|-------|--------|
+| Spec | Sub-task | Title | Estimate | Status |
+|------|----------|-------|----------|--------|
+
+---
+
+## Step 5b — Log worked hours for completed tasks
+
+For each **completed** task (\`- [x]\`) in the selected phases that already has a sub-task ID in the spec's \`.jira\` metadata:
+
+Ask the developer for each task:
+\`\`\`
+Task: [task description] ([sub-task ID])
+  Hours worked? [default: Xh from estimate]
+  Start date?   [default: today YYYY-MM-DD]
+\`\`\`
+
+Validate: start date cannot be in the future. Warn if the date seems incorrect and ask to confirm.
+
+Call \`jira_post\` to \`/rest/api/3/issue/{KEY}/worklog\`:
+\`\`\`json
+{ "timeSpent": "3h", "started": "2026-05-17T09:00:00.000+0000" }
+\`\`\`
+
+Show a worklog summary table after all entries are logged:
+
+| Spec | Sub-task | Title | Hours Logged | Start Date | Status |
+|------|----------|-------|-------------|------------|--------|
+
+If there are no completed tasks in the selected phases, skip this step silently.
 
 ---
 
@@ -795,6 +823,16 @@ Show a final table:
 Ask: "Add a comment to the story ticket summarising what was synced? (yes / no)"
 
 If yes: call \`jira_add_comment\` on the story ticket with a brief summary including the list of specs that contributed sub-tasks.
+
+---
+
+## Step 7 — Update story status
+
+1. Call \`jira_get\` on the story ticket to read its current status.
+2. Call \`jira_get\` on \`/rest/api/3/issue/{STORY-ID}/transitions\` to fetch available transitions.
+3. Show: "Story [STORY-ID] is currently: [status]. Available transitions: [list]"
+4. Ask: "Transition story to which status? (Enter number or press Enter to skip)"
+5. If selected, call \`jira_post\` to \`/rest/api/3/issue/{STORY-ID}/transitions\` with \`{ "transition": { "id": "<id>" } }\` and confirm the new status.
 
 ---
 

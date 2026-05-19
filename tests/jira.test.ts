@@ -140,6 +140,73 @@ describe('generateWorkflowJiraSync', () => {
     });
 });
 
+// ─── Step 5 — timetracking.originalEstimate ──────────────────────────────────
+
+describe('buildJiraSyncPrompt — Step 5 timetracking', () => {
+    const prompt = buildJiraSyncPrompt();
+
+    test('includes timetracking.originalEstimate instruction', () => {
+        expect(prompt).toContain('timetracking.originalEstimate');
+    });
+
+    test('maps [~2h] → "2h", [~30min] → "30m", [~1d] → "1d"', () => {
+        expect(prompt).toContain('"2h"');
+        expect(prompt).toContain('"30m"');
+        expect(prompt).toContain('"1d"');
+    });
+
+    test('omits timetracking field when no estimate marker present', () => {
+        expect(prompt).toContain('Omit if no estimate marker present');
+    });
+});
+
+// ─── Step 5b — worklog endpoint ───────────────────────────────────────────────
+
+describe('buildJiraSyncPrompt — Step 5b worklog', () => {
+    const prompt = buildJiraSyncPrompt();
+
+    test('references the Jira worklog REST endpoint', () => {
+        expect(prompt).toContain('/rest/api/3/issue/');
+        expect(prompt).toContain('/worklog');
+    });
+
+    test('asks for hours worked and start date', () => {
+        expect(prompt).toContain('Hours worked');
+        expect(prompt).toContain('Start date');
+    });
+
+    test('validates start date is not in the future', () => {
+        expect(prompt).toContain('cannot be in the future');
+    });
+
+    test('defaults hours from the estimate marker', () => {
+        expect(prompt).toContain('from estimate');
+    });
+
+    test('skips silently when no completed tasks exist', () => {
+        expect(prompt).toContain('skip this step silently');
+    });
+});
+
+// ─── Step 7 — transitions endpoint ───────────────────────────────────────────
+
+describe('buildJiraSyncPrompt — Step 7 transitions', () => {
+    const prompt = buildJiraSyncPrompt();
+
+    test('references the Jira transitions REST endpoint', () => {
+        expect(prompt).toContain('/rest/api/3/issue/');
+        expect(prompt).toContain('/transitions');
+    });
+
+    test('fetches current status before offering transitions', () => {
+        expect(prompt).toContain('current status');
+    });
+
+    test('never auto-transitions — always lets developer skip', () => {
+        expect(prompt).toContain('press Enter to skip');
+    });
+});
+
 // ─── Shared prompt consistency ────────────────────────────────────────────────
 
 describe('Prompt consistency across agents', () => {
@@ -160,7 +227,7 @@ describe('Prompt consistency across agents', () => {
         const command = generateJiraCommand(config);
         const hookPrompt = JSON.parse(generateWorkflowJiraSync(makeConfig('flutter', 'kiro'))).then.prompt;
 
-        const phrases = ['jira_get', '.jira', 'storyId', 'subtasks'];
+        const phrases = ['jira_get', '.jira', 'storyId', 'subtasks', 'timetracking.originalEstimate', '/worklog', '/transitions'];
         for (const phrase of phrases) {
             expect(prompt).toContain(phrase);
             expect(command).toContain(phrase);
