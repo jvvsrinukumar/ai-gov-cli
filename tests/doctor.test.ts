@@ -199,9 +199,9 @@ describe('AC-7 scanner confidence wrapper', () => {
         const blank = { value: null, confidence: 'unknown' as const, source: 'manifest' as const };
         const snap: Record<string, typeof blank> = {};
         for (const k of ['stateFramework', 'diFramework', 'detectedORM', 'detectedTestFramework',
-                         'detectedLinter', 'detectedFormatter', 'detectedRouter', 'httpClient',
-                         'archPattern', 'serviceStyle', 'featuresDir', 'sourceDir',
-                         'layerNames', 'localStorageName', 'scaffoldTool']) {
+            'detectedLinter', 'detectedFormatter', 'detectedRouter', 'httpClient',
+            'archPattern', 'serviceStyle', 'featuresDir', 'sourceDir',
+            'layerNames', 'localStorageName', 'scaffoldTool']) {
             snap[k] = blank;
         }
         writeMinimalState('claude-code', { scannerSnapshot: snap as never });
@@ -229,6 +229,7 @@ describe('AC-8 completion contracts', () => {
         writeFile('src/agents/claude-code/commands/audit.ts', 'AUDIT_COMPLETE:');
         writeFile('src/agents/claude-code/commands/assess.ts', 'ASSESS_COMPLETE:');
         writeFile('src/agents/claude-code/commands/backlog.ts', 'BACKLOG_COMPLETE:');
+        writeFile('src/generators/plan-phases-content.ts', 'PHASES_COMPLETE:');
         await runProductionReady({ dir, agent: 'claude-code' });
         expect(acStatus('AC-8')).toBe('PASSING');
     });
@@ -237,14 +238,16 @@ describe('AC-8 completion contracts', () => {
         writeFile('src/generators/audit-content.ts', 'AUDIT_COMPLETE:');
         writeFile('src/generators/assess-content.ts', 'ASSESS_COMPLETE:');
         writeFile('src/generators/backlog-content.ts', 'BACKLOG_COMPLETE:');
+        writeFile('src/generators/plan-phases-content.ts', 'PHASES_COMPLETE:');
         await runProductionReady({ dir, agent: 'claude-code' });
         expect(acStatus('AC-8')).toBe('PASSING');
     });
 
-    it('BLOCKING when one of the three commands lacks its contract', async () => {
+    it('BLOCKING when one of the four commands lacks its contract', async () => {
         writeFile('src/agents/claude-code/commands/audit.ts', 'AUDIT_COMPLETE:');
         writeFile('src/agents/claude-code/commands/assess.ts', '');
         writeFile('src/agents/claude-code/commands/backlog.ts', 'BACKLOG_COMPLETE:');
+        writeFile('src/generators/plan-phases-content.ts', 'PHASES_COMPLETE:');
         await runProductionReady({ dir, agent: 'claude-code' });
         expect(acStatus('AC-8')).toBe('BLOCKING');
         expect(output()).toContain('assess');
@@ -273,6 +276,7 @@ describe('overall verdict', () => {
         writeFile('src/generators/audit-content.ts', 'AUDIT_COMPLETE:');
         writeFile('src/generators/assess-content.ts', 'ASSESS_COMPLETE:');
         writeFile('src/generators/backlog-content.ts', 'BACKLOG_COMPLETE:');
+        writeFile('src/generators/plan-phases-content.ts', 'PHASES_COMPLETE:');
         // Self-referential: doctor checks its own test file paths.
         const fakeAssertions = 'expect(0);'.repeat(30);
         writeFile('tests/audit.test.ts', fakeAssertions);
@@ -281,9 +285,9 @@ describe('overall verdict', () => {
         const blank = { value: null, confidence: 'unknown' as const, source: 'manifest' as const };
         const snap: Record<string, typeof blank> = {};
         for (const k of ['stateFramework', 'diFramework', 'detectedORM', 'detectedTestFramework',
-                         'detectedLinter', 'detectedFormatter', 'detectedRouter', 'httpClient',
-                         'archPattern', 'serviceStyle', 'featuresDir', 'sourceDir',
-                         'layerNames', 'localStorageName', 'scaffoldTool']) {
+            'detectedLinter', 'detectedFormatter', 'detectedRouter', 'httpClient',
+            'archPattern', 'serviceStyle', 'featuresDir', 'sourceDir',
+            'layerNames', 'localStorageName', 'scaffoldTool']) {
             snap[k] = blank;
         }
         writeMinimalState('claude-code', { scannerSnapshot: snap as never });

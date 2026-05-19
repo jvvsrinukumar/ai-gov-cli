@@ -28,7 +28,11 @@ v20 is defined by 8 acceptance criteria (AC-1 through AC-8), mechanically verifi
 - **`tests/audit.test.ts`** — 49 assertions covering prompt structure, scorecard surgery, DO NOT STOP collapse, completion contract, Kiro parity, and cross-stack generation. (AC-6)
 - **`tests/assess.test.ts`** — 51 assertions covering structure, Business Pressure rubric signals, ASSUMPTIONS block schema, completion contract, no human-input gates, Kiro parity, and cross-stack. (AC-6)
 - **`tests/doctor.test.ts`** — 43 assertions covering each AC check (PASSING and BLOCKING conditions), overall verdict logic, exit code behavior. (AC-6)
-- **Completion contracts** — audit emits `AUDIT_COMPLETE: persist-files=N/3 steps=N/12 verdict=<V>`, assess emits `ASSESS_COMPLETE: docs-written=N/11 recommendation=<R> confidence=<C>`, backlog emits `BACKLOG_COMPLETE: stories=N skip-list=M p1=N p2=N p3=N`. Runner greps for these — absent = run incomplete. (AC-8)
+- **Completion contracts** — audit emits `AUDIT_COMPLETE: persist-files=N/3 steps=N/12 verdict=<V>`, assess emits `ASSESS_COMPLETE: docs-written=N/11 recommendation=<R> confidence=<C>`, backlog emits `BACKLOG_COMPLETE: stories=N skip-list=M p1=N p2=N p3=N`, plan-phases emits `PHASES_COMPLETE: phases=N stories=N clarity_warnings=N docs_generated=N`. Runner greps for these — absent = run incomplete. (AC-8)
+- **`src/generators/plan-phases-content.ts`** — shared `/plan-phases` prompt body. Document-to-Phases generator that ingests PRDs / user stories / epics and emits `docs/phases/phase0…N/`. Strict zero-hallucination rule: every output field traces to a source passage or is marked `⚠️ NOT IN DOC`. Doc-only command — does not flow into `governance-state.json`.
+- **`src/agents/claude-code/commands/plan-phases.ts`** — Claude `/plan-phases` wrapper. Thin adapter over shared content.
+- **`src/agents/kiro/hooks/workflow-plan-phases.ts`** — Kiro `workflow-plan-phases` hook. Same shared content with Kiro JSON envelope. Registered in hooks/index.ts and added to audit's expected-hooks list.
+- **`tests/plan-phases.test.ts`** — 74 assertions covering structure, zero-hallucination guarantees, DOC CLARITY warning blocks, completion contract, governance-state boundary, no-human-gates rule, Kiro envelope, drift prevention, cross-stack (9 stacks). (AC-6 parity)
 
 ### Changed
 
@@ -38,7 +42,9 @@ v20 is defined by 8 acceptance criteria (AC-1 through AC-8), mechanically verifi
 - **`/audit` DO NOT STOP collapse** — reduced from 10× repetition to one canonical execution rule (#9) + one completion contract line. Stronger signal with less token cost.
 - **`/audit` completion contract** — Rule #12 added. Final line must be `AUDIT_COMPLETE: persist-files=<N>/3 steps=<N>/12 verdict=<ALIGNED|UPDATED|ACTION_NEEDED>`.
 - **Kiro hooks/index.ts** — registered `generateWorkflowAssess` and `generateWorkflowBacklog`. Both write `.kiro/hooks/workflow-assess.kiro.hook` and `workflow-backlog.kiro.hook`.
-- **`package.json` version** bumped to 20.0.0.
+- **Version alignment** — `package.json`, `src/constants.ts` (`VERSION`, `HOOK_VERSION`), and CI install scripts (GitHub/GitLab/Bitbucket) all bumped to `20.0.0`. `tests/knowledge-hub.test.ts` version assertion updated to match.
+- **`/doctor production-ready` AC-8** — extended to enforce `PHASES_COMPLETE:` alongside the original three contracts. Adding a new strategic command without its contract would now fail the doctor.
+- **`workflow-audit.ts`** — `workflow-plan-phases.kiro.hook` added to the expected-workflow-hooks list so audit Step 2 no longer flags it as CUSTOM.
 
 ### Migration
 

@@ -36,6 +36,7 @@ import { generateProductKnowledgeCommand } from './commands/product-knowledge.js
 import { generateDetectConflictsCommand } from './commands/detect-conflicts.js';
 import { generateKnowledgeCommand } from './commands/knowledge.js';
 import { generateBacklogCommand } from './commands/backlog.js';
+import { generatePlanPhasesCommand } from './commands/plan-phases.js';
 import { generateJiraCommand } from './commands/jira.js';
 import { generateTaskEstimates } from '../../generators/task-estimates.js';
 
@@ -143,6 +144,7 @@ export function generateClaudeCode(config: GovernanceConfig): void {
     safeWrite(join(dir, '.claude', 'commands', 'detect-conflicts.md'), generateDetectConflictsCommand(config), opts);
     safeWrite(join(dir, '.claude', 'commands', 'knowledge.md'), generateKnowledgeCommand(config), opts);
     safeWrite(join(dir, '.claude', 'commands', 'backlog.md'), generateBacklogCommand(config), opts);
+    safeWrite(join(dir, '.claude', 'commands', 'plan-phases.md'), generatePlanPhasesCommand(config), opts);
     safeWrite(join(dir, '.claude', 'commands', 'jira.md'), generateJiraCommand(config), opts);
 
     log.section('Spec templates:');
@@ -203,6 +205,7 @@ export function upgradeClaudeCode(config: GovernanceConfig, opts: WriteOptions, 
     safeWrite(join(cmdDir, 'detect-conflicts.md'), generateDetectConflictsCommand(config), opts);
     safeWrite(join(cmdDir, 'knowledge.md'), generateKnowledgeCommand(config), opts);
     safeWrite(join(cmdDir, 'backlog.md'), generateBacklogCommand(config), opts);
+    safeWrite(join(cmdDir, 'plan-phases.md'), generatePlanPhasesCommand(config), opts);
     safeWrite(join(cmdDir, 'jira.md'), generateJiraCommand(config), opts);
 
     log.section('Upgrading .claude/CLAUDE.md:');

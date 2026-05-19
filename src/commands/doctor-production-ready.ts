@@ -256,9 +256,9 @@ function checkAC7ScannerConfidence(state: GovernanceState | null): CheckResult {
         };
     }
     const expected = ['stateFramework', 'diFramework', 'detectedORM', 'detectedTestFramework',
-                      'detectedLinter', 'detectedFormatter', 'detectedRouter', 'httpClient',
-                      'archPattern', 'serviceStyle', 'featuresDir', 'sourceDir',
-                      'layerNames', 'localStorageName', 'scaffoldTool'];
+        'detectedLinter', 'detectedFormatter', 'detectedRouter', 'httpClient',
+        'archPattern', 'serviceStyle', 'featuresDir', 'sourceDir',
+        'layerNames', 'localStorageName', 'scaffoldTool'];
     const snap = state.scannerSnapshot;
     const missing = expected.filter(k => !(k in snap));
     if (missing.length > 0) {
@@ -275,18 +275,30 @@ function checkAC8CompletionContracts(dir: string): CheckResult {
     // Each command's contract may be emitted from either the wrapper or the
     // shared content file (Phase B moved prompt bodies into src/generators/).
     const targets = [
-        { name: 'audit', token: 'AUDIT_COMPLETE:', paths: [
-            join(dir, 'src/agents/claude-code/commands/audit.ts'),
-            join(dir, 'src/generators/audit-content.ts'),
-        ]},
-        { name: 'assess', token: 'ASSESS_COMPLETE:', paths: [
-            join(dir, 'src/agents/claude-code/commands/assess.ts'),
-            join(dir, 'src/generators/assess-content.ts'),
-        ]},
-        { name: 'backlog', token: 'BACKLOG_COMPLETE:', paths: [
-            join(dir, 'src/agents/claude-code/commands/backlog.ts'),
-            join(dir, 'src/generators/backlog-content.ts'),
-        ]},
+        {
+            name: 'audit', token: 'AUDIT_COMPLETE:', paths: [
+                join(dir, 'src/agents/claude-code/commands/audit.ts'),
+                join(dir, 'src/generators/audit-content.ts'),
+            ]
+        },
+        {
+            name: 'assess', token: 'ASSESS_COMPLETE:', paths: [
+                join(dir, 'src/agents/claude-code/commands/assess.ts'),
+                join(dir, 'src/generators/assess-content.ts'),
+            ]
+        },
+        {
+            name: 'backlog', token: 'BACKLOG_COMPLETE:', paths: [
+                join(dir, 'src/agents/claude-code/commands/backlog.ts'),
+                join(dir, 'src/generators/backlog-content.ts'),
+            ]
+        },
+        {
+            name: 'plan-phases', token: 'PHASES_COMPLETE:', paths: [
+                join(dir, 'src/agents/claude-code/commands/plan-phases.ts'),
+                join(dir, 'src/generators/plan-phases-content.ts'),
+            ]
+        },
     ];
     const missing: string[] = [];
     for (const t of targets) {
@@ -300,7 +312,7 @@ function checkAC8CompletionContracts(dir: string): CheckResult {
             remediation: 'Build Phase D — add completion contract line to each command prompt.',
         };
     }
-    return { status: 'PASSING', evidence: 'All three commands emit grep-able completion contracts.' };
+    return { status: 'PASSING', evidence: 'All four commands emit grep-able completion contracts.' };
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────

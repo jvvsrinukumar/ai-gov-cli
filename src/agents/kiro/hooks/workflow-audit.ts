@@ -121,7 +121,7 @@ Conditional hooks (may be absent by design):
 Workflow hooks — also check:
 \`workflow-audit.kiro.hook\`, \`workflow-new-feature.kiro.hook\`, \`workflow-fix.kiro.hook\`,
 \`workflow-refactor.kiro.hook\`, \`workflow-hotfix.kiro.hook\`, \`workflow-explore.kiro.hook\`,
-\`workflow-edit-feature.kiro.hook\`
+\`workflow-edit-feature.kiro.hook\`, \`workflow-plan-phases.kiro.hook\`
 
 For each hook: file exists? ✓ · version matches \`${hookVer}\`? ✓ or STALE [found: X.Y.Z] · valid JSON? ✓
 
