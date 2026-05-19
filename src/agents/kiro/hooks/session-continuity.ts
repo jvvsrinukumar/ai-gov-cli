@@ -1,4 +1,5 @@
 import type { GovernanceConfig } from '../../../types.js';
+import { generateKnowledgePreambleHook } from '../../../utils/knowledge-preamble.js';
 
 export function generateSessionContinuity(c: GovernanceConfig): string {
     const featuresDir = c.profile.featuresDir;
@@ -20,7 +21,8 @@ export function generateSessionContinuity(c: GovernanceConfig): string {
    "SESSION: feature '<name>' has N done / M remaining. Next: <first pending task>"
 4. Check ${featuresDir}/ for recently modified feature directories
 
-This helps maintain continuity across sessions. Report findings briefly, then proceed with the user's request.`,
+This helps maintain continuity across sessions. Report findings briefly, then proceed with the user's request.
+${generateKnowledgePreambleHook()}`,
         },
     }, null, 2) + '\n';
 }
