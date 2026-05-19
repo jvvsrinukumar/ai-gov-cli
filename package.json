@@ -20,6 +20,7 @@
   },
   "scripts": {
     "build": "tsc",
+    "postbuild": "chmod +x dist/bin/ai-gov.js",
     "prepublishOnly": "npm run build && npm test",
     "dev": "tsx src/cli.ts",
     "test": "jest --config jest.config.cjs",
