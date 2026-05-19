@@ -743,12 +743,12 @@ describe('pre-commit knowledge-confirmed wiring (v19.1)', () => {
     });
 });
 
-// ─── v20.0 production-ready — version bump ───────────────────────────────────
+// ─── v20.1 — workspace Jira sync — version bump ──────────────────────────────
 
-describe('version (v20.0)', () => {
-    test('VERSION is 20.0.0', async () => {
+describe('version (v20.1)', () => {
+    test('VERSION is 20.1.0', async () => {
         const { VERSION, HOOK_VERSION } = await import('../src/constants.js');
-        expect(VERSION).toBe('20.0.0');
-        expect(HOOK_VERSION).toBe('20.0.0');
+        expect(VERSION).toBe('20.1.0');
+        expect(HOOK_VERSION).toBe('20.1.0');
     });
 });

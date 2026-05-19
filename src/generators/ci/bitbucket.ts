@@ -20,7 +20,7 @@ pipelines:
           name: Governance Check
           script:
             - apt-get update && apt-get install -y jq
-            - npm install -g ai-gov@20.0.0
+            - npm install -g ai-gov@20.1.0
             - ai-gov pr-check --base $BITBUCKET_PR_DESTINATION_BRANCH --format terminal
 ${hubStep}`;
 }

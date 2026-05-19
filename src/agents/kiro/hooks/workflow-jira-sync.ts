@@ -11,7 +11,7 @@ export function generateWorkflowJiraSync(c: GovernanceConfig): string {
         },
         then: {
             type: 'askAgent',
-            prompt: buildJiraSyncPrompt(c),
+            prompt: buildJiraSyncPrompt(),
         },
     }, null, 2) + '\n';
 }

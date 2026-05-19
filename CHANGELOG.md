@@ -7,6 +7,37 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [20.1.0] — 2026-05-19
+
+### Workspace-level Jira sync — close the cross-project gap
+
+When v20.0 shipped, `/jira` only existed at the project level — so a cross-project spec at the workspace root (which the workspace `/new-feature` Path 3 produces) had no way to sync to Jira. v20.1 adds workspace-level Jira sync that scans the workspace root plus every project, lets a single story collect sub-tasks from multiple specs, and labels each sub-task with its source spec so the Jira board reflects the multi-project provenance.
+
+### Added
+
+- **`src/generators/workspace/commands/jira.ts`** — `generateWorkspaceJiraCommand`. Claude workspace `/jira` slash command. Scans workspace-root `specs/` (or `.kiro/specs/`) plus every project's `specs/` and `.kiro/specs/`. Reuses the shared Jira-sync workflow body via `buildJiraSyncPrompt({ specPaths, scopeLabel })`.
+- **`generateWsWorkflowJiraSync`** in `src/generators/workspace/hooks/kiro-workspace-hooks.ts` — Kiro workspace hook. Same cross-project spec scan. Multi-spec selection: one Jira story can absorb sub-tasks from multiple specs, each prefixed with its spec name (`[auth-service] Write JWT signing utility`). Registered as `workspace-jira-sync.kiro.hook`.
+- **`tests/workspace-jira.test.ts`** — 57 assertions covering envelope, prompt body, spec-path scanning across project counts, scope-label injection, Jira API vocabulary parity between Claude and Kiro variants, and "doesn't collapse to single-project" sentinel.
+
+### Changed
+
+- **`src/generators/jira-sync-prompt.ts`** — `buildJiraSyncPrompt` signature: the unused `_c: GovernanceConfig` parameter is removed; the function now accepts `JiraSyncOptions = {}` with optional `specPaths` and `scopeLabel`. Default behavior (project-level scan of `.kiro/specs/` + `specs/`) is unchanged. Workspace callers pass cross-project paths and a scope descriptor. Project callers in `src/agents/claude-code/commands/jira.ts` and `src/agents/kiro/hooks/workflow-jira-sync.ts` updated.
+- **`src/generators/workspace.ts`** — registers the new Claude workspace `/jira` command write at `<workspace>/.claude/commands/jira.md`.
+- **`tests/jira.test.ts`** — existing test calls migrated from `buildJiraSyncPrompt(config)` to `buildJiraSyncPrompt()`. No semantic test changes.
+
+### Version alignment
+
+- `package.json` 20.0.0 → 20.1.0
+- `src/constants.ts` VERSION + HOOK_VERSION → 20.1.0
+- CI install scripts (GitHub / GitLab / Bitbucket) → `ai-gov@20.1.0`
+- `tests/knowledge-hub.test.ts` version assertion updated
+
+### Migration
+
+No migration required. v20.0 projects pick up workspace `/jira` on next `ai-gov init` at the workspace root. Project-level `/jira` is unchanged.
+
+---
+
 ## [20.0.0] — 2026-05-18
 
 ### Production-Ready Release — Review Loop Closed

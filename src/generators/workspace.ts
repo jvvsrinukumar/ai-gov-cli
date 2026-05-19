@@ -14,6 +14,7 @@ import { generateWorkspaceRefactorCommand } from './workspace/commands/refactor.
 import { generateWorkspaceHotfixCommand } from './workspace/commands/hotfix.js';
 import { generateWorkspaceEditFeatureCommand } from './workspace/commands/edit-feature.js';
 import { generateWorkspaceBacklogCommand } from './workspace/commands/backlog.js';
+import { generateWorkspaceJiraCommand } from './workspace/commands/jira.js';
 import { generateCrossProjectSpecCheck, generateWorkspaceOverview } from './workspace/hooks/cross-project-spec-check.js';
 import { generateWorkspaceKiroHooks } from './workspace/hooks/kiro-workspace-hooks.js';
 import { generateWorkspaceSpecTemplates } from './workspace/spec-templates.js';
@@ -123,6 +124,11 @@ export function generateWorkspaceFiles(config: WorkspaceConfig, opts: WriteOptio
     safeWrite(
         join(workspaceDir, agentDir, 'commands', 'backlog.md'),
         generateWorkspaceBacklogCommand(config),
+        opts,
+    );
+    safeWrite(
+        join(workspaceDir, agentDir, 'commands', 'jira.md'),
+        generateWorkspaceJiraCommand(config),
         opts,
     );
 

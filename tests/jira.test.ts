@@ -81,7 +81,7 @@ describe('generateJiraCommand', () => {
 
     test('contains buildJiraSyncPrompt output verbatim', () => {
         const config = makeConfig();
-        const prompt = buildJiraSyncPrompt(config);
+        const prompt = buildJiraSyncPrompt();
         const command = generateJiraCommand(config);
         expect(command).toContain(prompt);
     });
@@ -145,18 +145,18 @@ describe('generateWorkflowJiraSync', () => {
 describe('Prompt consistency across agents', () => {
     test('buildJiraSyncPrompt appears verbatim in generateJiraCommand', () => {
         const config = makeConfig('react');
-        expect(generateJiraCommand(config)).toContain(buildJiraSyncPrompt(config));
+        expect(generateJiraCommand(config)).toContain(buildJiraSyncPrompt());
     });
 
     test('buildJiraSyncPrompt appears verbatim in then.prompt of generateWorkflowJiraSync', () => {
         const config = makeConfig('react', 'kiro');
         const hook = JSON.parse(generateWorkflowJiraSync(config));
-        expect(hook.then.prompt).toContain(buildJiraSyncPrompt(config));
+        expect(hook.then.prompt).toContain(buildJiraSyncPrompt());
     });
 
     test('key phrases appear in all three outputs', () => {
         const config = makeConfig('flutter');
-        const prompt = buildJiraSyncPrompt(config);
+        const prompt = buildJiraSyncPrompt();
         const command = generateJiraCommand(config);
         const hookPrompt = JSON.parse(generateWorkflowJiraSync(makeConfig('flutter', 'kiro'))).then.prompt;
 
@@ -276,10 +276,10 @@ describe('Property P8: prompt consistency across agents', () => {
             (stack) => {
                 const ccConfig = makeConfig(stack, 'claude-code');
                 const kiroConfig = makeConfig(stack, 'kiro');
-                const prompt = buildJiraSyncPrompt(ccConfig);
+                const prompt = buildJiraSyncPrompt();
                 expect(generateJiraCommand(ccConfig)).toContain(prompt);
                 const hook = JSON.parse(generateWorkflowJiraSync(kiroConfig));
-                expect(hook.then.prompt).toContain(buildJiraSyncPrompt(kiroConfig));
+                expect(hook.then.prompt).toContain(buildJiraSyncPrompt());
                 return true;
             }
         ), { numRuns: ALL_STACKS.length });

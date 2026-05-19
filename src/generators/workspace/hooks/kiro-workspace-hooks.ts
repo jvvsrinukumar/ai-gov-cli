@@ -703,6 +703,108 @@ If full workspace sweep: write a summary at workspace root .kiro/audit-report.md
     }, null, 2) + '\n';
 }
 
+export function generateWsWorkflowJiraSync(
+    hookVersion: string,
+    workspaceName: string,
+    projects: WorkspaceProject[],
+): string {
+    // Scan workspace-root specs AND every project's specs. Covers cross-project
+    // specs (workspace root) and per-project specs in one pass — one Jira story
+    // can map to sub-tasks across multiple specs without running /jira-sync
+    // separately in each project.
+    const specPaths = [
+        '.kiro/specs/',
+        ...projects.flatMap(p => [`${p.relativePath}/.kiro/specs/`, `${p.relativePath}/specs/`]),
+    ];
+    const pathsList = specPaths.map(p => `\`${p}\``).join(', ');
+
+    return JSON.stringify({
+        name: 'Jira Sync [Workspace]',
+        version: hookVersion,
+        description: 'Workspace-aware Jira sync — discovers specs across workspace root and every project, maps to a single Jira story',
+        when: { type: 'userTriggered' },
+        then: {
+            type: 'askAgent',
+            prompt: `JIRA SYNC — Workspace: ${workspaceName}
+
+> **Scope:** workspace \`${workspaceName}\` (${projects.length} project(s)) + workspace-root specs.
+
+## Step 1 — Discover specs
+
+Scan the following paths for subdirectories containing a \`tasks.md\` file:
+${pathsList}
+
+For each discovered spec, count the number of open task lines (\`- [ ]\`) and sum all time estimates (\`[~Xmin]\` and \`[~Xh]\` markers). Present results as a numbered table grouped by source (workspace root vs project):
+
+| # | Source | Spec | Open tasks | Total estimate |
+|---|--------|------|-----------|----------------|
+
+If no specs with tasks.md are found, display: "No specs with tasks found across workspace or projects. Create a spec with tasks.md first." Stop.
+
+If only one spec is found, select it automatically. Otherwise ask the developer which spec(s) to sync — multi-select supported (single Jira story can receive sub-tasks from multiple specs).
+
+---
+
+## Step 2 — Identify the Jira story ticket
+
+Check whether a \`.jira\` metadata file exists in the SELECTED spec directory (format: \`{"storyId": "<ID>", "subtasks": ["<ID>", ...]}\`).
+
+If multiple specs are selected, check each spec's \`.jira\` file. If they reference different story IDs, ask the developer to confirm whether all selected specs should sync to one story or to their respective stored IDs.
+
+If no metadata file exists: ask for the Jira story ticket ID, or "new" to create one from \`requirements.md\`.
+
+---
+
+## Step 3 — Verify the ticket
+
+Call \`jira_get\` with the chosen ticket ID. If it fails, offer:
+1. Create a new story from \`requirements.md\` of the first selected spec
+2. Enter a different ticket ID
+3. Cancel
+
+---
+
+## Step 4 — Select phases to sync
+
+For each selected spec, parse its \`tasks.md\` to identify phases (## Task N: / ## Phase N: headings). Show per-spec phase status:
+- ✓ all tasks already in \`.jira\` subtasks
+- ◑ some tasks already created
+- ○ no tasks created yet
+
+Let the developer choose which phases (across which specs) to sync now.
+
+---
+
+## Step 5 — Create sub-tasks
+
+For each uncreated task in the selected phases:
+1. Call \`jira_create\` with parent = story ticket ID. Summary includes the spec name as prefix when multiple specs sync into one story:
+   - Single spec: \`Write token validation middleware [~2h]\`
+   - Multi-spec:  \`[auth-service] Write token validation middleware [~2h]\`
+2. Append the new sub-task ID to the relevant spec's \`.jira\` metadata immediately.
+
+Show a final table:
+
+| Spec | Sub-task | Title | Status |
+|------|----------|-------|--------|
+
+---
+
+## Step 6 — Optional comment
+
+Ask: "Add a comment to the story ticket summarising what was synced? (yes / no)"
+
+If yes: call \`jira_add_comment\` on the story ticket with a brief summary including the list of specs that contributed sub-tasks.
+
+---
+
+## Done
+
+Show the story ticket link and confirm sync is complete.`,
+        },
+    }, null, 2) + '\n';
+}
+
 // ─── main entry point ────────────────────────────────────────────────────────
 
 export function generateWorkspaceKiroHooks(config: WorkspaceConfig, opts: WriteOptions): void {
@@ -726,4 +828,5 @@ export function generateWorkspaceKiroHooks(config: WorkspaceConfig, opts: WriteO
     w('workspace-hotfix.kiro.hook', generateWsWorkflowHotfix(hookVersion, workspaceName, projects));
     w('workspace-explore.kiro.hook', generateWsWorkflowExplore(hookVersion, workspaceName, projects));
     w('workspace-audit.kiro.hook', generateWsWorkflowAudit(hookVersion, workspaceName, projects));
+    w('workspace-jira-sync.kiro.hook', generateWsWorkflowJiraSync(hookVersion, workspaceName, projects));
 }

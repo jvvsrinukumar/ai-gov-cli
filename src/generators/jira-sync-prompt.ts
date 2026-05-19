@@ -1,11 +1,24 @@
-import type { GovernanceConfig } from '../types.js';
+export interface JiraSyncOptions {
+    /** Spec roots to scan in Step 1. Defaults to `.kiro/specs/` and `specs/` (project-level). */
+    specPaths?: string[];
+    /** Optional descriptor printed in the intro (e.g. "workspace (N projects)"). */
+    scopeLabel?: string;
+}
 
-export function buildJiraSyncPrompt(_c: GovernanceConfig): string {
-    return `## Jira Sync Workflow
+export function buildJiraSyncPrompt(opts: JiraSyncOptions = {}): string {
+    const specPaths = opts.specPaths && opts.specPaths.length > 0
+        ? opts.specPaths
+        : ['.kiro/specs/', 'specs/'];
+    const pathsList = specPaths.map(p => `\`${p}\``).join(specPaths.length === 2 ? ' and ' : ', ');
+    const scopeIntro = opts.scopeLabel
+        ? `\n> **Scope:** ${opts.scopeLabel}\n`
+        : '';
+
+    return `## Jira Sync Workflow${scopeIntro}
 
 ### Step 1 — Discover specs
 
-Scan \`.kiro/specs/\` and \`specs/\` for subdirectories that contain a \`tasks.md\` file.
+Scan ${pathsList} for subdirectories that contain a \`tasks.md\` file.
 
 If **no specs with tasks.md are found**: display the error "No specs with tasks found. Create a spec with a tasks.md file first." and stop — do not continue to the next step.
 
