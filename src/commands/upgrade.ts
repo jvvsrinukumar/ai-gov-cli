@@ -110,7 +110,9 @@ export function runUpgrade(options: UpgradeOptions): void {
     // ── Retire merged steering files (v20.4+) ───────────────────────────
     // These files were consolidated into 5 merged files in v20.4.
     // On --force: delete retired files so the AI doesn't read stale/conflicting content.
-    // On standard upgrade: print migration notice only.
+    // On standard upgrade: print migration notice to stdout only.
+    // Teams running CI-driven upgrades should pass --force to trigger the full migration
+    // automatically — the notice is a human-readable hint for interactive runs.
     const RETIRED_STEERING: Record<string, string[]> = {
         'claude-code': ['ai-usage-policy.md', 'spec-first-workflow.md', 'feature-readme.md', 'prompt-templates.md', 'task-estimates.md'],
         'kiro': ['ai-usage-policy.md', 'spec-first-workflow.md', 'feature-readme.md', 'prompt-templates.md', 'task-estimates.md', 'naming-conventions.md'],

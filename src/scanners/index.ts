@@ -102,6 +102,8 @@ function scanDomainContext(projectDir: string, scan: ScanResult): void {
         .join('\n')
         .toLowerCase();
 
+    // First-match wins. A patient billing system with both healthcare and fintech signals
+    // lands in healthcare — the stricter PHI rules are correct for that case.
     if (/fhir|hl7|hipaa|medic[^\w]|clinical|patient\b|phi\b|biometric/.test(content)) {
         scan.detectedDomainContext = 'healthcare';
         scan.detectedDataSensitivity = 'health';
@@ -110,13 +112,17 @@ function scanDomainContext(projectDir: string, scan: ScanResult): void {
     }
     if (/stripe|plaid|payment|fintech|banking|transaction|ledger|kyc\b/.test(content)) {
         scan.detectedDomainContext = 'fintech';
-        log.detected('Domain: fintech');
+        // Fintech handles account numbers, KYC info, financial data — treat as PII unless
+        // a stricter health signal is detected (already handled above via early return)
+        scan.detectedDataSensitivity = 'pii';
+        log.detected('Domain: fintech (PII sensitivity implied)');
     } else if (/logistics|shipment|tracking|freight|dispatch|fulfillment/.test(content)) {
         scan.detectedDomainContext = 'logistics';
         log.detected('Domain: logistics');
     }
-    // PII sensitivity (independent of domain)
-    if (/bcrypt|passlib|jsonwebtoken|gdpr|personal.{0,10}data|pii\b/.test(content)) {
+    // Additional PII signals independent of domain (e.g. logistics app with user data)
+    if (scan.detectedDataSensitivity === 'general' &&
+        /bcrypt|passlib|jsonwebtoken|gdpr|personal.{0,10}data|pii\b/.test(content)) {
         scan.detectedDataSensitivity = 'pii';
         log.detected('Data sensitivity: PII');
     }
