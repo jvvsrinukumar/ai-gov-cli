@@ -99,13 +99,17 @@ Read and confirm each file exists and is non-empty:
 - \`.kiro/steering/architecture.md\`
 - \`.kiro/steering/coding-standards.md\`
 - \`.kiro/steering/workflow.md\`
-- \`.kiro/steering/ai-usage-policy.md\`
-- \`.kiro/steering/naming-conventions.md\`
-- \`.kiro/steering/spec-first-workflow.md\`
-- \`.kiro/steering/feature-readme.md\`
-- \`.kiro/steering/prompt-templates.md\`
+- \`.kiro/steering/developer-reference.md\`
 
 Report: ✓ present / ✗ MISSING / ⚠ empty for each file.
+
+> **Note (v20.4+):** The following files were consolidated and are no longer separate files. Do NOT mark them missing — their content now lives in the 5 files above:
+> - ai-usage-policy.md → merged into workflow.md
+> - naming-conventions.md → merged into architecture.md
+> - spec-first-workflow.md → merged into workflow.md
+> - feature-readme.md → merged into developer-reference.md
+> - prompt-templates.md → merged into developer-reference.md
+> - task-estimates.md → merged into developer-reference.md
 
 ### Step 2 — Hooks
 
@@ -234,18 +238,20 @@ Read each \`.kiro/steering/\` file and compare every factual claim to the PROJEC
 - Does the high-risk files list reference files that actually exist on disk?
 - Are any hard rules internally inconsistent?
 
-**ai-usage-policy.md — check:**
+**workflow.md — check:**
 - Do the "New Feature Rules" or layer flow rules match the actual architecture observed in Step 5?
-- Does the high-risk files list reference files that actually exist?
+- Do the AI usage policy prerequisites match the project's actual ticket system and spec folder location?
+- Do the spec-first STOP gates reference the correct specs directory for this agent?
 
-**naming-conventions.md — check:**
+**architecture.md — check naming conventions section:**
 - Do the naming rules match what files are actually named in the project?
 - Are class/function naming conventions consistent with what Step 5 observed?
 - Are any naming patterns described that don't exist in the actual codebase?
 
-**spec-first-workflow.md, feature-readme.md, prompt-templates.md — check:**
+**developer-reference.md — check:**
 - Are any file paths, directory names, or patterns referenced that don't exist in this project?
-- Are layer names consistent with what Step 5 observed?
+- Are layer names in the Feature README template consistent with what Step 5 observed?
+- Are task estimate markers ([~1h] etc.) referenced consistently with the project's Jira setup?
 
 > **Check ALL files above. Do not skip any. A steering file not checked is a file that can silently mislead Kiro.**
 

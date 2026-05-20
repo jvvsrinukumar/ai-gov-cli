@@ -99,13 +99,17 @@ Read and confirm each file exists and is non-empty:
 - \`.claude/steering/architecture.md\`
 - \`.claude/steering/coding-standards.md\`
 - \`.claude/steering/workflow.md\`
-- \`.claude/steering/ai-usage-policy.md\`
-- \`.claude/steering/naming-conventions.md\`
-- \`.claude/steering/spec-first-workflow.md\`
-- \`.claude/steering/feature-readme.md\`
-- \`.claude/steering/prompt-templates.md\`
+- \`.claude/steering/developer-reference.md\`
 
 Report: ✓ present / ✗ MISSING / ⚠ empty for each file.
+
+> **Note (v20.4+):** The following files were consolidated and are no longer separate files. Do NOT mark them missing — their content now lives in the 5 files above:
+> - ai-usage-policy.md → merged into workflow.md
+> - naming-conventions.md → merged into architecture.md
+> - spec-first-workflow.md → merged into workflow.md
+> - feature-readme.md → merged into developer-reference.md
+> - prompt-templates.md → merged into developer-reference.md
+> - task-estimates.md → merged into developer-reference.md
 
 ### Step 2 — Hooks
 
@@ -122,10 +126,9 @@ Extra hooks not in the list: report as CUSTOM, note if wired in settings.json.
 ### Step 3 — Settings.json wiring
 
 Read \`.claude/settings.json\`. Confirm:
-- UserPromptSubmit hooks registered (require-task-type.sh)
 - PreToolUse hooks registered (protect-files, check-secrets, session-continuity, block-dangerous)
-- PostToolUse hooks registered (format-code, analyze-code, check-feature-readme, check-consistency, check-file-size)
-- Stop hooks registered (post-task-checklist)
+- PostToolUse hooks registered (format-code)
+- Stop hooks registered (analyze-code, post-task-checklist)
 - check-spec-exists.sh: present AND registered only if \`specs/\` has active feature dirs
 
 > **After Step 3:** Say exactly: "Governance scaffolding checked — proceeding to project discovery (Step 4)." Then begin Step 4 (no verdict yet — per rule #2).
@@ -220,39 +223,29 @@ Read \`.claude/CLAUDE.md\` AND each \`.claude/steering/\` file and compare every
 - Does the naming section match actual file names observed in Step 5?
 - If multiple zones exist, does it have different rules per zone?
 
-**naming-conventions.md — check:**
-- Do the naming rules match what files are actually named in the project?
+**architecture.md — check naming conventions section:**
+- Do the naming rules in the Naming Conventions section match what files are actually named in the project?
+- Are class/function naming patterns consistent with what Step 5 observed?
 
 **workflow.md — check:**
 - Does \`FEATURES_DIR\` in workflow.md match the actual feature directory found in Step 4?
 - Does \`SOURCE_DIR\` match the actual source directory?
 - Does the layer flow description match what you traced in Step 5?
 - Does the layer build order match what Step 5 observed (especially if dual-zone)?
+- Do the AI usage policy prerequisites match the project's actual ticket system and spec folder location?
+- Do the spec-first STOP gates reference the correct specs directory path?
 - If wrong: this is critical — Claude will create every new feature in the wrong path
 
 **constitution.md — check:**
 - Does the stated layer flow match what Step 5 actually traced? If the project is dual-zone, does constitution.md acknowledge both zone flows — or does it state only one as absolute?
-- Does the high-risk files list reference files that actually exist on disk? Ghost entries (e.g. \`src/routes/index.ts\` in a JavaScript project) confuse Claude when it searches for them and finds nothing.
-- Are any hard rules internally inconsistent? (e.g. "Layer flow: Route → Model always" in one section, "New features use Controller → Service → Repo" in another section — these directly contradict each other)
+- Does the high-risk files list reference files that actually exist on disk? Ghost entries confuse Claude when it searches for them and finds nothing.
+- Are any hard rules internally inconsistent?
 - Do the architecture invariants in constitution.md align with the Zone Rules in architecture.md?
 
-**ai-usage-policy.md — check:**
-- Do the "New Feature Rules" or "layer flow" rules match the actual architecture observed in Step 5?
-- Does the high-risk files list reference files that actually exist? Remove any ghost entries.
-- Are any policy rules contradicted by the actual project structure (e.g. policy says "always use Route → Model" but project has a controller/service/repo zone)?
-
-**spec-first-workflow.md — check:**
-- Does the FEATURES_DIR path match the actual feature directory from Step 4?
-- Does the SOURCE_DIR match the actual source root?
-- Are any example paths or file names referenced that don't exist in this project?
-
-**feature-readme.md — check:**
-- Does it reference the correct feature directory path for this project?
+**developer-reference.md — check:**
+- Does the Feature README template reference the correct feature directory path for this project?
 - Are any paths or directory names referenced that don't match Step 4 findings?
-
-**prompt-templates.md — check:**
-- Are any file paths, directory names, or patterns referenced that don't exist in this project?
-- Are layer names in templates consistent with what Step 5 observed?
+- Are layer names in the prompt templates consistent with what Step 5 observed?
 
 > **Check ALL files above. Do not skip any. A steering file not checked is a file that can silently mislead Claude.**
 
