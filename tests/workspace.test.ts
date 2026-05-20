@@ -525,7 +525,6 @@ describe('generateWorkspaceFiles (Kiro) — workspace-root .kiro/hooks/', () => 
         expect(existsSync(join(hooksDir, 'block-dangerous-commands.kiro.hook'))).toBe(true);
         expect(existsSync(join(hooksDir, 'pre-write-secrets-gate.kiro.hook'))).toBe(true);
         expect(existsSync(join(hooksDir, 'check-secrets.kiro.hook'))).toBe(true);
-        expect(existsSync(join(hooksDir, 'require-task-type.kiro.hook'))).toBe(true);
         expect(existsSync(join(hooksDir, 'session-continuity.kiro.hook'))).toBe(true);
     });
 

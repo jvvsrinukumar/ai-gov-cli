@@ -11,12 +11,11 @@ export function generateAnalyzeCode(c: GovernanceConfig): string | null {
     // Linter detected but no config — warn
     if (linter && !hasConfig) {
         return JSON.stringify({
-            name: 'Analyze Code After Write',
+            name: 'Analyze Code After Task',
             version: c.hookVersion,
             description: `${linter} detected but no config file found — add a config to enable auto-linting`,
             when: {
-                type: 'postToolUse',
-                toolTypes: ['write'],
+                type: 'postTaskExecution',
             },
             then: {
                 type: 'askAgent',
@@ -26,12 +25,11 @@ export function generateAnalyzeCode(c: GovernanceConfig): string | null {
     }
 
     return JSON.stringify({
-        name: 'Analyze Code After Write',
+        name: 'Analyze Code After Task',
         version: c.hookVersion,
-        description: `Runs ${linter || 'linter'} after every file write to catch issues early`,
+        description: `Runs ${linter || 'linter'} once per task completion — not per file write`,
         when: {
-            type: 'postToolUse',
-            toolTypes: ['write'],
+            type: 'postTaskExecution',
         },
         then: {
             type: 'runCommand',

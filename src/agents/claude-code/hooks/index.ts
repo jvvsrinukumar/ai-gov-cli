@@ -7,13 +7,9 @@ import { generateCheckSpecExists } from './check-spec-exists.js';
 import { generateSessionContinuity } from './session-continuity.js';
 import { generateFormatCode } from './format-code.js';
 import { generateAnalyzeCode } from './analyze-code.js';
-import { generateCheckFeatureReadme } from './check-feature-readme.js';
-import { generateCheckConsistency } from './check-consistency.js';
-import { generateCheckFileSize } from './check-file-size.js';
 import { generatePostTaskChecklist } from './post-task-checklist.js';
 import { generateHooksReadme } from './hooks-readme.js';
 import { generateCheckSecrets } from './check-secrets.js';
-import { generateRequireTaskType } from './require-task-type.js';
 
 export function generateAllHooks(config: GovernanceConfig, opts: WriteOptions): void {
     const hooksDir = join(config.projectDir, '.claude', 'hooks');
@@ -26,10 +22,6 @@ export function generateAllHooks(config: GovernanceConfig, opts: WriteOptions): 
     w('session-continuity.sh', generateSessionContinuity(config));
     w('format-code.sh', generateFormatCode(config));
     w('analyze-code.sh', generateAnalyzeCode(config));
-    w('check-feature-readme.sh', generateCheckFeatureReadme(config));
-    w('check-consistency.sh', generateCheckConsistency(config));
-    w('check-file-size.sh', generateCheckFileSize(config));
     w('post-task-checklist.sh', generatePostTaskChecklist(config));
-    w('require-task-type.sh', generateRequireTaskType(config));
     w('README.md', generateHooksReadme(config));
 }

@@ -24,13 +24,7 @@ export function generateSettingsJson(config: GovernanceConfig, opts: WriteOption
     // v14.3: All commands use bash prefix for Windows compatibility
     const bp = 'bash "$CLAUDE_PROJECT_DIR"/.claude';
 
-    const userPromptSubmitHooks = [
-        {
-            hooks: [
-                { type: 'command', command: `${bp}/hooks/require-task-type.sh`, timeout: 5, statusMessage: 'Checking task classification...' },
-            ],
-        },
-    ];
+    const userPromptSubmitHooks: object[] = [];
 
     const preToolUseHooks: object[] = [
         { type: 'command', command: `${bp}/hooks/protect-files.sh`, timeout: 10, statusMessage: 'Checking file protection...' },
@@ -55,10 +49,6 @@ export function generateSettingsJson(config: GovernanceConfig, opts: WriteOption
                     matcher: 'Edit|Write',
                     hooks: [
                         { type: 'command', command: `${bp}/hooks/format-code.sh`, timeout: 30, statusMessage: 'Formatting...' },
-                        { type: 'command', command: `${bp}/hooks/analyze-code.sh`, timeout: 60, statusMessage: 'Analyzing...' },
-                        { type: 'command', command: `${bp}/hooks/check-feature-readme.sh`, timeout: 10, statusMessage: 'Checking README...' },
-                        { type: 'command', command: `${bp}/hooks/check-consistency.sh`, timeout: 10, statusMessage: 'Checking consistency...' },
-                        { type: 'command', command: `${bp}/hooks/check-file-size.sh`, timeout: 10, statusMessage: 'Checking file size...' },
                         { type: 'command', command: `${bp}/extensions/load-extensions.sh PostToolUse`, timeout: 15, statusMessage: 'Running extensions...' },
                     ],
                 },
@@ -66,6 +56,7 @@ export function generateSettingsJson(config: GovernanceConfig, opts: WriteOption
             Stop: [
                 {
                     hooks: [
+                        { type: 'command', command: `${bp}/hooks/analyze-code.sh`, timeout: 60, statusMessage: 'Analyzing...' },
                         { type: 'command', command: `${bp}/hooks/post-task-checklist.sh`, timeout: 5 },
                         { type: 'command', command: `${bp}/extensions/load-extensions.sh Stop`, timeout: 15, statusMessage: 'Running extensions...' },
                     ],

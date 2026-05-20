@@ -83,8 +83,7 @@ describe('upgrade — hook regeneration', () => {
         const hooks = [
             'check-secrets.sh', 'protect-files.sh', 'block-dangerous-commands.sh',
             'check-spec-exists.sh', 'session-continuity.sh', 'format-code.sh',
-            'analyze-code.sh', 'check-feature-readme.sh', 'check-consistency.sh',
-            'check-file-size.sh', 'post-task-checklist.sh',
+            'analyze-code.sh', 'post-task-checklist.sh',
         ];
         for (const h of hooks) {
             expect(existsSync(join(projectDir, '.claude', 'hooks', h))).toBe(true);

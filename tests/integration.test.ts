@@ -176,7 +176,6 @@ describeFG('Integration — workspace-init file generation', () => {
         expect(settings).toHaveProperty('hooks');
         const allHooks = JSON.stringify(settings.hooks);
         expect(allHooks).toContain('check-secrets.sh');
-        expect(allHooks).toContain('require-task-type.sh');
     });
 
     test('generated hooks use python3/jq fallback, not jq-only guard', () => {

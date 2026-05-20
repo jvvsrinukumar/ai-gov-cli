@@ -6,13 +6,9 @@ import { generateProtectFiles } from './protect-files.js';
 import { generateSpecFirstGate } from './spec-first-gate.js';
 import { generateFormatCode } from './format-code.js';
 import { generateAnalyzeCode } from './analyze-code.js';
-import { generateCheckFileSize } from './check-file-size.js';
 import { generateCheckSecrets } from './check-secrets.js';
 import { generateSessionContinuity } from './session-continuity.js';
 import { generatePostTaskChecklist } from './post-task-checklist.js';
-import { generateCheckFeatureReadme } from './check-feature-readme.js';
-import { generateCheckConsistency } from './check-consistency.js';
-import { generateRequireTaskType } from './require-task-type.js';
 import { generateHooksReadme } from './hooks-readme.js';
 import { generatePreWriteSecretsGate } from './pre-write-secrets-gate.js';
 import { generateWorkflowAudit } from './workflow-audit.js';
@@ -47,19 +43,15 @@ export function generateAllKiroHooks(config: GovernanceConfig, opts: WriteOption
 
     // postToolUse hooks
     w('format-code.kiro.hook', generateFormatCode(config));          // null if no formatter
-    w('analyze-code.kiro.hook', generateAnalyzeCode(config));        // null if no linter
-    w('check-file-size.kiro.hook', generateCheckFileSize(config));
-    w('check-feature-readme.kiro.hook', generateCheckFeatureReadme(config));
-    w('check-consistency.kiro.hook', generateCheckConsistency(config));
 
     // fileEdited hooks
     w('check-secrets.kiro.hook', generateCheckSecrets(config));
 
     // promptSubmit hooks
     w('session-continuity.kiro.hook', generateSessionContinuity(config));
-    w('require-task-type.kiro.hook', generateRequireTaskType(config));
 
     // postTaskExecution hooks
+    w('analyze-code.kiro.hook', generateAnalyzeCode(config));        // null if no linter — runs once per task, not per file
     w('post-task-checklist.kiro.hook', generatePostTaskChecklist(config));
 
     // userTriggered workflow hooks

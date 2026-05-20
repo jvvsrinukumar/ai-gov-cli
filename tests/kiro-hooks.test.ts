@@ -17,13 +17,9 @@ import { generateProtectFiles } from '../src/agents/kiro/hooks/protect-files.js'
 import { generateSpecFirstGate } from '../src/agents/kiro/hooks/spec-first-gate.js';
 import { generateFormatCode } from '../src/agents/kiro/hooks/format-code.js';
 import { generateAnalyzeCode } from '../src/agents/kiro/hooks/analyze-code.js';
-import { generateCheckFileSize } from '../src/agents/kiro/hooks/check-file-size.js';
 import { generateCheckSecrets } from '../src/agents/kiro/hooks/check-secrets.js';
 import { generateSessionContinuity } from '../src/agents/kiro/hooks/session-continuity.js';
 import { generatePostTaskChecklist } from '../src/agents/kiro/hooks/post-task-checklist.js';
-import { generateCheckFeatureReadme } from '../src/agents/kiro/hooks/check-feature-readme.js';
-import { generateCheckConsistency } from '../src/agents/kiro/hooks/check-consistency.js';
-import { generateRequireTaskType } from '../src/agents/kiro/hooks/require-task-type.js';
 import { generateAllKiroHooks } from '../src/agents/kiro/hooks/index.js';
 
 const DEFAULT_PROJECT = {
@@ -84,13 +80,9 @@ describe('Kiro hook schema validation', () => {
     const hookGenerators: Array<{ name: string; generate: (c: GovernanceConfig) => string | null }> = [
         { name: 'block-dangerous', generate: generateBlockDangerous },
         { name: 'protect-files', generate: generateProtectFiles },
-        { name: 'check-file-size', generate: generateCheckFileSize },
         { name: 'check-secrets', generate: generateCheckSecrets },
         { name: 'session-continuity', generate: generateSessionContinuity },
         { name: 'post-task-checklist', generate: generatePostTaskChecklist },
-        { name: 'check-feature-readme', generate: generateCheckFeatureReadme },
-        { name: 'check-consistency', generate: generateCheckConsistency },
-        { name: 'require-task-type', generate: generateRequireTaskType },
     ];
 
     for (const { name, generate } of hookGenerators) {
@@ -168,17 +160,13 @@ describe('Kiro hook content correctness', () => {
         cfg.profile.analyzeCmd = 'npx eslint src/';
         const json = JSON.parse(generateAnalyzeCode(cfg)!);
         expect(json.then.command).toContain('eslint');
+        expect(json.when.type).toBe('postTaskExecution');
     });
 
     test('analyze-code: null when no linter detected', () => {
         const cfg = makeConfig('nodejs');
         cfg.profile.analyzeCmd = '';
         expect(generateAnalyzeCode(cfg)).toBeNull();
-    });
-
-    test('check-file-size: contains 200-line threshold', () => {
-        const json = JSON.parse(generateCheckFileSize(makeConfig()));
-        expect(json.then.prompt).toContain('200');
     });
 
     test('check-secrets: file patterns match stack extensions', () => {
@@ -198,15 +186,6 @@ describe('Kiro hook content correctness', () => {
         expect(json.when.type).toBe('postTaskExecution');
     });
 
-    test('check-feature-readme: contains README check', () => {
-        const json = JSON.parse(generateCheckFeatureReadme(makeConfig()));
-        expect(json.then.prompt).toContain('README');
-    });
-
-    test('require-task-type: contains task classification', () => {
-        const json = JSON.parse(generateRequireTaskType(makeConfig()));
-        expect(json.then.prompt).toContain('Task Type');
-    });
 });
 
 // ─── Cross-stack ─────────────────────────────────────────────────────────────
@@ -232,7 +211,6 @@ describe('Kiro hook version', () => {
     const generators: Array<{ name: string; generate: (c: GovernanceConfig) => string | null }> = [
         { name: 'block-dangerous', generate: generateBlockDangerous },
         { name: 'protect-files', generate: generateProtectFiles },
-        { name: 'check-file-size', generate: generateCheckFileSize },
         { name: 'check-secrets', generate: generateCheckSecrets },
     ];
 
