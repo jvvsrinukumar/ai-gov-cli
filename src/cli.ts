@@ -16,6 +16,7 @@ import { runPRCheck } from './pr-check/index.js';
 import { runInitCmd } from './commands/init-cmd.js';
 import { runDoctor } from './commands/doctor.js';
 import { runMigrateState } from './commands/migrate-state.js';
+import { runRescan } from './commands/rescan.js';
 import { runWorkspaceCmd } from './commands/workspace-cmd.js';
 
 // Import adapter modules to trigger self-registration (Req 17.3, 17.4)
@@ -91,6 +92,20 @@ program
             dir: resolve(options.dir),
             agent: options.agent,
             force: options.force,
+        });
+    });
+
+program
+    .command('rescan')
+    .description('Re-run scanner and update ScannerSnapshot in governance-state.json (non-destructive)')
+    .option('-s, --stack <stack>', 'Specify stack (flutter|kotlin|nodejs|react|next|angular|swiftui|python|java)')
+    .option('-a, --agent <agent>', 'Target agent (claude-code|kiro)')
+    .option('-d, --dir <path>', 'Target directory', process.cwd())
+    .action((options) => {
+        runRescan({
+            dir: resolve(options.dir),
+            stack: options.stack,
+            agent: options.agent,
         });
     });
 

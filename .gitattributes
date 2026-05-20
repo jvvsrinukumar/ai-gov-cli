@@ -1,0 +1,3 @@
+
+# Knowledge hub — keep all additions from both sides on merge
+knowledge/*.md merge=union

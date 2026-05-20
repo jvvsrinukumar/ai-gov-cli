@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Governance File Structure — ai-gov v20.4</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d0f13;
+  --surface:#13161c;
+  --surface2:#1a1e27;
+  --border:#232733;
+  --border2:#2d3347;
+  --text:#e2e8f0;
+  --text-dim:#6b7c99;
+  --text-muted:#3d4d66;
+  --accent:#4f8eff;
+
+  --steering:#22c55e;    --steering-bg:rgba(34,197,94,0.08);   --steering-border:rgba(34,197,94,0.25);
+  --pretool:#f59e0b;     --pretool-bg:rgba(245,158,11,0.08);   --pretool-border:rgba(245,158,11,0.25);
+  --posttool:#a78bfa;    --posttool-bg:rgba(167,139,250,0.08); --posttool-border:rgba(167,139,250,0.25);
+  --filedited:#38bdf8;   --filedited-bg:rgba(56,189,248,0.08); --filedited-border:rgba(56,189,248,0.25);
+  --promptsubmit:#fb923c;--promptsubmit-bg:rgba(251,146,60,0.08);--promptsubmit-border:rgba(251,146,60,0.25);
+  --posttask:#e879f9;    --posttask-bg:rgba(232,121,249,0.08); --posttask-border:rgba(232,121,249,0.25);
+  --usertriggered:#34d399;--usertriggered-bg:rgba(52,211,153,0.08);--usertriggered-border:rgba(52,211,153,0.25);
+  --commands:#60a5fa;    --commands-bg:rgba(96,165,250,0.08);  --commands-border:rgba(96,165,250,0.25);
+  --githook:#f87171;     --githook-bg:rgba(248,113,113,0.08);  --githook-border:rgba(248,113,113,0.25);
+  --knowledge:#fbbf24;   --knowledge-bg:rgba(251,191,36,0.08); --knowledge-border:rgba(251,191,36,0.25);
+  --optional:#94a3b8;    --optional-bg:rgba(148,163,184,0.06); --optional-border:rgba(148,163,184,0.2);
+}
+html{font-size:14px;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Geist Mono',monospace;min-height:100vh;overflow-x:hidden}
+
+/* ── layout ── */
+.shell{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:280px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.main{flex:1;overflow-y:auto;background:var(--bg)}
+
+/* ── sidebar header ── */
+.sidebar-head{padding:20px 18px 14px;border-bottom:1px solid var(--border);flex-shrink:0}
+.sidebar-title{font-family:'Syne',sans-serif;font-size:1rem;font-weight:600;color:var(--text);letter-spacing:-0.01em}
+.sidebar-sub{font-size:0.65rem;color:var(--text-muted);margin-top:4px;letter-spacing:0.05em;text-transform:uppercase}
+.version-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(79,142,255,0.1);border:1px solid rgba(79,142,255,0.3);color:var(--accent);font-size:0.6rem;padding:2px 8px;border-radius:20px;margin-top:8px;letter-spacing:0.08em}
+.version-pill::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--accent);animation:blink 2s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── agent tabs ── */
+.agent-tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
+.agent-tab{flex:1;padding:10px 0;font-size:0.7rem;letter-spacing:0.08em;text-transform:uppercase;background:none;border:none;color:var(--text-dim);cursor:pointer;transition:all 0.15s;font-family:'Geist Mono',monospace;border-bottom:2px solid transparent;margin-bottom:-1px}
+.agent-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:rgba(79,142,255,0.05)}
+.agent-tab:hover:not(.active){color:var(--text);background:rgba(255,255,255,0.03)}
+
+/* ── sidebar nav ── */
+.sidebar-nav{flex:1;overflow-y:auto;padding:10px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.nav-section-label{padding:10px 18px 4px;font-size:0.58rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-muted)}
+.nav-item{display:flex;align-items:center;gap:8px;padding:6px 18px;cursor:pointer;transition:all 0.12s;border-left:2px solid transparent;font-size:0.72rem;color:var(--text-dim)}
+.nav-item:hover{color:var(--text);background:rgba(255,255,255,0.03)}
+.nav-item.active{color:var(--text);border-left-color:var(--accent);background:rgba(79,142,255,0.07)}
+.nav-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+.nav-count{margin-left:auto;font-size:0.6rem;color:var(--text-muted);background:var(--surface2);padding:1px 6px;border-radius:10px}
+
+/* ── legend ── */
+.legend{padding:12px 18px;border-top:1px solid var(--border);flex-shrink:0}
+.legend-title{font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
+.legend-items{display:flex;flex-wrap:wrap;gap:5px}
+.legend-item{display:flex;align-items:center;gap:4px;font-size:0.6rem;color:var(--text-dim)}
+.legend-dot{width:7px;height:7px;border-radius:2px}
+
+/* ── main content ── */
+.content-header{padding:28px 36px 0;border-bottom:1px solid var(--border);background:var(--surface)}
+.content-header-inner{max-width:1100px;margin:0 auto;padding-bottom:20px}
+.page-title{font-family:'Syne',sans-serif;font-size:1.6rem;font-weight:700;color:var(--text);letter-spacing:-0.02em}
+.page-title span{color:var(--accent)}
+.page-desc{font-size:0.78rem;color:var(--text-dim);margin-top:8px;line-height:1.6;max-width:680px}
+.stats-row{display:flex;gap:16px;margin-top:16px;flex-wrap:wrap}
+.stat-chip{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 14px;display:flex;gap:10px;align-items:center}
+.stat-num{font-size:1.2rem;font-weight:500;color:var(--text);font-family:'Syne',sans-serif}
+.stat-label{font-size:0.65rem;color:var(--text-dim);line-height:1.4}
+
+/* ── section panels ── */
+.sections-wrap{padding:24px 36px 60px;max-width:1100px;margin:0 auto}
+.file-section{margin-bottom:32px}
+.section-header{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.section-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.section-name{font-family:'Syne',sans-serif;font-size:1rem;font-weight:600;color:var(--text)}
+.section-path{font-size:0.68rem;color:var(--text-dim);margin-top:1px}
+.section-badge{margin-left:auto;font-size:0.62rem;padding:3px 10px;border-radius:20px;border:1px solid;font-weight:500;letter-spacing:0.05em}
+
+/* ── file grid ── */
+.file-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.file-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;cursor:pointer;transition:all 0.15s;position:relative;overflow:hidden}
+.file-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:0}
+.file-card:hover{border-color:var(--border2);background:var(--surface2);transform:translateY(-1px)}
+.file-card.active{border-color:var(--accent)!important;background:rgba(79,142,255,0.06)}
+.file-name{font-size:0.78rem;font-weight:500;color:var(--text);margin-bottom:5px;display:flex;align-items:center;gap:6px}
+.file-ext{font-size:0.6rem;padding:1px 6px;border-radius:4px;border:1px solid;opacity:0.8}
+.file-desc{font-size:0.7rem;color:var(--text-dim);line-height:1.5}
+.file-tags{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
+.file-tag{font-size:0.58rem;padding:2px 7px;border-radius:4px;border:1px solid;letter-spacing:0.04em;opacity:0.9}
+
+/* color themes for cards */
+.theme-steering .file-card::before{background:var(--steering)}
+.theme-steering .file-card:hover{border-color:var(--steering-border)}
+.theme-pretool .file-card::before{background:var(--pretool)}
+.theme-pretool .file-card:hover{border-color:var(--pretool-border)}
+.theme-posttool .file-card::before{background:var(--posttool)}
+.theme-posttool .file-card:hover{border-color:var(--posttool-border)}
+.theme-filedited .file-card::before{background:var(--filedited)}
+.theme-filedited .file-card:hover{border-color:var(--filedited-border)}
+.theme-promptsubmit .file-card::before{background:var(--promptsubmit)}
+.theme-promptsubmit .file-card:hover{border-color:var(--promptsubmit-border)}
+.theme-posttask .file-card::before{background:var(--posttask)}
+.theme-posttask .file-card:hover{border-color:var(--posttask-border)}
+.theme-usertriggered .file-card::before{background:var(--usertriggered)}
+.theme-usertriggered .file-card:hover{border-color:var(--usertriggered-border)}
+.theme-commands .file-card::before{background:var(--commands)}
+.theme-commands .file-card:hover{border-color:var(--commands-border)}
+.theme-githook .file-card::before{background:var(--githook)}
+.theme-githook .file-card:hover{border-color:var(--githook-border)}
+.theme-knowledge .file-card::before{background:var(--knowledge)}
+.theme-knowledge .file-card:hover{border-color:var(--knowledge-border)}
+.theme-optional .file-card::before{background:var(--optional)}
+
+/* hook trigger groups */
+.hook-group{margin-bottom:24px}
+.hook-group-header{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.hook-trigger-badge{font-size:0.62rem;padding:3px 10px;border-radius:6px;border:1px solid;letter-spacing:0.06em;font-weight:500}
+.hook-trigger-desc{font-size:0.68rem;color:var(--text-dim)}
+.hook-trigger-count{font-size:0.6rem;color:var(--text-muted);margin-left:auto}
+
+/* detail drawer */
+.drawer{position:fixed;right:0;top:0;bottom:0;width:380px;background:var(--surface);border-left:1px solid var(--border);transform:translateX(100%);transition:transform 0.25s cubic-bezier(.4,0,.2,1);z-index:200;display:flex;flex-direction:column;overflow:hidden}
+.drawer.open{transform:translateX(0)}
+.drawer-head{padding:20px 22px 16px;border-bottom:1px solid var(--border);flex-shrink:0}
+.drawer-close{position:absolute;top:16px;right:16px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:all 0.1s}
+.drawer-close:hover{color:var(--text);background:var(--border)}
+.drawer-file{font-size:0.9rem;font-weight:500;color:var(--text);padding-right:36px;line-height:1.3}
+.drawer-path{font-size:0.65rem;color:var(--text-dim);margin-top:4px}
+.drawer-body{flex:1;overflow-y:auto;padding:18px 22px;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.drawer-section{margin-bottom:20px}
+.drawer-label{font-size:0.6rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
+.drawer-desc{font-size:0.78rem;color:var(--text-dim);line-height:1.7}
+.drawer-list{list-style:none;padding:0}
+.drawer-list li{font-size:0.74rem;color:var(--text-dim);line-height:1.6;padding:3px 0;display:flex;gap:8px}
+.drawer-list li::before{content:'→';color:var(--text-muted);flex-shrink:0}
+.trigger-chip{display:inline-flex;align-items:center;gap:5px;font-size:0.65rem;padding:3px 10px;border-radius:6px;border:1px solid;margin-bottom:8px}
+.when-label{font-size:0.7rem;font-weight:500;color:var(--text);margin-bottom:4px}
+pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:10px 12px;font-size:0.68rem;line-height:1.6;color:var(--text-dim);overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+
+/* tree view */
+.tree{padding:0 0 0 4px}
+.tree-item{display:flex;align-items:flex-start;gap:0;font-size:0.72rem;line-height:1.8;color:var(--text-dim)}
+.tree-item .indent{color:var(--border2);flex-shrink:0;font-size:0.65rem;width:20px}
+.tree-item .icon{flex-shrink:0;width:18px;text-align:center}
+.tree-item .name{color:var(--text)}
+.tree-item .name.dir{color:#60a5fa}
+.tree-item .name.gray{color:var(--text-muted)}
+.tree-item .name.green{color:var(--steering)}
+.tree-item .name.amber{color:var(--pretool)}
+.tree-item .name.purple{color:var(--posttool)}
+.tree-item .name.sky{color:var(--commands)}
+.tree-item .name.red{color:var(--githook)}
+.tree-item .name.yellow{color:var(--knowledge)}
+.tree-item .badge{font-size:0.58rem;padding:0px 5px;border-radius:3px;margin-left:6px;border:1px solid;opacity:0.7}
+
+/* agent panel */
+.agent-panel{display:none}
+.agent-panel.show{display:block}
+
+/* scroll sections */
+.section-anchor{scroll-margin-top:20px}
+
+/* overlay */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:199;display:none}
+.overlay.show{display:block}
+
+@media(max-width:900px){
+  .sidebar{display:none}
+  .drawer{width:100%;border-left:none;border-top:1px solid var(--border)}
+  .sections-wrap{padding:16px 16px 40px}
+  .content-header{padding:20px 16px 0}
+  .file-grid{grid-template-columns:1fr}
+  .stats-row{gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-head">
+    <div class="sidebar-title">ai-gov</div>
+    <div class="sidebar-sub">Governance File Structure</div>
+    <div class="version-pill">v20.4.0 · live</div>
+  </div>
+
+  <div class="agent-tabs">
+    <button class="agent-tab active" onclick="switchAgent('cc', this)">Claude Code</button>
+    <button class="agent-tab" onclick="switchAgent('kiro', this)">Kiro</button>
+  </div>
+
+  <nav class="sidebar-nav" id="sidebar-nav">
+    <div class="nav-section-label">Always Loaded</div>
+    <div class="nav-item active" onclick="scrollTo('steering')" id="nav-steering">
+      <div class="nav-dot" style="background:var(--steering)"></div>Steering Files<span class="nav-count">5</span>
+    </div>
+    <div class="nav-section-label">Commands</div>
+    <div class="nav-item" onclick="scrollTo('commands')" id="nav-commands">
+      <div class="nav-dot" style="background:var(--commands)"></div>Slash Commands<span class="nav-count">14</span>
+    </div>
+    <div class="nav-section-label">Hooks — Kiro</div>
+    <div class="nav-item" onclick="scrollTo('pretool')" id="nav-pretool">
+      <div class="nav-dot" style="background:var(--pretool)"></div>preToolUse<span class="nav-count">4</span>
+    </div>
+    <div class="nav-item" onclick="scrollTo('posttool')" id="nav-posttool">
+      <div class="nav-dot" style="background:var(--posttool)"></div>postToolUse<span class="nav-count">1</span>
+    </div>
+    <div class="nav-item" onclick="scrollTo('filedited')" id="nav-filedited">
+      <div class="nav-dot" style="background:var(--filedited)"></div>fileEdited<span class="nav-count">1</span>
+    </div>
+    <div class="nav-item" onclick="scrollTo('promptsubmit')" id="nav-promptsubmit">
+      <div class="nav-dot" style="background:var(--promptsubmit)"></div>promptSubmit<span class="nav-count">1</span>
+    </div>
+    <div class="nav-item" onclick="scrollTo('posttask')" id="nav-posttask">
+      <div class="nav-dot" style="background:var(--posttask)"></div>postTaskExecution<span class="nav-count">2</span>
+    </div>
+    <div class="nav-item" onclick="scrollTo('usertriggered')" id="nav-usertriggered">
+      <div class="nav-dot" style="background:var(--usertriggered)"></div>userTriggered<span class="nav-count">14</span>
+    </div>
+    <div class="nav-section-label">Hooks — Claude Code</div>
+    <div class="nav-item" onclick="scrollTo('cchooks')" id="nav-cchooks">
+      <div class="nav-dot" style="background:var(--pretool)"></div>Shell Hooks (.sh)<span class="nav-count">8</span>
+    </div>
+    <div class="nav-section-label">Git &amp; CI</div>
+    <div class="nav-item" onclick="scrollTo('githooks')" id="nav-githooks">
+      <div class="nav-dot" style="background:var(--githook)"></div>Git Hooks<span class="nav-count">3</span>
+    </div>
+    <div class="nav-section-label">Knowledge Hub</div>
+    <div class="nav-item" onclick="scrollTo('knowledge')" id="nav-knowledge">
+      <div class="nav-dot" style="background:var(--knowledge)"></div>knowledge/<span class="nav-count">4+</span>
+    </div>
+    <div class="nav-item" onclick="scrollTo('tree')" id="nav-tree">
+      <div class="nav-dot" style="background:var(--text-muted)"></div>Full Directory Tree
+    </div>
+  </nav>
+
+  <div class="legend">
+    <div class="legend-title">File type key</div>
+    <div class="legend-items">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--steering)"></div>Steering</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--pretool)"></div>Pre-tool</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--posttool)"></div>Post-tool</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--usertriggered)"></div>Workflow</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--commands)"></div>Command</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--githook)"></div>Git hook</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--knowledge)"></div>Knowledge</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <div class="content-header">
+    <div class="content-header-inner">
+      <h1 class="page-title">Governance <span>File Structure</span></h1>
+      <p class="page-desc">Every file generated by <code>ai-gov init</code> — what it does, when it fires, and why it exists. Click any file for details.</p>
+      <div class="stats-row">
+        <div class="stat-chip"><div class="stat-num" style="color:var(--steering)">5</div><div class="stat-label">Steering files<br>(always loaded)</div></div>
+        <div class="stat-chip"><div class="stat-num" style="color:var(--commands)">14</div><div class="stat-label">Slash commands<br>(Claude Code)</div></div>
+        <div class="stat-chip"><div class="stat-num" style="color:var(--usertriggered)">23</div><div class="stat-label">Kiro hooks<br>(all triggers)</div></div>
+        <div class="stat-chip"><div class="stat-num" style="color:var(--githook)">3</div><div class="stat-label">Git hooks<br>(commit guards)</div></div>
+        <div class="stat-chip"><div class="stat-num" style="color:var(--knowledge)">5+</div><div class="stat-label">Knowledge files<br>(per project)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sections-wrap">
+
+    <!-- STEERING -->
+    <div class="file-section section-anchor" id="steering">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--steering-bg);border:1px solid var(--steering-border)">📐</div>
+        <div>
+          <div class="section-name">Steering Files</div>
+          <div class="section-path">.claude/steering/ &nbsp;·&nbsp; .kiro/steering/</div>
+        </div>
+        <span class="section-badge" style="color:var(--steering);background:var(--steering-bg);border-color:var(--steering-border)">ALWAYS LOADED</span>
+      </div>
+      <div class="file-grid theme-steering" id="steering-grid">
+        <div class="file-card" onclick="openDrawer('constitution')">
+          <div class="file-name">constitution.md <span class="file-ext" style="color:var(--steering);border-color:var(--steering-border)">md</span></div>
+          <div class="file-desc">Hard rules, architecture invariants, high-risk files. Also: project context (domain, app description) and data security rules (PHI/PII/general + stack-specific).</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--steering);border-color:var(--steering-border)">priority-1</span><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">security</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('architecture')">
+          <div class="file-name">architecture.md <span class="file-ext" style="color:var(--steering);border-color:var(--steering-border)">md</span></div>
+          <div class="file-desc">Layer flow, patterns, API docs, external service boundaries, data layer patterns, naming conventions by layer and directory.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--steering);border-color:var(--steering-border)">layers</span><span class="file-tag" style="color:var(--posttool);border-color:var(--posttool-border)">naming</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('coding-standards')">
+          <div class="file-name">coding-standards.md <span class="file-ext" style="color:var(--steering);border-color:var(--steering-border)">md</span></div>
+          <div class="file-desc">Naming rules, type naming, state pattern, error handling, file size limits, import order, and stack-specific testing conventions (MockK/Jest/RTL/pytest/JUnit).</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--steering);border-color:var(--steering-border)">conventions</span><span class="file-tag" style="color:var(--posttask);border-color:var(--posttask-border)">testing</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('workflow')">
+          <div class="file-name">workflow.md <span class="file-ext" style="color:var(--steering);border-color:var(--steering-border)">md</span></div>
+          <div class="file-desc">New feature / edit / bug fix / refactor / hotfix flows, layer build order, commands table. Also contains: AI usage policy (prerequisites, forbidden actions) and spec-first workflow (gates, STOP rules).</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--steering);border-color:var(--steering-border)">process</span><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">policy</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('developer-reference')">
+          <div class="file-name">developer-reference.md <span class="file-ext" style="color:var(--steering);border-color:var(--steering-border)">md</span></div>
+          <div class="file-desc">Feature README requirements and template. Prompt templates for each task type. Task size and time estimate markers ([~1h], [S/M/L]) used by /jira command.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--steering);border-color:var(--steering-border)">reference</span><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">jira</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('system-context')" style="border-style:dashed">
+          <div class="file-name">system-context.md <span class="file-ext" style="color:var(--optional);border-color:var(--optional-border)">md</span></div>
+          <div class="file-desc"><strong style="color:var(--optional)">Kiro only · Manual inclusion · Conditional.</strong> Auto-generated index of .kiro/notes/ files using #[[file:...]] references. Only created when notes directory has .md files.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--optional);border-color:var(--optional-border)">kiro-only</span><span class="file-tag" style="color:var(--optional);border-color:var(--optional-border)">conditional</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLASH COMMANDS -->
+    <div class="file-section section-anchor" id="commands">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--commands-bg);border:1px solid var(--commands-border)">⚡</div>
+        <div>
+          <div class="section-name">Slash Commands</div>
+          <div class="section-path">.claude/commands/ &nbsp;·&nbsp; triggered by typing /command-name</div>
+        </div>
+        <span class="section-badge" style="color:var(--commands);background:var(--commands-bg);border-color:var(--commands-border)">CLAUDE CODE ONLY</span>
+      </div>
+      <div class="file-grid theme-commands">
+        <div class="file-card" onclick="openDrawer('cmd-new-feature')">
+          <div class="file-name">new-feature.md</div>
+          <div class="file-desc">Spec-first 3-gate workflow. Knowledge preamble → Gate 1 requirements → Gate 2 design → Gate 3 tasks → implementation. Silent knowledge capture after Gate 1.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">3 gates</span><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">captures</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-edit-feature')">
+          <div class="file-name">edit-feature.md</div>
+          <div class="file-desc">Diff-based edit of existing feature. Shows &lt;!-- NEW --&gt; and &lt;!-- CHANGED --&gt; markers. Silent capture only for changed items.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">diff</span><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">captures</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-fix')">
+          <div class="file-name">fix.md</div>
+          <div class="file-desc">Bug fix with diagnostic gate. Reads knowledge before diagnosing. Selective capture: only when root cause is a misunderstood requirement or unenforced constraint.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">plan mode</span><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">selective</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-hotfix')">
+          <div class="file-name">hotfix.md</div>
+          <div class="file-desc">Emergency production fix. Faster than /fix — same knowledge preamble, no spec written. Deploy first, ticket after.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">urgent</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-refactor')">
+          <div class="file-name">refactor.md</div>
+          <div class="file-desc">Reads knowledge/tech for existing layer structure. Approval gate if >10 files. No silent capture — refactors change structure, not business rules.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">plan mode</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-explore')">
+          <div class="file-name">explore.md</div>
+          <div class="file-desc">Read-only codebase exploration. Reads knowledge preamble first. No writes, no spec, no gates — pure discovery.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">read-only</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-audit')">
+          <div class="file-name">audit.md</div>
+          <div class="file-desc">Architecture compliance + code quality + Knowledge Health check. Reports [STALE] and [UNVERIFIABLE] knowledge entries. Release gate.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">health check</span><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">drift</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-assess')">
+          <div class="file-name">assess.md</div>
+          <div class="file-desc">Technical debt + risk assessment. Business Pressure rubric, ASSUMPTIONS block, no human-input gates — fully automated.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">automated</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-tech-knowledge')">
+          <div class="file-name">tech-knowledge.md</div>
+          <div class="file-desc">Writes knowledge/tech-[scope].md. Stack Primer, Layer Map, First-Run Guide, Env Vars, DB connection (any SQL client), Daily Commands, Stack Notes, API Access, Logging. Offers sql export.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">writes kb</span><span class="file-tag" style="color:var(--steering);border-color:var(--steering-border)">STEP 3.5</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-product-knowledge')">
+          <div class="file-name">product-knowledge.md</div>
+          <div class="file-desc">Writes knowledge/product-[scope].md. User flows, domain objects, permissions, business states, API endpoint catalog, contribution workflow.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">writes kb</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-knowledge')">
+          <div class="file-name">knowledge.md</div>
+          <div class="file-desc">Read-only viewer for knowledge/ files. Zero writes, zero scanning. Safe for all developers. /knowledge auth shows tech-auth.md + product-auth.md.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">read-only</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-detect-conflicts')">
+          <div class="file-name">detect-conflicts.md</div>
+          <div class="file-desc">Cross-feature conflict detection. Reads all product-*.md files, surfaces contradicting business rules, writes knowledge/conflicts/ decision inbox.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">team lead</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-backlog')">
+          <div class="file-name">backlog.md</div>
+          <div class="file-desc">Story estimation and backlog breakdown. Stack-specific user story templates, sizing with [S/M/L], no human-input gates.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">planning</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('cmd-jira')">
+          <div class="file-name">jira.md</div>
+          <div class="file-desc">Jira worklog logging, ticket sync, status transitions. Reads [~1h] estimate markers from developer-reference.md. Post-task nudge via post-task-checklist.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">jira</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KIRO HOOKS: preToolUse -->
+    <div class="file-section section-anchor" id="pretool">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--pretool-bg);border:1px solid var(--pretool-border)">🛡️</div>
+        <div>
+          <div class="section-name">Hooks — preToolUse</div>
+          <div class="section-path">.kiro/hooks/ &nbsp;·&nbsp; fires before every tool use</div>
+        </div>
+        <span class="section-badge" style="color:var(--pretool);background:var(--pretool-bg);border-color:var(--pretool-border)">SAFETY GATES</span>
+      </div>
+      <div class="file-grid theme-pretool">
+        <div class="file-card" onclick="openDrawer('block-dangerous')">
+          <div class="file-name">block-dangerous-commands</div>
+          <div class="file-desc">Intercepts shell tool calls. Blocks rm -rf, drop table, git push --force, format/wipe commands. Zero cost in normal operation — essential safety net.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--pretool);border-color:var(--pretool-border)">shell guard</span><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">critical</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('protect-files')">
+          <div class="file-name">protect-files</div>
+          <div class="file-desc">Blocks writes to steering files, governance config, git hooks, and scanned high-risk files. Prevents AI from overwriting the governance setup itself.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--pretool);border-color:var(--pretool-border)">write guard</span><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">critical</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('pre-write-secrets')">
+          <div class="file-name">pre-write-secrets-gate</div>
+          <div class="file-desc">Scans the content about to be written for credential patterns (API keys, tokens, passwords). Blocks the write if detected — before any damage is done.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--pretool);border-color:var(--pretool-border)">secrets</span><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">critical</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('spec-first-gate')">
+          <div class="file-name">spec-first-gate</div>
+          <div class="file-desc">Blocks code generation if no Gate 3-approved spec exists. Only active when specFirstEnabled=true (project has existing spec history). Enforces spec-before-code.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--pretool);border-color:var(--pretool-border)">conditional</span><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">spec-first</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KIRO HOOKS: postToolUse -->
+    <div class="file-section section-anchor" id="posttool">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--posttool-bg);border:1px solid var(--posttool-border)">✨</div>
+        <div>
+          <div class="section-name">Hooks — postToolUse</div>
+          <div class="section-path">.kiro/hooks/ &nbsp;·&nbsp; fires after each file write</div>
+        </div>
+        <span class="section-badge" style="color:var(--posttool);background:var(--posttool-bg);border-color:var(--posttool-border)">AUTO QUALITY</span>
+      </div>
+      <div class="file-grid theme-posttool">
+        <div class="file-card" onclick="openDrawer('format-code')">
+          <div class="file-name">format-code</div>
+          <div class="file-desc">Runs the stack's formatter (prettier, ruff format, dart format, spotless) on every file written. Auto-formats without developer action. Only generated when a formatter is detected.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--posttool);border-color:var(--posttool-border)">per-file</span><span class="file-tag" style="color:var(--steering);border-color:var(--steering-border)">conditional</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KIRO HOOKS: fileEdited -->
+    <div class="file-section section-anchor" id="filedited">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--filedited-bg);border:1px solid var(--filedited-border)">🔍</div>
+        <div>
+          <div class="section-name">Hooks — fileEdited</div>
+          <div class="section-path">.kiro/hooks/ &nbsp;·&nbsp; fires when a matching file is saved</div>
+        </div>
+        <span class="section-badge" style="color:var(--filedited);background:var(--filedited-bg);border-color:var(--filedited-border)">SECURITY SCAN</span>
+      </div>
+      <div class="file-grid theme-filedited">
+        <div class="file-card" onclick="openDrawer('check-secrets')">
+          <div class="file-name">check-secrets</div>
+          <div class="file-desc">Post-write scan for accidentally included credentials, tokens, or PII in any source file. Complements pre-write-secrets-gate — catches edge cases that bypass the pre-write check.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--filedited);border-color:var(--filedited-border)">secrets</span><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">security</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KIRO HOOKS: promptSubmit -->
+    <div class="file-section section-anchor" id="promptsubmit">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--promptsubmit-bg);border:1px solid var(--promptsubmit-border)">💬</div>
+        <div>
+          <div class="section-name">Hooks — promptSubmit</div>
+          <div class="section-path">.kiro/hooks/ &nbsp;·&nbsp; fires when user submits a message</div>
+        </div>
+        <span class="section-badge" style="color:var(--promptsubmit);background:var(--promptsubmit-bg);border-color:var(--promptsubmit-border)">SESSION CONTEXT</span>
+      </div>
+      <div class="file-grid theme-promptsubmit">
+        <div class="file-card" onclick="openDrawer('session-continuity')">
+          <div class="file-name">session-continuity</div>
+          <div class="file-desc">Injects project context at the start of each Kiro session. Kiro workflows are fresh askAgent sessions — this hook reads disk state so the agent knows what's in progress without conversation history.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--promptsubmit);border-color:var(--promptsubmit-border)">context</span><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">kiro-essential</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KIRO HOOKS: postTaskExecution -->
+    <div class="file-section section-anchor" id="posttask">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--posttask-bg);border:1px solid var(--posttask-border)">✅</div>
+        <div>
+          <div class="section-name">Hooks — postTaskExecution</div>
+          <div class="section-path">.kiro/hooks/ &nbsp;·&nbsp; fires once per task completion</div>
+        </div>
+        <span class="section-badge" style="color:var(--posttask);background:var(--posttask-bg);border-color:var(--posttask-border)">PER-TASK CHECKS</span>
+      </div>
+      <div class="file-grid theme-posttask">
+        <div class="file-card" onclick="openDrawer('analyze-code')">
+          <div class="file-name">analyze-code</div>
+          <div class="file-desc">Runs the stack linter (eslint, ruff check, dart analyze, checkstyle) ONCE when the task completes — not after every file write. One clean lint pass over everything written.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--posttask);border-color:var(--posttask-border)">per-task</span><span class="file-tag" style="color:var(--steering);border-color:var(--steering-border)">conditional</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('post-task-checklist')">
+          <div class="file-name">post-task-checklist</div>
+          <div class="file-desc">After each spec task: verifies architecture compliance, no skipped layers, tests written, file size, tasks.md updated ([ ] → [x]). Reminds to run Jira sync if .jira metadata exists.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--posttask);border-color:var(--posttask-border)">checklist</span><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">jira</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KIRO HOOKS: userTriggered -->
+    <div class="file-section section-anchor" id="usertriggered">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--usertriggered-bg);border:1px solid var(--usertriggered-border)">🎯</div>
+        <div>
+          <div class="section-name">Hooks — userTriggered</div>
+          <div class="section-path">.kiro/hooks/ &nbsp;·&nbsp; triggered from Kiro workflow panel</div>
+        </div>
+        <span class="section-badge" style="color:var(--usertriggered);background:var(--usertriggered-bg);border-color:var(--usertriggered-border)">KIRO WORKFLOWS · 14</span>
+      </div>
+      <p style="font-size:0.72rem;color:var(--text-dim);margin-bottom:16px;line-height:1.6">Each workflow runs as a fresh <code>askAgent</code> session. The hook's prompt is fully self-contained — includes knowledge preamble, instructions, and output format. Both Claude Code (<code>/command</code>) and Kiro (workflow panel) produce identical output to the same <code>knowledge/</code> and <code>specs/</code> directories.</p>
+      <div class="file-grid theme-usertriggered">
+        <div class="file-card" onclick="openDrawer('wf-new-feature')">
+          <div class="file-name">workflow-new-feature</div>
+          <div class="file-desc">Kiro equivalent of /new-feature. STEP 0 reads disk state. 3-gate: requirements → design → tasks. Silent capture after Gate 1. Spec written to .kiro/specs/.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--usertriggered);border-color:var(--usertriggered-border)">3 gates</span><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">captures</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('wf-edit-feature')">
+          <div class="file-name">workflow-edit-feature</div>
+          <div class="file-desc">Kiro equivalent of /edit-feature. Diff view with markers. Selective capture for NEW/CHANGED items only.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--usertriggered);border-color:var(--usertriggered-border)">diff</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('wf-fix')">
+          <div class="file-name">workflow-fix</div>
+          <div class="file-desc">Bug fix with diagnostic gate. Selective knowledge capture — blocklist prevents trivial fixes from polluting product knowledge.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--usertriggered);border-color:var(--usertriggered-border)">selective</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('wf-hotfix')"><div class="file-name">workflow-hotfix</div><div class="file-desc">Emergency production fix. Same capture logic as workflow-fix.</div></div>
+        <div class="file-card" onclick="openDrawer('wf-refactor')"><div class="file-name">workflow-refactor</div><div class="file-desc">Reads tech knowledge for layer context. Approval gate on large changes. No capture.</div></div>
+        <div class="file-card" onclick="openDrawer('wf-explore')"><div class="file-name">workflow-explore</div><div class="file-desc">Read-only codebase exploration with knowledge preamble. Zero writes.</div></div>
+        <div class="file-card" onclick="openDrawer('wf-audit')"><div class="file-name">workflow-audit</div><div class="file-desc">Architecture + Knowledge Health check. Reports drift and unverifiable entries. Release gate.</div><div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">drift</span></div></div>
+        <div class="file-card" onclick="openDrawer('wf-assess')"><div class="file-name">workflow-assess</div><div class="file-desc">Technical debt + risk assessment. No gates — fully automated output.</div></div>
+        <div class="file-card" onclick="openDrawer('wf-backlog')"><div class="file-name">workflow-backlog</div><div class="file-desc">Story breakdown and estimation. Stack-specific story templates.</div></div>
+        <div class="file-card" onclick="openDrawer('wf-plan-phases')"><div class="file-name">workflow-plan-phases</div><div class="file-desc">Phase planning for large features — breaks down scope into ordered phases.</div></div>
+        <div class="file-card" onclick="openDrawer('wf-tech-knowledge')">
+          <div class="file-name">workflow-tech-knowledge</div>
+          <div class="file-desc">Kiro equivalent of /tech-knowledge. STEP 0 asks scope. STEP 1.5 scans .env.example, manifest, DB config (backend). Writes knowledge/tech-[slug].md. Offers sql export.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">writes kb</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('wf-product-knowledge')">
+          <div class="file-name">workflow-product-knowledge</div>
+          <div class="file-desc">Kiro equivalent of /product-knowledge. Writes knowledge/product-[slug].md. API catalog + contribution workflow for backend stacks.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">writes kb</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('wf-detect-conflicts')"><div class="file-name">workflow-detect-conflicts</div><div class="file-desc">Cross-feature conflict detection. STEP 0 asks scope. Writes knowledge/conflicts/ decision inbox.</div></div>
+        <div class="file-card" onclick="openDrawer('wf-jira-sync')">
+          <div class="file-name">workflow-jira-sync</div>
+          <div class="file-desc">Jira worklog, ticket sync, status transitions. Reads [~xh] estimate markers. Workspace version scans all project specs for cross-project story assembly.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">jira</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLAUDE CODE HOOKS -->
+    <div class="file-section section-anchor" id="cchooks">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--pretool-bg);border:1px solid var(--pretool-border)">🐚</div>
+        <div>
+          <div class="section-name">Claude Code Hooks</div>
+          <div class="section-path">.claude/hooks/ &nbsp;·&nbsp; shell scripts, wired via settings.json</div>
+        </div>
+        <span class="section-badge" style="color:var(--pretool);background:var(--pretool-bg);border-color:var(--pretool-border)">CLAUDE CODE ONLY</span>
+      </div>
+      <p style="font-size:0.72rem;color:var(--text-dim);margin-bottom:16px">Trigger routing is configured in <code>.claude/settings.json</code>. <code>PreToolUse</code> fires before Edit/Write/Bash. <code>PostToolUse</code> fires after Edit/Write. <code>Stop</code> fires when Claude finishes a turn.</p>
+      <div class="file-grid" style="margin-bottom:12px">
+        <div class="file-card" style="border-left:3px solid var(--pretool)" onclick="openDrawer('cc-protect')"><div class="file-name">protect-files.sh <span style="font-size:0.6rem;color:var(--pretool)">PreToolUse</span></div><div class="file-desc">Blocks writes to steering, governance config, git hooks, and high-risk files.</div></div>
+        <div class="file-card" style="border-left:3px solid var(--pretool)" onclick="openDrawer('cc-secrets-pre')"><div class="file-name">check-secrets.sh <span style="font-size:0.6rem;color:var(--pretool)">PreToolUse</span></div><div class="file-desc">Scans staged content for credential patterns before write.</div></div>
+        <div class="file-card" style="border-left:3px solid var(--pretool)" onclick="openDrawer('cc-block')"><div class="file-name">block-dangerous-commands.sh <span style="font-size:0.6rem;color:var(--pretool)">PreToolUse</span></div><div class="file-desc">Blocks destructive shell commands.</div></div>
+        <div class="file-card" style="border-left:3px solid var(--pretool)" onclick="openDrawer('cc-spec')"><div class="file-name">check-spec-exists.sh <span style="font-size:0.6rem;color:var(--pretool)">PreToolUse</span></div><div class="file-desc">Blocks code generation without a spec. Only when specFirstEnabled=true.</div></div>
+        <div class="file-card" style="border-left:3px solid var(--promptsubmit)" onclick="openDrawer('cc-session')"><div class="file-name">session-continuity.sh <span style="font-size:0.6rem;color:var(--promptsubmit)">PreToolUse</span></div><div class="file-desc">Injects project context at session start.</div></div>
+        <div class="file-card" style="border-left:3px solid var(--posttool)" onclick="openDrawer('cc-format')"><div class="file-name">format-code.sh <span style="font-size:0.6rem;color:var(--posttool)">PostToolUse</span></div><div class="file-desc">Auto-formats every written file using the stack's formatter.</div></div>
+        <div class="file-card" style="border-left:3px solid var(--posttask)" onclick="openDrawer('cc-analyze')"><div class="file-name">analyze-code.sh <span style="font-size:0.6rem;color:var(--posttask)">Stop</span></div><div class="file-desc">Runs linter once per Claude turn (Stop hook) — not per file write.</div></div>
+        <div class="file-card" style="border-left:3px solid var(--posttask)" onclick="openDrawer('cc-posttask')"><div class="file-name">post-task-checklist.sh <span style="font-size:0.6rem;color:var(--posttask)">Stop</span></div><div class="file-desc">Architecture compliance, tests, file size, spec updated, Jira reminder.</div></div>
+      </div>
+    </div>
+
+    <!-- GIT HOOKS -->
+    <div class="file-section section-anchor" id="githooks">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--githook-bg);border:1px solid var(--githook-border)">🔒</div>
+        <div>
+          <div class="section-name">Git Hooks</div>
+          <div class="section-path">.git/hooks/ &nbsp;·&nbsp; fire at git commit time</div>
+        </div>
+        <span class="section-badge" style="color:var(--githook);background:var(--githook-bg);border-color:var(--githook-border)">COMMIT GUARDS</span>
+      </div>
+      <div class="file-grid theme-githook">
+        <div class="file-card" onclick="openDrawer('git-precommit')">
+          <div class="file-name">pre-commit</div>
+          <div class="file-desc">Wrapper that runs all .claude/git-hooks/checks/. Runs: knowledge-confirmed.sh (guards [CONFIRMED] removal), secrets check, file-size check. Never runs with --no-verify unless explicitly asked.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">pre-commit</span><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">knowledge guard</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('git-commitmsg')">
+          <div class="file-name">commit-msg</div>
+          <div class="file-desc">Enforces commit message format — must include ticket prefix or conventional commit type. Blocks commit if format is violated.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">commit-msg</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('git-knowledge-guard')">
+          <div class="file-name">knowledge-confirmed.sh</div>
+          <div class="file-desc">Blocks removal of any [CONFIRMED] entry from knowledge/*.md files. [CONFIRMED] entries are human-verified — they cannot be silently deleted by AI. Bypass: AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">knowledge</span><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">bypassable</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KNOWLEDGE HUB -->
+    <div class="file-section section-anchor" id="knowledge">
+      <div class="section-header">
+        <div class="section-icon" style="background:var(--knowledge-bg);border:1px solid var(--knowledge-border)">🧠</div>
+        <div>
+          <div class="section-name">Knowledge Hub</div>
+          <div class="section-path">knowledge/ &nbsp;·&nbsp; committed to git · shared between Claude Code and Kiro</div>
+        </div>
+        <span class="section-badge" style="color:var(--knowledge);background:var(--knowledge-bg);border-color:var(--knowledge-border)">AI MEMORY</span>
+      </div>
+      <p style="font-size:0.72rem;color:var(--text-dim);margin-bottom:16px;line-height:1.6">Written by /tech-knowledge and /product-knowledge. Read automatically by every developer command via the knowledge preamble. Grows as a byproduct of Gate 1 approvals. Both agents share the same directory.</p>
+      <div class="file-grid theme-knowledge">
+        <div class="file-card" onclick="openDrawer('kb-tech')">
+          <div class="file-name">tech-[scope].md <span class="file-ext" style="color:var(--knowledge);border-color:var(--knowledge-border)">md</span></div>
+          <div class="file-desc">HOW the codebase is built. Stack Primer, Layer Map, First-Run Guide, Env Variables, DB connection, Daily Commands, API Access, Logging. Written by /tech-knowledge.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">[INFERRED]</span><span class="file-tag" style="color:var(--steering);border-color:var(--steering-border)">backend+</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('kb-product')">
+          <div class="file-name">product-[scope].md <span class="file-ext" style="color:var(--knowledge);border-color:var(--knowledge-border)">md</span></div>
+          <div class="file-desc">WHAT the product does. User flows, domain objects, permissions, business states, API endpoint catalog. Written by /product-knowledge, then grown by Gate 1 silent capture ([CONFIRMED] entries).</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">[CONFIRMED]</span><span class="file-tag" style="color:var(--commands);border-color:var(--commands-border)">auto-grows</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('kb-sql')">
+          <div class="file-name">db-schema-discovery.sql <span class="file-ext" style="color:var(--knowledge);border-color:var(--knowledge-border)">sql</span></div>
+          <div class="file-desc">15 ready-to-run schema discovery queries for the detected DB engine. Project-aware: header injects ORM name, migration table (typeorm_migrations, alembic_version, etc.). Run in any SQL client.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">optional</span><span class="file-tag" style="color:var(--githook);border-color:var(--githook-border)">committed</span></div>
+        </div>
+        <div class="file-card" onclick="openDrawer('kb-conflicts')">
+          <div class="file-name">conflicts/[a]-vs-[b].md <span class="file-ext" style="color:var(--knowledge);border-color:var(--knowledge-border)">md</span></div>
+          <div class="file-desc">Cross-feature conflict decision inbox. Written by /detect-conflicts. Team lead resolves open conflicts by editing the file ([ ] Unresolved → [x] Resolved — decision). Re-raised unless resolved.</div>
+          <div class="file-tags"><span class="file-tag" style="color:var(--knowledge);border-color:var(--knowledge-border)">team lead</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIRECTORY TREE -->
+    <div class="file-section section-anchor" id="tree">
+      <div class="section-header">
+        <div class="section-icon" style="background:rgba(100,116,139,0.1);border:1px solid rgba(100,116,139,0.25)">🗂️</div>
+        <div>
+          <div class="section-name">Full Directory Tree</div>
+          <div class="section-path">Project root after ai-gov init</div>
+        </div>
+        <span class="section-badge" style="color:#94a3b8;background:rgba(148,163,184,0.06);border-color:rgba(148,163,184,0.2)">OVERVIEW</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
+          <div style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">Claude Code · .claude/</div>
+          <div class="tree">
+            <div class="tree-item"><span class="indent">├─</span><span class="icon">📄</span><span class="name dir">CLAUDE.md</span><span class="badge" style="color:var(--steering);border-color:var(--steering-border)">master index</span></div>
+            <div class="tree-item"><span class="indent">├─</span><span class="icon">⚙️</span><span class="name gray">settings.json</span><span class="badge" style="color:var(--pretool);border-color:var(--pretool-border)">hook wiring</span></div>
+            <div class="tree-item"><span class="indent">├─</span><span class="icon">📁</span><span class="name dir">steering/</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">📐</span><span class="name green">constitution.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">📐</span><span class="name green">architecture.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">📐</span><span class="name green">coding-standards.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">📐</span><span class="name green">workflow.md</span></div>
+            <div class="tree-item"><span class="indent">│ └─</span><span class="icon">📐</span><span class="name green">developer-reference.md</span></div>
+            <div class="tree-item"><span class="indent">├─</span><span class="icon">📁</span><span class="name dir">commands/</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">⚡</span><span class="name sky">new-feature.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">⚡</span><span class="name sky">edit-feature.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">⚡</span><span class="name sky">fix.md · hotfix.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">⚡</span><span class="name sky">refactor.md · explore.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">⚡</span><span class="name sky">audit.md · assess.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">⚡</span><span class="name sky">tech-knowledge.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">⚡</span><span class="name sky">product-knowledge.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">⚡</span><span class="name sky">knowledge.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">⚡</span><span class="name sky">detect-conflicts.md</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">⚡</span><span class="name sky">backlog.md · plan-phases.md</span></div>
+            <div class="tree-item"><span class="indent">│ └─</span><span class="icon">⚡</span><span class="name sky">jira.md</span></div>
+            <div class="tree-item"><span class="indent">├─</span><span class="icon">📁</span><span class="name dir">hooks/</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🛡️</span><span class="name amber">protect-files.sh</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🛡️</span><span class="name amber">check-secrets.sh</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🛡️</span><span class="name amber">block-dangerous-commands.sh</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🛡️</span><span class="name amber">check-spec-exists.sh</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">💬</span><span class="name amber">session-continuity.sh</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">✨</span><span class="name purple">format-code.sh</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">✅</span><span class="name purple">analyze-code.sh</span></div>
+            <div class="tree-item"><span class="indent">│ └─</span><span class="icon">✅</span><span class="name purple">post-task-checklist.sh</span></div>
+            <div class="tree-item"><span class="indent">└─</span><span class="icon">📁</span><span class="name dir">git-hooks/checks/</span></div>
+            <div class="tree-item"><span class="indent">&nbsp; ├─</span><span class="icon">🔒</span><span class="name red">knowledge-confirmed.sh</span></div>
+            <div class="tree-item"><span class="indent">&nbsp; ├─</span><span class="icon">🔒</span><span class="name red">check-secrets.sh</span></div>
+            <div class="tree-item"><span class="indent">&nbsp; └─</span><span class="icon">🔒</span><span class="name red">check-file-size.sh</span></div>
+          </div>
+        </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px">
+          <div style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px">Kiro · .kiro/</div>
+          <div class="tree">
+            <div class="tree-item"><span class="indent">├─</span><span class="icon">📁</span><span class="name dir">steering/</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">📐</span><span class="name green">constitution.md</span><span class="badge" style="color:#94a3b8;border-color:rgba(148,163,184,0.3)">always</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">📐</span><span class="name green">architecture.md</span><span class="badge" style="color:#94a3b8;border-color:rgba(148,163,184,0.3)">always</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">📐</span><span class="name green">coding-standards.md</span><span class="badge" style="color:#94a3b8;border-color:rgba(148,163,184,0.3)">always</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">📐</span><span class="name green">workflow.md</span><span class="badge" style="color:#94a3b8;border-color:rgba(148,163,184,0.3)">always</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">📐</span><span class="name green">developer-reference.md</span><span class="badge" style="color:#94a3b8;border-color:rgba(148,163,184,0.3)">always</span></div>
+            <div class="tree-item"><span class="indent">│ └─</span><span class="icon">📐</span><span class="name gray">system-context.md</span><span class="badge" style="color:#94a3b8;border-color:rgba(148,163,184,0.3)">manual·if notes/</span></div>
+            <div class="tree-item"><span class="indent">├─</span><span class="icon">📁</span><span class="name dir">hooks/</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🛡️</span><span class="name amber">block-dangerous-commands.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🛡️</span><span class="name amber">protect-files.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🛡️</span><span class="name amber">pre-write-secrets-gate.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🛡️</span><span class="name amber">spec-first-gate.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">✨</span><span class="name purple">format-code.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🔍</span><span class="name sky">check-secrets.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">💬</span><span class="name orange" style="color:var(--promptsubmit)">session-continuity.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">✅</span><span class="name" style="color:var(--posttask)">analyze-code.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">✅</span><span class="name" style="color:var(--posttask)">post-task-checklist.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-new-feature.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-edit-feature.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-fix.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-hotfix.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-refactor.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-explore.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-audit.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-assess.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-backlog.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-plan-phases.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-tech-knowledge.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-product-knowledge.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ ├─</span><span class="icon">🎯</span><span class="name green">workflow-detect-conflicts.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">│ └─</span><span class="icon">🎯</span><span class="name green">workflow-jira-sync.kiro.hook</span></div>
+            <div class="tree-item"><span class="indent">└─</span><span class="icon">📁</span><span class="name dir">specs/</span></div>
+            <div class="tree-item"><span class="indent">&nbsp; ├─</span><span class="icon">📋</span><span class="name gray">_template/</span></div>
+            <div class="tree-item"><span class="indent">&nbsp; └─</span><span class="icon">📋</span><span class="name gray">[feature-name]/</span></div>
+          </div>
+          <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+            <div style="font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Shared · knowledge/ (both agents)</div>
+            <div class="tree">
+              <div class="tree-item"><span class="indent">├─</span><span class="icon">🧠</span><span class="name yellow">tech-overview.md</span></div>
+              <div class="tree-item"><span class="indent">├─</span><span class="icon">🧠</span><span class="name yellow">tech-[scope].md</span></div>
+              <div class="tree-item"><span class="indent">├─</span><span class="icon">🧠</span><span class="name yellow">product-overview.md</span></div>
+              <div class="tree-item"><span class="indent">├─</span><span class="icon">🧠</span><span class="name yellow">product-[scope].md</span></div>
+              <div class="tree-item"><span class="indent">├─</span><span class="icon">🗃️</span><span class="name yellow">db-schema-discovery.sql</span><span class="badge" style="color:#94a3b8;border-color:rgba(148,163,184,0.3)">optional</span></div>
+              <div class="tree-item"><span class="indent">└─</span><span class="icon">📂</span><span class="name dir">conflicts/</span></div>
+              <div class="tree-item"><span class="indent">&nbsp; └─</span><span class="icon">⚔️</span><span class="name yellow">[a]-vs-[b].md</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /sections-wrap -->
+</main>
+</div><!-- /shell -->
+
+<!-- DETAIL DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-head">
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+    <div class="drawer-file" id="drawer-file">—</div>
+    <div class="drawer-path" id="drawer-path">—</div>
+  </div>
+  <div class="drawer-body" id="drawer-body"></div>
+</div>
+
+<script>
+// ── data ────────────────────────────────────────────────────────────────────
+const FILES = {
+  constitution:{name:'constitution.md',path:'.claude/steering/ or .kiro/steering/',trigger:'Always loaded',desc:'The highest-priority steering file. Establishes absolute rules the AI must never violate.',sections:['## Project Context — app name, domain label (healthcare/fintech/logistics/general), key domain concepts','## Hard Rules — stack-specific constraints from content-blocks.ts','## Architecture Invariants — layer flow, layer responsibilities','## Data Security Rules — conditional: PHI (health), PII/GDPR, or general API key rules. Stack-specific additions for kotlin/nodejs/react/python/java','## High-Risk Files — files the AI must confirm before editing']},
+  architecture:{name:'architecture.md',path:'.claude/steering/ or .kiro/steering/',trigger:'Always loaded',desc:'Documents HOW the codebase is structured. The AI reads this before any architectural decision.',sections:['## Layer Flow — the canonical request path','## Layer Responsibilities — what each layer owns','## DI Pattern — detected dependency injection approach','## Project Structure — source dir layout','## State Pattern, General Rules','## API Documentation — swagger/OpenAPI style if detected','## External Service Boundaries — detected DB/auth/queue services (backend)','## Data Layer Patterns — ORM-specific migration rules (Prisma/TypeORM/Alembic etc.)','## Naming Conventions — layer file patterns, directory naming, import order (absorbed from naming-conventions.ts)','## Hook Data — architecture.sh machine-readable layer definitions']},
+  'coding-standards':{name:'coding-standards.md',path:'.claude/steering/ or .kiro/steering/',trigger:'Always loaded',desc:'How code must be written. Naming, types, patterns, file size, testing.',sections:['## Naming — classes, methods, constants, files','## Type Naming — per-stack type naming patterns','## State Pattern — stack state management approach','## Error Handling — error propagation pattern','## File Size — 200-line limit for frontend stacks + decomposition table','## Comments — no "what" comments, only "why"','## Testing — layer coverage + stack-specific conventions (MockK/Jest/RTL/pytest/JUnit 5/XCTest)','## Imports — import order convention','## Zone Rules — dual-mode project legacy/clean zone rules (when hasLegacyZones)']},
+  workflow:{name:'workflow.md',path:'.claude/steering/ or .kiro/steering/',trigger:'Always loaded',desc:'How work is done — task flows, commands, AI policy, spec-first gates. Absorbs 3 old files.',sections:['## New Feature / Edit / Bug Fix / Refactor / Hotfix — flow diagrams','## Layer Build Order','## Commands — install, run, build, test, analyze, format','## AI Usage Policy (absorbed) — prerequisites, new feature rules, bug fix rules, forbidden actions, PR checklist','## Spec-First Workflow (absorbed) — STOP gates, spec completeness criteria, common mistakes, session continuity']},
+  'developer-reference':{name:'developer-reference.md',path:'.claude/steering/ or .kiro/steering/',trigger:'Always loaded',desc:'Quick reference for feature README template, prompt templates, and task size estimates.',sections:['## Feature README Policy — required sections, auto-update rule, when to create','## Prompt Templates — copy-paste prompts for New Feature / Edit / Bug Fix / Hotfix','## Task Estimate Format — time markers [~10min] through [~2d], size markers [S/M/L], used by /jira command']},
+  'system-context':{name:'system-context.md',path:'.kiro/steering/ (optional)',trigger:'Manual — Kiro only',desc:'Auto-generated index of .kiro/notes/ files. Only created when notes directory contains .md files. Developer references it via # when context is needed.',sections:['## Architecture Notes — list of #[[file:.kiro/notes/xxx.md]] references, auto-updated on next init']},
+  'cmd-new-feature':{name:'/new-feature',path:'.claude/commands/new-feature.md',trigger:'Developer types /new-feature [name]',desc:'The core spec-first workflow. Knowledge preamble reads context first. Three gates before code is written.',sections:['Knowledge preamble reads tech-[slug].md + product-[slug].md silently','GATE 1 — Requirements shown in chat (no files written). Developer says ok → SILENT CAPTURE fires','GATE 2 — Design shown in chat (no capture). Developer says ok','GATE 3 — Tasks shown in chat. Developer says ok → ExitPlanMode → specs/ written → code generated']},
+  'cmd-edit-feature':{name:'/edit-feature',path:'.claude/commands/edit-feature.md',trigger:'Developer types /edit-feature [name]',desc:'Updates an existing feature spec and code. Only extracts NEW/CHANGED items during Gate 1 capture.',sections:['Knowledge preamble reads existing feature context','GATE 1 — diff view with <!-- NEW --> and <!-- CHANGED: --> markers','Silent capture: only items marked NEW or CHANGED are extracted','GATE 2 — design diff, GATE 3 — task delta']},
+  'cmd-fix':{name:'/fix',path:'.claude/commands/fix.md',trigger:'Developer types /fix [description]',desc:'Bug fix with knowledge-informed diagnosis. Selective capture — default is no capture.',sections:['Knowledge preamble reads product-[slug].md → AI knows intended behaviour before diagnosing','Plan mode: diagnose → propose fix → developer approves','Silent capture AFTER fix — DO NOT CAPTURE list checked first','Only captures when root cause is: misunderstood requirement, unenforced constraint, or missing role check']},
+  'cmd-hotfix':{name:'/hotfix',path:'.claude/commands/hotfix.md',trigger:'Developer types /hotfix',desc:'Emergency production fix — same knowledge preamble, faster flow, no spec written.',sections:['Same blocklist as /fix for capture','Deploy immediately after gate, ticket after']},
+  'cmd-refactor':{name:'/refactor',path:'.claude/commands/refactor.md',trigger:'Developer types /refactor [scope]',desc:'Reads tech knowledge for existing layer structure. No capture — refactors change structure not rules.',sections:['Reads knowledge/tech-[slug].md for documented layer structure','Approval gate if >10 files affected','No silent capture (structure change, not business change)','Next /audit will catch tech knowledge drift']},
+  'cmd-explore':{name:'/explore',path:'.claude/commands/explore.md',trigger:'Developer types /explore [scope]',desc:'Pure read-only discovery. Reads knowledge preamble. Zero writes.',sections:['Knowledge preamble loads context','Reads and maps the codebase area','No gates, no spec, no capture — safe for any developer']},
+  'cmd-audit':{name:'/audit',path:'.claude/commands/audit.md',trigger:'Developer or team lead types /audit',desc:'Architecture + quality + Knowledge Health check. Release gate.',sections:['Architecture violations in changed files','File size compliance','Dead code candidates','KNOWLEDGE HEALTH — reads each knowledge/tech-*.md, checks git hash, diffs source paths','Reports [STALE] and [UNVERIFIABLE] entries — action required before release']},
+  'cmd-assess':{name:'/assess',path:'.claude/commands/assess.md',trigger:'Developer types /assess',desc:'Technical debt + risk assessment. No human-input gates — fully automated.',sections:['Business Pressure rubric signals','ASSUMPTIONS block schema','No gates — automated output for CI']},
+  'cmd-tech-knowledge':{name:'/tech-knowledge',path:'.claude/commands/tech-knowledge.md',trigger:'Developer types /tech-knowledge [scope]',desc:'Writes knowledge/tech-[scope].md — the HOW file. For backend stacks, STEP 3.5 scans env + scripts + DB config.',sections:['STEP 3.5 (backend only): scan .env.example, manifest scripts, ORM config','Writes: Stack Primer, Layer Map, First-Run Guide, Env Variables, Daily Commands, Database (connection + migration + SQL), Stack-Specific Notes, API Access, Logging & Debugging','Offers sql export: knowledge/db-schema-discovery.sql with 15 ORM-specific queries','STEP 5: html or sql export offered after writing']},
+  'cmd-product-knowledge':{name:'/product-knowledge',path:'.claude/commands/product-knowledge.md',trigger:'Developer types /product-knowledge [scope]',desc:'Writes knowledge/product-[scope].md — the WHAT file. Used at bootstrap; Gate 1 grows it automatically after.',sections:['User Flows, Domain Objects, Domain Relationships (ER diagram), Permissions & Roles, Business States','API Endpoint Catalog (backend), Contribution Workflow (backend)','Generated at bootstrap; Gate 1 silent capture appends [CONFIRMED] entries automatically after every /new-feature']},
+  'cmd-knowledge':{name:'/knowledge',path:'.claude/commands/knowledge.md',trigger:'Developer types /knowledge [scope]',desc:'Read-only viewer. Shows committed knowledge files without re-scanning. Safe for all developers.',sections:['/knowledge auth → shows tech-auth.md + product-auth.md','/knowledge all → shows every file in knowledge/','/knowledge tech → all tech-*.md files','Zero writes, zero code scanning — always safe']},
+  'cmd-detect-conflicts':{name:'/detect-conflicts',path:'.claude/commands/detect-conflicts.md',trigger:'Team lead types /detect-conflicts [scopes]',desc:'Cross-feature conflict detection. Part of release audit flow.',sections:['Reads all product-*.md files','Detects: Permission conflicts, Domain object conflicts, Business state conflicts, Flow assumption conflicts','Writes knowledge/conflicts/[a]-vs-[b].md decision inbox','Resolved conflicts (marked [x]) are skipped on re-run']},
+  'cmd-backlog':{name:'/backlog',path:'.claude/commands/backlog.md',trigger:'Developer types /backlog',desc:'Story estimation and backlog breakdown. No human-input gates.',sections:['Stack-specific user story templates','Sizing with [S/M/L] markers','Automated output — no gates']},
+  'cmd-jira':{name:'/jira',path:'.claude/commands/jira.md',trigger:'Developer types /jira',desc:'Jira worklog, ticket sync, status transitions.',sections:['Reads [~xh] estimate markers from developer-reference.md','Worklog logging against ticket','Status transitions based on spec task completion','post-task-checklist.sh reminds to run this after each task']},
+  'block-dangerous':{name:'block-dangerous-commands.kiro.hook',path:'.kiro/hooks/',trigger:'preToolUse — before every shell tool call',desc:'First line of defence against destructive operations.',sections:['Intercepts all shell tool calls','Blocks: rm -rf, drop table, git push --force, format/wipe commands','Reports the blocked command and reason','Zero false positives in normal development flow']},
+  'protect-files':{name:'protect-files.kiro.hook',path:'.kiro/hooks/',trigger:'preToolUse — before every write',desc:'Prevents AI from accidentally overwriting governance infrastructure.',sections:['Blocks writes to .kiro/steering/, .claude/steering/','Blocks writes to .kiro/hooks/, .claude/hooks/','Blocks writes to scanned highRiskFiles (main app entry points, DB config)','Blocks writes to git hooks, governance config']},
+  'pre-write-secrets':{name:'pre-write-secrets-gate.kiro.hook',path:'.kiro/hooks/',trigger:'preToolUse — before every file write',desc:'Scans content about to be written for credential patterns. Blocks before damage.',sections:['Scans for: API key patterns, hardcoded passwords, JWT secrets','Blocks the write if credential patterns detected','Prevents: example code with real credentials, config files with secrets','Different from check-secrets.kiro.hook (which runs post-write as a safety net)']},
+  'spec-first-gate':{name:'spec-first-gate.kiro.hook',path:'.kiro/hooks/',trigger:'preToolUse — conditional',desc:'Enforces spec-before-code. Only active when specFirstEnabled=true.',sections:['Only generated when project has existing spec history','Checks .kiro/specs/[feature]/ exists and is complete before any code write','Blocks with: "Spec not found or incomplete"','Bypass: create spec first via workflow-new-feature, fill all placeholders']},
+  'format-code':{name:'format-code.kiro.hook',path:'.kiro/hooks/',trigger:'postToolUse — after every Edit/Write',desc:'Auto-formats every written file. Only generated when formatter detected.',sections:['Runs: prettier (JS/TS), ruff format (Python), dart format (Flutter), spotless (Java)','Near-zero friction — runs silently','Only generated when detectedFormatter is non-empty','Returns formatted file immediately']},
+  'check-secrets':{name:'check-secrets.kiro.hook',path:'.kiro/hooks/',trigger:'fileEdited — after save',desc:'Post-write credential scan. Complements pre-write-secrets-gate.',sections:['Triggered after a file is saved (fileEdited, not preToolUse)','Scans the saved file for credential patterns','Safety net for writes that bypass the pre-write gate','Same pattern library as pre-write-secrets-gate']},
+  'session-continuity':{name:'session-continuity.kiro.hook',path:'.kiro/hooks/',trigger:'promptSubmit — on every message',desc:'Solves Kiro\'s stateless session problem. Critical for context-aware development.',sections:['Kiro workflows run as fresh askAgent sessions — no conversation history','This hook reads project state from disk at session start','Reads: in-progress specs, last task, feature context','Enables workflow-new-feature STEP 0 to list in-progress features automatically']},
+  'analyze-code':{name:'analyze-code.kiro.hook',path:'.kiro/hooks/',trigger:'postTaskExecution — once per task',desc:'Runs linter once when the task completes, not after every file write.',sections:['Previous behaviour: postToolUse = ran N times per task (noisy, slow)','New behaviour: postTaskExecution = one clean lint pass over everything written','Runs: eslint (Node.js/React), ruff check (Python), dart analyze (Flutter), checkstyle (Java)','Only generated when detectedLinter is non-empty']},
+  'post-task-checklist':{name:'post-task-checklist.kiro.hook',path:'.kiro/hooks/',trigger:'postTaskExecution — after each spec task',desc:'Quality checklist that runs after each task in the spec\'s tasks.md.',sections:['Architecture compliance — does implementation follow layer flow?','No skipped layers','Tests written for the task','File size within 200-line limit','tasks.md updated ([ ] → [x])','Jira reminder if .jira metadata file exists in spec']},
+  'wf-new-feature':{name:'workflow-new-feature.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Full spec-first 3-gate new feature workflow for Kiro. Equivalent to /new-feature.',sections:['STEP 0: reads disk state for in-progress features (fresh session — no history)','STEP 0: asks ONE question: continue in-progress or start new?','Knowledge preamble embedded in prompt string','Same 3 gates as Claude Code — identical output to .kiro/specs/ and knowledge/']},
+  'wf-edit-feature':{name:'workflow-edit-feature.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Kiro equivalent of /edit-feature. Diff-based edit with selective capture.',sections:['Reads existing .kiro/specs/ for context','Shows diff with NEW/CHANGED markers','Selective capture: only marked items extracted to knowledge/product-[slug].md']},
+  'wf-fix':{name:'workflow-fix.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Kiro bug fix workflow. Same knowledge preamble + DO-NOT-CAPTURE logic.',sections:['Reads knowledge/product-[slug].md before diagnosing','Diagnostic gate: root cause + minimal fix proposed','Same blocklist as /fix: technical bugs not captured','Captures only: misunderstood requirement, unenforced constraint, missing role check']},
+  'wf-audit':{name:'workflow-audit.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Kiro equivalent of /audit. Architecture + Knowledge Health check.',sections:['Architecture violations','Knowledge Health: reads git hash from Generated: line, diffs source paths','Reports [STALE] and [UNVERIFIABLE] entries','Recommended for release gate']},
+  'wf-tech-knowledge':{name:'workflow-tech-knowledge.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Kiro equivalent of /tech-knowledge. STEP 0 asks scope. STEP 1.5 scans env + DB.',sections:['STEP 0: asks scope interactively (vs $ARGUMENTS in Claude Code)','STEP 1.5 (backend): scan .env.example, manifest scripts, ORM config','Writes same knowledge/tech-[slug].md as Claude Code','Offers sql export — generates db-schema-discovery.sql']},
+  'wf-product-knowledge':{name:'workflow-product-knowledge.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Kiro equivalent of /product-knowledge.',sections:['STEP 0: asks product area scope','Stack-adaptive reading strategy (same as Claude Code)','Writes knowledge/product-[slug].md with API catalog + contribution workflow (backend)']},
+  'wf-detect-conflicts':{name:'workflow-detect-conflicts.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Cross-feature conflict detection. STEP 0 asks which features to compare.',sections:['Single feature → error (need ≥2)', 'Empty → compares all product-*.md files','Writes knowledge/conflicts/[a]-vs-[b].md','Resolved entries skipped on re-run']},
+  'wf-jira-sync':{name:'workflow-jira-sync.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Jira worklog and ticket sync.',sections:['Reads [~xh] estimate markers from developer-reference.md','Workspace version scans all project specs for cross-project stories','Logs worked hours, transitions ticket status']},
+  'wf-explore':{name:'workflow-explore.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Read-only codebase exploration.',sections:['Knowledge preamble embedded','Zero writes — pure discovery']},
+  'wf-hotfix':{name:'workflow-hotfix.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Emergency fix — same as workflow-fix, faster flow.',sections:['No spec written','Deploy immediately, ticket after','Same capture logic as workflow-fix']},
+  'wf-refactor':{name:'workflow-refactor.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Reads tech knowledge for layer structure before proposing changes.',sections:['Reads knowledge/tech-[slug].md','Approval gate on large refactors','No capture (structure, not business rules)']},
+  'wf-assess':{name:'workflow-assess.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Technical debt + risk assessment. No human gates.',sections:['Business Pressure rubric','No gates — fully automated','Kiro parity with /assess']},
+  'wf-backlog':{name:'workflow-backlog.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Story estimation and backlog breakdown.',sections:['Stack-specific story templates','Sizing markers','No gates']},
+  'wf-plan-phases':{name:'workflow-plan-phases.kiro.hook',path:'.kiro/hooks/',trigger:'userTriggered — Kiro panel',desc:'Phase planning for large features.',sections:['Breaks large feature scope into ordered phases','Each phase has acceptance criteria']},
+  'git-precommit':{name:'pre-commit',path:'.git/hooks/',trigger:'At every git commit',desc:'Wrapper that runs all governance checks before a commit is accepted.',sections:['Runs: knowledge-confirmed.sh (blocks [CONFIRMED] removal)','Runs: check-secrets.sh (blocks credentials in staged files)','Runs: check-file-size.sh (warns on large files)','Does NOT use --no-verify bypass by default','To skip knowledge guard only: AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit -m "..."']},
+  'git-commitmsg':{name:'commit-msg',path:'.git/hooks/',trigger:'At every git commit (after pre-commit)',desc:'Enforces commit message format.',sections:['Must include ticket prefix (e.g. TICKET-123) or conventional commit type','Blocks commit if format violated','Helps maintain traceable commit history']},
+  'git-knowledge-guard':{name:'knowledge-confirmed.sh',path:'.claude/git-hooks/checks/',trigger:'Called by pre-commit',desc:'Protects [CONFIRMED] entries from silent deletion.',sections:['Scans git diff for removed lines from knowledge/*.md','Blocks commit if any [CONFIRMED] line is deleted','These entries are human-verified truth — removal must be intentional','Bypass: AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit — bypasses ONLY this check, all others still run']},
+  'cc-protect':{name:'protect-files.sh',path:'.claude/hooks/',trigger:'PreToolUse (Edit|Write|Bash)',desc:'Claude Code equivalent of Kiro protect-files hook.',sections:['Blocks writes to steering/, hooks/, git hooks','Blocks edits to high-risk files without confirmation']},
+  'cc-secrets-pre':{name:'check-secrets.sh',path:'.claude/hooks/',trigger:'PreToolUse (Edit|Write)',desc:'Scans staged content for credential patterns.',sections:['Same pattern library as Kiro version','Runs before write to prevent damage']},
+  'cc-block':{name:'block-dangerous-commands.sh',path:'.claude/hooks/',trigger:'PreToolUse (Bash)',desc:'Blocks destructive shell commands.',sections:['rm -rf, drop table, git push --force blocked','Force push to main/master always blocked']},
+  'cc-spec':{name:'check-spec-exists.sh',path:'.claude/hooks/',trigger:'PreToolUse (conditional)',desc:'Blocks code generation without spec. Only when specFirstEnabled=true.',sections:['Checks specs/[feature]/ exists and is complete','Same logic as Kiro spec-first-gate']},
+  'cc-session':{name:'session-continuity.sh',path:'.claude/hooks/',trigger:'PreToolUse (session start)',desc:'Injects project context when a Claude Code session starts.',sections:['Reads in-progress specs, last task state','Maintains context across session interruptions']},
+  'cc-format':{name:'format-code.sh',path:'.claude/hooks/',trigger:'PostToolUse (Edit|Write)',desc:'Auto-formats every file Claude writes.',sections:['Runs stack formatter immediately after write','prettier / ruff format / dart format / spotless / gofmt']},
+  'cc-analyze':{name:'analyze-code.sh',path:'.claude/hooks/',trigger:'Stop (once per turn)',desc:'Lints once when Claude finishes a turn — not per file.',sections:['Runs at Stop hook (end of Claude turn) not PostToolUse','One lint pass over all files written in the turn','Less noisy than per-file linting']},
+  'cc-posttask':{name:'post-task-checklist.sh',path:'.claude/hooks/',trigger:'Stop (once per turn)',desc:'Architecture + quality checklist at end of each Claude turn.',sections:['Architecture compliance, tests written, file size, spec updated','Jira reminder if .jira file exists']},
+  'kb-tech':{name:'knowledge/tech-[scope].md',path:'knowledge/ (project root)',trigger:'Written by /tech-knowledge or workflow-tech-knowledge',desc:'The HOW file. Read by every developer command via the knowledge preamble.',sections:['Stack Primer — plain-English framework explanation','Layer Map, Layer Flow Diagram, Patterns in Use, File Inventory, Conventions','First-Run Guide — numbered steps git clone to running server (backend)','Environment Variables — every .env variable explained','Developer Daily Commands — install/start/test/build/migrate','Database — connection (any SQL client), migration workflow, SQL verification','Stack-Specific Notes — beginner gotchas per framework (NestJS modules, FastAPI venv, etc.)','API Access — base URL, auth, curl to get JWT token, Swagger URL','Logging & Debugging — log location, debugger attach command','Needs Clarification — [UNKNOWN] entries for team review']},
+  'kb-product':{name:'knowledge/product-[scope].md',path:'knowledge/ (project root)',trigger:'Written by /product-knowledge; grown by Gate 1 silent capture',desc:'The WHAT file. Grows automatically every sprint as [CONFIRMED] entries are captured.',sections:['User Flows — derived from routes/navigation, one flow per feature','Domain Objects — entities with fields, business meaning, relationships','Domain Relationships — ER diagram (Mermaid)','Permissions & Roles — who can do what, derived from guards/middleware','Business States — status enums, state transitions (Mermaid)','API Endpoint Catalog (backend) — method, path, auth, description per route','Contribution Workflow (backend) — branch, code, migrate, lint, test, PR','Needs Clarification — WHY questions code cannot answer']},
+  'kb-sql':{name:'knowledge/db-schema-discovery.sql',path:'knowledge/ (project root)',trigger:'Optional export after /tech-knowledge when DB detected',desc:'Project-aware schema discovery queries — committed to git, not gitignored.',sections:['Header injects: project name, detected engine, ORM, migration table name','PostgreSQL: 15 queries — schemas, tables, columns, PKs, FKs, indexes, enums, views, functions, triggers, multi-tenant, soft-delete, sizes, running queries, migration history','MySQL: 10 INFORMATION_SCHEMA queries','MongoDB: .js file with mongosh commands','SQLite: PRAGMA statements','Redis: .sh file with redis-cli commands','Works with: DBeaver, SQL Workbench/J, DataGrip, TablePlus, pgAdmin, Beekeeper Studio, or any SQL client']},
+  'kb-conflicts':{name:'knowledge/conflicts/[a]-vs-[b].md',path:'knowledge/conflicts/',trigger:'Written by /detect-conflicts',desc:'Team lead decision inbox for cross-feature business rule conflicts.',sections:['Four conflict types: Permission, Domain object, Business state, Flow assumption','Each entry: what file A says, what file B says, why it conflicts, decision field','Resolution: change [ ] Unresolved to [x] Resolved — decision made','Resolved entries skipped on next /detect-conflicts run','Already-resolved count shown in output']},
+};
+
+// ── drawer ───────────────────────────────────────────────────────────────────
+function openDrawer(id){
+  const f = FILES[id]; if(!f) return;
+  document.getElementById('drawer-file').textContent = f.name;
+  document.getElementById('drawer-path').textContent = f.path;
+
+  const body = document.getElementById('drawer-body');
+  let html = '';
+  if(f.trigger){
+    const tc = getTriggerColor(f.trigger);
+    html += `<div class="drawer-section"><div class="drawer-label">Trigger</div><div class="trigger-chip" style="color:${tc.c};background:${tc.bg};border-color:${tc.b}">${f.trigger}</div></div>`;
+  }
+  html += `<div class="drawer-section"><div class="drawer-label">Purpose</div><div class="drawer-desc">${f.desc}</div></div>`;
+  if(f.sections && f.sections.length){
+    html += `<div class="drawer-section"><div class="drawer-label">Contents / Sections</div><ul class="drawer-list">${f.sections.map(s=>`<li>${s}</li>`).join('')}</ul></div>`;
+  }
+  body.innerHTML = html;
+
+  document.getElementById('overlay').classList.add('show');
+  document.getElementById('drawer').classList.add('open');
+  // mark active
+  document.querySelectorAll('.file-card.active').forEach(c=>c.classList.remove('active'));
+  event?.currentTarget?.classList?.add('active');
+}
+
+function closeDrawer(){
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  document.querySelectorAll('.file-card.active').forEach(c=>c.classList.remove('active'));
+}
+
+function getTriggerColor(t){
+  if(/preToolUse|PreToolUse/.test(t)) return {c:'#f59e0b',bg:'rgba(245,158,11,0.1)',b:'rgba(245,158,11,0.3)'};
+  if(/postToolUse|PostToolUse/.test(t)) return {c:'#a78bfa',bg:'rgba(167,139,250,0.1)',b:'rgba(167,139,250,0.3)'};
+  if(/fileEdited/.test(t)) return {c:'#38bdf8',bg:'rgba(56,189,248,0.1)',b:'rgba(56,189,248,0.3)'};
+  if(/promptSubmit/.test(t)) return {c:'#fb923c',bg:'rgba(251,146,60,0.1)',b:'rgba(251,146,60,0.3)'};
+  if(/postTaskExecution/.test(t)) return {c:'#e879f9',bg:'rgba(232,121,249,0.1)',b:'rgba(232,121,249,0.3)'};
+  if(/userTriggered/.test(t)) return {c:'#34d399',bg:'rgba(52,211,153,0.1)',b:'rgba(52,211,153,0.3)'};
+  if(/commit/.test(t)) return {c:'#f87171',bg:'rgba(248,113,113,0.1)',b:'rgba(248,113,113,0.3)'};
+  if(/Always/.test(t)) return {c:'#22c55e',bg:'rgba(34,197,94,0.1)',b:'rgba(34,197,94,0.3)'};
+  if(/Stop/.test(t)) return {c:'#e879f9',bg:'rgba(232,121,249,0.1)',b:'rgba(232,121,249,0.3)'};
+  return {c:'#94a3b8',bg:'rgba(148,163,184,0.06)',b:'rgba(148,163,184,0.2)'};
+}
+
+// ── nav scroll ───────────────────────────────────────────────────────────────
+function scrollTo(id){
+  const el = document.getElementById(id);
+  if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('nav-'+id)?.classList.add('active');
+}
+
+// ── agent tab (UI only — all sections shown for both) ────────────────────────
+function switchAgent(agent, btn){
+  document.querySelectorAll('.agent-tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+// ── IntersectionObserver for active nav ──────────────────────────────────────
+const navMap = {steering:'nav-steering',commands:'nav-commands',pretool:'nav-pretool',posttool:'nav-posttool',filedited:'nav-filedited',promptsubmit:'nav-promptsubmit',posttask:'nav-posttask',usertriggered:'nav-usertriggered',cchooks:'nav-cchooks',githooks:'nav-githooks',knowledge:'nav-knowledge',tree:'nav-tree'};
+const io = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){
+      const navId = navMap[e.target.id];
+      if(navId){
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+        document.getElementById(navId)?.classList.add('active');
+      }
+    }
+  });
+},{rootMargin:'-20% 0px -70% 0px'});
+document.querySelectorAll('.section-anchor').forEach(s=>io.observe(s));
+</script>
+</body>
+</html>

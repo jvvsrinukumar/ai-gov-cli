@@ -9,3 +9,12 @@ coverage/
 # AI governance CLI
 ai_governance_v14*.sh
 onboard.sh
+
+# AI governance CLI
+onboard.sh
+
+# AI governance usage logs (local telemetry)
+.ai-gov/usage-logs/
+
+# Knowledge hub HTML exports (local sharing only)
+knowledge/*.html
