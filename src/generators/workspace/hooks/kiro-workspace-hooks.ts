@@ -658,8 +658,7 @@ Read and confirm each file exists and is non-empty:
 - .kiro/steering/architecture.md
 - .kiro/steering/coding-standards.md
 - .kiro/steering/workflow.md
-- .kiro/steering/ai-usage-policy.md
-- .kiro/steering/spec-first-workflow.md
+- .kiro/steering/developer-reference.md
 
 Check .kiro/hooks/ — all workflow hooks present? Versions match ${hookVersion}?
 

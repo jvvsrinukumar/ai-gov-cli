@@ -5,15 +5,8 @@ export function generateHooksReadme(c: GovernanceConfig): string {
 
     let fmtStatus = 'Auto-format after edits';
     let analyzeStatus = 'Run linter/analyzer';
-    let fileSizeStatus = 'Warn when file exceeds 200 lines (frontend stacks)';
-
     if (!s.detectedFormatter) fmtStatus = 'No-op (no formatter configured)';
     if (!c.profile.analyzeCmd) analyzeStatus = 'No-op (no linter configured)';
-
-    const frontendStacks = ['flutter', 'kotlin', 'react', 'angular'];
-    if (!frontendStacks.includes(c.stack)) {
-        fileSizeStatus = `No-op (not applicable for ${c.stack})`;
-    }
 
     const totalCount = c.specFirstEnabled
         ? '12 scripts / 12 registrations (all use `bash` prefix for Windows compatibility)'
@@ -37,10 +30,7 @@ Total: ${totalCount}
 | \`block-dangerous-commands.sh\` | PreToolUse Edit\\|Write\\|Bash | Yes | Block force push, rm -rf, pkg install |
 ${specRow}
 | \`format-code.sh\` | PostToolUse Edit\\|Write | No | ${fmtStatus} |
-| \`analyze-code.sh\` | PostToolUse Edit\\|Write | No | ${analyzeStatus} |
-| \`check-feature-readme.sh\` | PostToolUse Edit\\|Write | No | Ensure README exists and is updated |
-| \`check-consistency.sh\` | PostToolUse Edit\\|Write | No | Check spec/code/README drift |
-| \`check-file-size.sh\` | PostToolUse Edit\\|Write | Warn/Block | ${fileSizeStatus} |
+| \`analyze-code.sh\` | Stop | No | ${analyzeStatus} |
 | \`post-task-checklist.sh\` | Stop | No | End-of-task reminder |
 
 ## Windows Compatibility

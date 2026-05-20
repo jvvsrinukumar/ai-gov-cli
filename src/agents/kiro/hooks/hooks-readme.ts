@@ -13,13 +13,9 @@ export function generateHooksReadme(c: GovernanceConfig): string {
 | \`protect-files.kiro.hook\` | preToolUse (write) | askAgent | Warns on high-risk file edits |
 | \`pre-write-secrets-gate.kiro.hook\` | preToolUse (write) | askAgent | Blocks writes containing hardcoded credentials |
 ${c.specFirstEnabled ? '| `spec-first-gate.kiro.hook` | preToolUse (write) | askAgent | Blocks writes without spec |\n' : ''}| \`check-secrets.kiro.hook\` | fileEdited | askAgent | Scans for hardcoded credentials (post-hoc) |
-| \`check-file-size.kiro.hook\` | postToolUse (write) | askAgent | Warns on files > 200 lines |
-| \`check-feature-readme.kiro.hook\` | postToolUse (write) | askAgent | Reminds to update feature README |
-| \`check-consistency.kiro.hook\` | postToolUse (write) | askAgent | Detects spec-vs-code drift |
 | \`format-code.kiro.hook\` | postToolUse (write) | runCommand | Auto-formats after write |
-| \`analyze-code.kiro.hook\` | postToolUse (write) | runCommand | Runs linter after write |
+| \`analyze-code.kiro.hook\` | postTaskExecution | runCommand | Runs linter once per task completion |
 | \`session-continuity.kiro.hook\` | promptSubmit | askAgent | Context preservation |
-| \`require-task-type.kiro.hook\` | promptSubmit | askAgent | Task classification |
 | \`post-task-checklist.kiro.hook\` | postTaskExecution | askAgent | Post-task verification |
 
 ## How Kiro Hooks Work

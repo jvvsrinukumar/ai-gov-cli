@@ -25,8 +25,7 @@ export async function runDoctor(options: { dir: string; agent?: string; producti
         check('.kiro/hooks/ exists', existsSync(join(dir, '.kiro', 'hooks')));
 
         const steeringFiles = ['constitution.md', 'architecture.md', 'coding-standards.md',
-            'ai-usage-policy.md', 'workflow.md', 'spec-first-workflow.md',
-            'feature-readme.md', 'prompt-templates.md'];
+            'workflow.md', 'developer-reference.md'];
         for (const f of steeringFiles) {
             check(`  steering/${f}`, existsSync(join(dir, '.kiro', 'steering', f)));
         }
@@ -41,10 +40,9 @@ export async function runDoctor(options: { dir: string; agent?: string; producti
 
         const hooksDir = join(dir, '.kiro', 'hooks');
         if (existsSync(hooksDir)) {
-            const hookFiles = ['block-dangerous-commands.json', 'protect-files.json',
-                'check-secrets.json', 'check-file-size.json', 'check-feature-readme.json',
-                'check-consistency.json', 'session-continuity.json', 'require-task-type.json',
-                'post-task-checklist.json'];
+            const hookFiles = ['block-dangerous-commands.kiro.hook', 'protect-files.kiro.hook',
+                'pre-write-secrets-gate.kiro.hook', 'check-secrets.kiro.hook',
+                'session-continuity.kiro.hook', 'post-task-checklist.kiro.hook'];
             for (const h of hookFiles) {
                 const hp = join(hooksDir, h);
                 const exists = existsSync(hp);
@@ -72,9 +70,8 @@ export async function runDoctor(options: { dir: string; agent?: string; producti
 
         const hooksDir = join(dir, '.claude', 'hooks');
         if (existsSync(hooksDir)) {
-            const hooks = ['protect-files.sh', 'check-secrets.sh', 'block-dangerous-commands.sh', 'check-spec-exists.sh',
-                'session-continuity.sh', 'format-code.sh', 'analyze-code.sh',
-                'check-feature-readme.sh', 'check-consistency.sh', 'check-file-size.sh', 'post-task-checklist.sh'];
+            const hooks = ['protect-files.sh', 'check-secrets.sh', 'block-dangerous-commands.sh',
+                'session-continuity.sh', 'format-code.sh', 'analyze-code.sh', 'post-task-checklist.sh'];
             for (const h of hooks) {
                 check(`  ${h}`, existsSync(join(hooksDir, h)));
             }

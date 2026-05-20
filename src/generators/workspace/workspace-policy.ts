@@ -9,7 +9,7 @@ export function generateWorkspacePolicy(workspaceName: string, agent: 'claude-co
 
 ## Scope
 This policy applies to ALL projects in this workspace.
-Each project may extend it with project-specific rules in their own \`steering/ai-usage-policy.md\`.
+Each project may extend it with project-specific rules in their own \`steering/workflow.md\`.
 
 ## General Rules
 
