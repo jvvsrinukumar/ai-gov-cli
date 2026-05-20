@@ -239,7 +239,7 @@ describe('Prompt consistency across agents', () => {
 // ─── Integration: file generation ─────────────────────────────────────────────
 
 describe('Integration: Claude Code file generation', () => {
-    test('generates jira.md and task-estimates.md on init', () => {
+    test('generates jira.md and developer-reference.md on init', () => {
         const dir = mkdtempSync(join(tmpdir(), 'ai-gov-cc-jira-'));
         try {
             const config: GovernanceConfig = {
@@ -250,12 +250,12 @@ describe('Integration: Claude Code file generation', () => {
             };
             generateClaudeCode(config);
             expect(existsSync(join(dir, '.claude', 'commands', 'jira.md'))).toBe(true);
-            expect(existsSync(join(dir, '.claude', 'steering', 'task-estimates.md'))).toBe(true);
+            expect(existsSync(join(dir, '.claude', 'steering', 'developer-reference.md'))).toBe(true);
 
             const jiraContent = readFileSync(join(dir, '.claude', 'commands', 'jira.md'), 'utf-8');
             expect(jiraContent.startsWith('# /jira')).toBe(true);
 
-            const estimatesContent = readFileSync(join(dir, '.claude', 'steering', 'task-estimates.md'), 'utf-8');
+            const estimatesContent = readFileSync(join(dir, '.claude', 'steering', 'developer-reference.md'), 'utf-8');
             expect(estimatesContent).toContain('[~');
         } finally {
             rmSync(dir, { recursive: true, force: true });
@@ -264,7 +264,7 @@ describe('Integration: Claude Code file generation', () => {
 });
 
 describe('Integration: Kiro file generation', () => {
-    test('generates workflow-jira-sync.kiro.hook and task-estimates.md on init', () => {
+    test('generates workflow-jira-sync.kiro.hook and developer-reference.md on init', () => {
         const dir = mkdtempSync(join(tmpdir(), 'ai-gov-kiro-jira-'));
         try {
             const config: GovernanceConfig = {
@@ -275,14 +275,14 @@ describe('Integration: Kiro file generation', () => {
             };
             generateKiro(config);
             expect(existsSync(join(dir, '.kiro', 'hooks', 'workflow-jira-sync.kiro.hook'))).toBe(true);
-            expect(existsSync(join(dir, '.kiro', 'steering', 'task-estimates.md'))).toBe(true);
+            expect(existsSync(join(dir, '.kiro', 'steering', 'developer-reference.md'))).toBe(true);
 
             const hookContent = readFileSync(join(dir, '.kiro', 'hooks', 'workflow-jira-sync.kiro.hook'), 'utf-8');
             const hook = JSON.parse(hookContent);
             expect(hook.when.type).toBe('userTriggered');
             expect(hook.then.type).toBe('askAgent');
 
-            const estimatesContent = readFileSync(join(dir, '.kiro', 'steering', 'task-estimates.md'), 'utf-8');
+            const estimatesContent = readFileSync(join(dir, '.kiro', 'steering', 'developer-reference.md'), 'utf-8');
             expect(estimatesContent).toContain('---'); // Kiro front-matter
             expect(estimatesContent).toContain('[~');
         } finally {

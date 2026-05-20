@@ -1,7 +1,33 @@
 import type { GovernanceConfig } from '../types.js';
 
+function buildTestConventions(stack: string, subtype: string): string {
+    switch (stack) {
+        case 'kotlin':
+            return `\n### Testing Conventions — Kotlin / Android\n- Use MockK: \`mockk<T>(relaxed=true)\` for lenient mocks; \`every { }\` / \`verify { }\` for strict\n- Coroutines: \`coEvery { }\` / \`coVerify { }\`; wrap tests in \`runTest { }\` with \`StandardTestDispatcher\`\n- Method names use backtick strings: \`\`\`fun \`should return user when id is valid\`() { }\`\`\`\n- Structure: Given / When / Then comments inside test body`;
+        case 'nodejs':
+            if (subtype === 'nestjs') return `\n### Testing Conventions — Node.js / NestJS\n- Use Jest with \`@nestjs/testing\` \`TestingModule\`: \`Test.createTestingModule({ providers: [...] }).compile()\`\n- Unit tests: \`jest.fn()\` for dependencies; inject via \`module.get<T>()\`\n- E2E tests: \`supertest\` against the NestJS app; use \`app.init()\` in \`beforeAll\`\n- Arrange / Act / Assert structure`;
+            return `\n### Testing Conventions — Node.js\n- Use Jest: \`describe\` / \`it\`; \`jest.mock()\` at module level; \`jest.spyOn()\` for method-level spies\n- \`beforeEach\` for setup; \`afterEach\` for cleanup\n- HTTP routes: \`supertest\` against the Express/Fastify app instance`;
+        case 'react':
+        case 'next':
+            return `\n### Testing Conventions — React\n- Use React Testing Library: \`render\`, \`screen\`, \`userEvent\` — never query by implementation detail\n- Custom hooks: \`renderHook\` + \`act()\` for state updates\n- No Enzyme; no snapshot tests for behaviour (snapshots only for styled components)\n- Arrange / Act / Assert structure`;
+        case 'python':
+            return `\n### Testing Conventions — Python / pytest\n- Use \`@pytest.fixture\` for shared setup; \`conftest.py\` for cross-module fixtures\n- Async tests: \`@pytest.mark.asyncio\`; FastAPI: \`httpx.AsyncClient\` with \`ASGITransport\`\n- Mock with \`unittest.mock.patch\` or \`pytest-mock\`'s \`mocker.patch\`\n- Name: \`test_<action>_when_<condition>_should_<result>\``;
+        case 'java':
+            return `\n### Testing Conventions — Java / JUnit 5\n- \`@ExtendWith(MockitoExtension.class)\` for unit tests; \`@Mock\` / \`@InjectMocks\`\n- \`@SpringBootTest\` + \`@AutoConfigureMockMvc\` for integration; \`MockMvc\` for controller tests\n- \`@DataJpaTest\` with in-memory H2 for repository tests\n- Arrange / Act / Assert; test method: \`should_ReturnUser_When_IdIsValid()\``;
+        case 'angular':
+            return `\n### Testing Conventions — Angular\n- Use \`TestBed.configureTestingModule\` with \`HttpClientTestingModule\` for services that call HTTP\n- \`ComponentFixture\` + \`fixture.detectChanges()\` for component tests\n- Jasmine or Jest; \`spyOn\` for method mocking`;
+        case 'flutter':
+            return `\n### Testing Conventions — Flutter\n- Unit: \`flutter_test\`; BLoC/Cubit: \`bloc_test\` with \`blocTest<>(...)\`\n- Widget: \`WidgetTester\`, \`pump()\` / \`pumpWidget()\`, \`find.byType()\`\n- Mocking: \`mockito\` with \`@GenerateMocks\`; run \`flutter pub run build_runner build\` after annotation changes`;
+        case 'swiftui':
+            return `\n### Testing Conventions — SwiftUI / XCTest\n- \`@MainActor\` on UI test classes; \`async/await\` with \`XCTestExpectation\` for async flows\n- \`XCTAssertEqual\`, \`XCTAssertNil\`, \`XCTAssertThrowsError\` for assertions\n- Test ViewModel in isolation; inject dependencies via protocol`;
+        default:
+            return '';
+    }
+}
+
 export function generateCodingStandards(c: GovernanceConfig): string {
     const p = c.profile, b = c.blocks;
+    const testConventions = buildTestConventions(c.stack, c.scan.detectedSubtype || '');
     let fileSizeSection = '';
     if (['flutter', 'kotlin', 'react', 'angular'].includes(c.stack)) {
         const tables: Record<string, string> = {
@@ -49,7 +75,7 @@ ${fileSizeSection}
 - No TODO in production — create a ${c.project.ticketSystem} ticket
 
 ## Testing
-${b.testLayers}
+${b.testLayers}${testConventions}
 
 ## Imports
 ${p.importStyle}

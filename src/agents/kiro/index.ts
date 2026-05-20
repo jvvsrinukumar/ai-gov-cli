@@ -14,14 +14,10 @@ import { generateAllKiroHooks } from './hooks/index.js';
 import { generateConstitution } from '../../generators/constitution.js';
 import { generateArchitecture } from '../../generators/architecture.js';
 import { generateCodingStandards } from '../../generators/coding-standards.js';
-import { generateAIUsagePolicy } from '../../generators/ai-usage-policy.js';
 import { generateWorkflow } from '../../generators/workflow.js';
-import { generateSpecFirstWorkflow } from '../../generators/spec-first-workflow.js';
-import { generateFeatureReadme } from '../../generators/feature-readme.js';
-import { generatePromptTemplates } from '../../generators/prompt-templates.js';
+import { generateDeveloperReference } from '../../generators/developer-reference.js';
 import { generateMonorepoGovernance } from '../../generators/monorepo.js';
-import { generateNamingConventions } from '../../generators/naming-conventions.js';
-import { generateTaskEstimates } from '../../generators/task-estimates.js';
+import { generateSystemContext } from '../../generators/system-context.js';
 
 export function generateKiro(config: GovernanceConfig): void {
     console.log('');
@@ -47,29 +43,26 @@ export function generateKiro(config: GovernanceConfig): void {
     }
 
     // ── Steering files (shared content + Kiro front-matter) ──────────────
-    log.section('Steering:');
+    log.section('Steering (5 files):');
     const steeringDir = join(dir, '.kiro', 'steering');
 
-    safeWrite(join(steeringDir, 'task-estimates.md'),
-        wrapWithFrontMatter(generateTaskEstimates(config)), opts);
     safeWrite(join(steeringDir, 'constitution.md'),
         wrapWithFrontMatter(generateConstitution(config)), opts);
     safeWrite(join(steeringDir, 'architecture.md'),
         wrapWithFrontMatter(generateArchitecture(config)), opts);
     safeWrite(join(steeringDir, 'coding-standards.md'),
         wrapWithFrontMatter(generateCodingStandards(config)), opts);
-    safeWrite(join(steeringDir, 'ai-usage-policy.md'),
-        wrapWithFrontMatter(generateAIUsagePolicy(config)), opts);
     safeWrite(join(steeringDir, 'workflow.md'),
         wrapWithFrontMatter(generateWorkflow(config)), opts);
-    safeWrite(join(steeringDir, 'spec-first-workflow.md'),
-        wrapWithFrontMatter(generateSpecFirstWorkflow(config)), opts);
-    safeWrite(join(steeringDir, 'feature-readme.md'),
-        wrapWithFrontMatter(generateFeatureReadme(config)), opts);
-    safeWrite(join(steeringDir, 'prompt-templates.md'),
-        wrapWithFrontMatter(generatePromptTemplates(config)), opts);
-    safeWrite(join(steeringDir, 'naming-conventions.md'),
-        wrapWithFrontMatter(generateNamingConventions(config)), opts);
+    safeWrite(join(steeringDir, 'developer-reference.md'),
+        wrapWithFrontMatter(generateDeveloperReference(config)), opts);
+    // Optional: system-context.md only when .kiro/notes/ has .md files
+    const sysCtx = generateSystemContext(config);
+    if (sysCtx) {
+        safeWrite(join(steeringDir, 'system-context.md'),
+            wrapWithFrontMatter(sysCtx, 'manual'), opts);
+        log.created('system-context.md (notes/ index — manual inclusion)');
+    }
 
     // ── Hooks (JSON files) ───────────────────────────────────────────────
     log.section('Hooks:');
@@ -241,12 +234,11 @@ export function upgradeKiro(config: GovernanceConfig, opts: WriteOptions, force:
     if (force) {
         log.section('Upgrading steering files (--force):');
         const steeringDir = join(dir, '.kiro', 'steering');
+        safeWrite(join(steeringDir, 'constitution.md'), wrapWithFrontMatter(generateConstitution(config)), opts);
         safeWrite(join(steeringDir, 'architecture.md'), wrapWithFrontMatter(generateArchitecture(config)), opts);
         safeWrite(join(steeringDir, 'coding-standards.md'), wrapWithFrontMatter(generateCodingStandards(config)), opts);
         safeWrite(join(steeringDir, 'workflow.md'), wrapWithFrontMatter(generateWorkflow(config)), opts);
-        safeWrite(join(steeringDir, 'constitution.md'), wrapWithFrontMatter(generateConstitution(config)), opts);
-        safeWrite(join(steeringDir, 'naming-conventions.md'), wrapWithFrontMatter(generateNamingConventions(config)), opts);
-        safeWrite(join(steeringDir, 'task-estimates.md'), wrapWithFrontMatter(generateTaskEstimates(config)), opts);
+        safeWrite(join(steeringDir, 'developer-reference.md'), wrapWithFrontMatter(generateDeveloperReference(config)), opts);
     } else {
         log.info('Steering files kept (use --force to also upgrade them)');
     }

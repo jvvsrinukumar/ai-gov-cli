@@ -17,7 +17,7 @@
  *   ai-gov upgrade --force                  # also overwrite steering files
  */
 
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, rmSync } from 'fs';
 import { join, basename, resolve } from 'path';
 import type { Stack, GovernanceConfig, Agent } from '../types.js';
 import { createDefaultScanResult } from '../types.js';
@@ -106,6 +106,37 @@ export function runUpgrade(options: UpgradeOptions): void {
 
     // ── Delegate to agent adapter ───────────────────────────────────────
     adapter.upgrade(config, opts, force);
+
+    // ── Retire merged steering files (v20.4+) ───────────────────────────
+    // These files were consolidated into 5 merged files in v20.4.
+    // On --force: delete retired files so the AI doesn't read stale/conflicting content.
+    // On standard upgrade: print migration notice only.
+    const RETIRED_STEERING: Record<string, string[]> = {
+        'claude-code': ['ai-usage-policy.md', 'spec-first-workflow.md', 'feature-readme.md', 'prompt-templates.md', 'task-estimates.md'],
+        'kiro': ['ai-usage-policy.md', 'spec-first-workflow.md', 'feature-readme.md', 'prompt-templates.md', 'task-estimates.md', 'naming-conventions.md'],
+    };
+    const steeringDir = join(projectDir, agentDirName, 'steering');
+    const retiredList = RETIRED_STEERING[agent] ?? [];
+    if (force) {
+        const deleted: string[] = [];
+        for (const retired of retiredList) {
+            const p = join(steeringDir, retired);
+            if (existsSync(p)) { rmSync(p); deleted.push(retired); }
+        }
+        if (deleted.length > 0) {
+            log.section('Retired steering files (merged into 5 consolidated files):');
+            deleted.forEach(f => log.warn(`Removed: ${f} (content merged into workflow.md / developer-reference.md)`));
+        }
+    } else {
+        const present = retiredList.filter(f => existsSync(join(steeringDir, f)));
+        if (present.length > 0) {
+            console.log('');
+            console.log('  ⚠  Steering consolidation available (v20.4):');
+            console.log(`     ${present.length} steering file(s) can be merged into 5 consolidated files.`);
+            console.log('     Run: ai-gov upgrade --force to migrate and remove old files.');
+            console.log('     Until then, existing steering files are preserved as-is.');
+        }
+    }
 
     // ── Git hooks (shared across agents) ────────────────────────────────
     log.section(`Upgrading git hooks (${agentDirName}/git-hooks/):`);

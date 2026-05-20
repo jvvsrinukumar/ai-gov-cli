@@ -2,7 +2,7 @@ import { existsSync, readdirSync } from 'fs';
 import { execSync } from 'child_process';
 import { join, basename } from 'path';
 import type { Stack, BaseProfile, ScanResult } from '../types.js';
-import { findFilesRecursive, fileExists } from '../utils/file-helpers.js';
+import { findFilesRecursive, fileExists, readFileSafe } from '../utils/file-helpers.js';
 import { log } from '../utils/logger.js';
 import { scanFlutter } from './flutter.js';
 import { scanKotlin } from './kotlin.js';
@@ -51,6 +51,7 @@ export function scanProject(
     }
 
     scanHighRiskByName(stack, projectDir, profile, scan);
+    scanDomainContext(projectDir, scan);
 
     // Default featuresDir
     profile.featuresDir = profile.featuresDir || profile.sourceDir;
@@ -90,6 +91,35 @@ export function checkSpecFirstEnabled(projectDir: string): boolean {
     } catch { /* no git or no commits */ }
     log.detected('INFO: No spec history found — spec-first enforcement disabled (opt-in for all stacks)');
     return false;
+}
+
+function scanDomainContext(projectDir: string, scan: ScanResult): void {
+    // Read manifest + README for domain/sensitivity signals
+    const candidates = ['package.json', 'pyproject.toml', 'requirements.txt', 'pom.xml',
+        'build.gradle.kts', 'build.gradle', 'pubspec.yaml', 'README.md', 'readme.md'];
+    const content = candidates
+        .map(f => readFileSafe(join(projectDir, f)))
+        .join('\n')
+        .toLowerCase();
+
+    if (/fhir|hl7|hipaa|medic[^\w]|clinical|patient\b|phi\b|biometric/.test(content)) {
+        scan.detectedDomainContext = 'healthcare';
+        scan.detectedDataSensitivity = 'health';
+        log.detected('Domain: healthcare (PHI/health data detected)');
+        return;
+    }
+    if (/stripe|plaid|payment|fintech|banking|transaction|ledger|kyc\b/.test(content)) {
+        scan.detectedDomainContext = 'fintech';
+        log.detected('Domain: fintech');
+    } else if (/logistics|shipment|tracking|freight|dispatch|fulfillment/.test(content)) {
+        scan.detectedDomainContext = 'logistics';
+        log.detected('Domain: logistics');
+    }
+    // PII sensitivity (independent of domain)
+    if (/bcrypt|passlib|jsonwebtoken|gdpr|personal.{0,10}data|pii\b/.test(content)) {
+        scan.detectedDataSensitivity = 'pii';
+        log.detected('Data sensitivity: PII');
+    }
 }
 
 function scanHighRiskByName(

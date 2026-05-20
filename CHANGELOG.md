@@ -7,6 +7,46 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [20.4.0] — 2026-05-20
+
+### Steering File Consolidation (9→5) + V2 Domain/Security/Testing Content
+
+v20.4 reduces the always-loaded steering file count from 9 (Claude Code) / 10 (Kiro) down to 5 for both agents, and absorbs all V2 governance content — domain context, data security rules, stack-specific test conventions, external service boundaries, and data layer patterns — into those 5 consolidated files. A safe upgrade migration deletes orphaned old files on `--force` to prevent conflicting rules.
+
+### Added
+
+- **`src/generators/developer-reference.ts`** — new consolidated generator absorbing `feature-readme.ts` + `prompt-templates.ts` + `task-estimates.ts`. Writes `developer-reference.md` replacing the 3 separate files.
+- **`src/generators/system-context.ts`** — new conditional Kiro-only generator. Scans `.kiro/notes/` at init time; auto-generates `#[[file:...]]` references for every `.md` found. Skips generation entirely if no notes directory or no `.md` files. Written with `manual` inclusion so it only loads when the developer explicitly references it.
+- **`src/scanners/index.ts` — `scanDomainContext()`** — new shared scanner that reads manifests + README to detect domain context (`healthcare`/`fintech`/`logistics`/`general`) and data sensitivity (`health`/`pii`/`general`). Runs for all stacks after stack-specific scanning.
+- **`src/types.ts`** — `detectedDomainContext` and `detectedDataSensitivity` added to `ScanResult`; both default to `'general'`.
+
+### Changed
+
+- **`src/generators/constitution.ts`** — added `## Project Context` (app name, description, domain label, key domain concepts per detected domain) and `## Data Security Rules` (conditional blocks: health → PHI rules, pii → GDPR/PII rules, general → API key/secrets rules; stack-specific additions for kotlin/nodejs/react/python/java).
+- **`src/generators/architecture.ts`** — absorbed `generateNamingConventions()` content as a trailing `## Naming Conventions` section. Added `## External Service Boundaries` (backend stacks: DB, auth, queue, realtime detected services) and `## Data Layer Patterns` (ORM-specific: Prisma/TypeORM/Sequelize/Drizzle/SQLAlchemy/Spring JPA/Room).
+- **`src/generators/coding-standards.ts`** — added `buildTestConventions()`: stack-specific test convention blocks appended to `## Testing` section (MockK for Kotlin, Jest/NestJS for Node.js, RTL for React, pytest for Python, JUnit 5 for Java, TestBed for Angular, flutter_test + bloc_test for Flutter, XCTest for SwiftUI).
+- **`src/generators/workflow.ts`** — absorbed `generateAIUsagePolicy()` and `generateSpecFirstWorkflow()` as appended sections. Old `ai-usage-policy.md` and `spec-first-workflow.md` are no longer written as separate files.
+- **`src/agents/claude-code/index.ts`** — steering section reduced from 9 writes to 5: `constitution.md`, `architecture.md`, `coding-standards.md`, `workflow.md`, `developer-reference.md`.
+- **`src/agents/kiro/index.ts`** — steering section reduced from 10 writes to 5 always + optional `system-context.md` (manual, conditional on `.kiro/notes/`).
+- **`src/commands/upgrade.ts`** — added `RETIRED_STEERING_FILES` manifest + migration logic. Standard upgrade: prints notice that 5 old files can be consolidated. `--force` upgrade: writes new merged files then deletes retired files (`ai-usage-policy.md`, `spec-first-workflow.md`, `feature-readme.md`, `prompt-templates.md`, `task-estimates.md`, + `naming-conventions.md` for Kiro). New files written before old files deleted for atomicity.
+
+### Version alignment
+
+- `package.json` 20.3.0 → 20.4.0
+- `src/constants.ts` VERSION + HOOK_VERSION → 20.4.0
+- CI install scripts → `ai-gov@20.4.0`
+- `tests/knowledge-hub.test.ts` version assertion updated
+
+### Migration
+
+**Existing projects (no `--force`):** Old steering files remain unchanged. AI continues reading them as before. A migration notice is printed suggesting `ai-gov upgrade --force`.
+
+**`ai-gov upgrade --force`:** Generates 5 new consolidated steering files, then deletes the 6 retired individual files. New files are written first for safety. After migration, `.claude/steering/` and `.kiro/steering/` each contain exactly 5 files. No content is lost — all content from the 6 retired files is present in the 5 merged files.
+
+**New projects (`ai-gov init`):** Get 5 files from the start. No migration needed.
+
+---
+
 ## [20.3.0] — 2026-05-20
 
 ### Knowledge Freshness in PR Check + Documentation Overhaul

@@ -138,21 +138,21 @@ describe('CLI --agent routing', () => {
         expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'spec-first-gate.kiro.hook'))).toBe(false);
     });
 
-    test('claude-code init generates jira.md command and task-estimates.md steering', () => {
+    test('claude-code init generates jira.md command and developer-reference.md steering', () => {
         const config = makeConfig('claude-code', 'nodejs', {}, { projectDir: tmpDir });
         runGovernance(config);
         expect(existsSync(join(tmpDir, '.claude', 'commands', 'jira.md'))).toBe(true);
-        expect(existsSync(join(tmpDir, '.claude', 'steering', 'task-estimates.md'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.claude', 'steering', 'developer-reference.md'))).toBe(true);
         const jira = readFileSync(join(tmpDir, '.claude', 'commands', 'jira.md'), 'utf-8');
         expect(jira.startsWith('# /jira')).toBe(true);
         expect(jira).toContain('jira_get');
     });
 
-    test('kiro init generates workflow-jira-sync hook and task-estimates.md steering', () => {
+    test('kiro init generates workflow-jira-sync hook and developer-reference.md steering', () => {
         const config = makeConfig('kiro', 'nodejs', {}, { projectDir: tmpDir });
         runGovernance(config);
         expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'workflow-jira-sync.kiro.hook'))).toBe(true);
-        expect(existsSync(join(tmpDir, '.kiro', 'steering', 'task-estimates.md'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.kiro', 'steering', 'developer-reference.md'))).toBe(true);
         const hook = JSON.parse(readFileSync(join(tmpDir, '.kiro', 'hooks', 'workflow-jira-sync.kiro.hook'), 'utf-8'));
         expect(hook.when.type).toBe('userTriggered');
         expect(hook.name).toBe('Jira Sync');

@@ -1,4 +1,5 @@
 import type { GovernanceConfig } from '../types.js';
+import { generateNamingConventions } from './naming-conventions.js';
 
 function generateArchLayersBlock(c: GovernanceConfig): string {
     const s = c.scan;
@@ -224,6 +225,12 @@ export function generateArchitecture(c: GovernanceConfig): string {
         apiDocsSection = sections[s.detectedSwaggerStyle] || '';
     }
 
+    // External services + data layer (backend stacks only)
+    const externalServicesSection = c.isBackend ? buildExternalServicesSection(c) : '';
+    const dataLayerSection = buildDataLayerSection(c);
+    // Naming conventions absorbed (previously separate naming-conventions.md)
+    const namingSection = `\n---\n\n${generateNamingConventions(c)}`;
+
     return `# Architecture — ${p.stackDisplay}
 ${mixedArchSection}
 ## Layer Flow
@@ -252,5 +259,46 @@ ${p.statePattern}
 - Never skip a layer
 - Never expose raw DTOs to ${p.layerNames[0]} layer
 - Dependencies flow inward: ${p.layerFlow}
-${apiDocsSection}${legacyZoneSection}${generateArchLayersBlock(c)}`;
+${apiDocsSection}${legacyZoneSection}${generateArchLayersBlock(c)}${externalServicesSection}${dataLayerSection}${namingSection}`;
+}
+
+function buildExternalServicesSection(c: GovernanceConfig): string {
+    const s = c.scan;
+    const lines: string[] = [];
+    if (s.detectedORM && s.detectedORM !== 'not detected')
+        lines.push(`- **DB (${s.detectedORM}):** all access via repository layer — never raw queries in controllers`);
+    if (s.detectedDBDriver)
+        lines.push(`- **DB driver (${s.detectedDBDriver}):** always wrapped by repository; no driver calls in services`);
+    if (s.detectedAuth)
+        lines.push(`- **Auth (${s.detectedAuth}):** never replicate auth logic in app code — delegate to auth layer`);
+    if (s.detectedQueue)
+        lines.push(`- **Queue (${s.detectedQueue}):** all async work via queue — never block request thread`);
+    if (s.detectedRealtime)
+        lines.push(`- **Realtime (${s.detectedRealtime}):** event emission only from service layer, not controllers`);
+    lines.push(`- **External APIs:** document each in \`.kiro/notes/\` or \`.claude/notes/\` and reference from system-context`);
+    return `\n---\n\n## External Service Boundaries\n${lines.join('\n')}\n`;
+}
+
+function buildDataLayerSection(c: GovernanceConfig): string {
+    const orm = c.scan.detectedORM || '';
+    let content = '';
+    if (orm === 'Prisma') {
+        content = `- \`schema.prisma\` is the single source of truth — never edit generated migration files manually\n- Run \`npx prisma migrate dev\` for schema changes; commit migration alongside code`;
+    } else if (orm === 'TypeORM') {
+        content = `- \`@Entity\`/\`@Column\` decorators define schema — always use migrations for schema changes\n- Never use \`synchronize: true\` in production`;
+    } else if (orm === 'Sequelize') {
+        content = `- Migrations live in \`migrations/\` — never modify applied migrations\n- Use \`sequelize-cli migration:generate\` for all schema changes`;
+    } else if (orm === 'Drizzle') {
+        content = `- Schema defined in TypeScript — run \`drizzle-kit generate\` for migrations\n- Never edit generated SQL files manually`;
+    } else if (orm === 'SQLAlchemy') {
+        content = `- Base models live in \`models/\` — Alembic manages all schema changes\n- Run \`alembic revision --autogenerate\`, review SQL, then \`alembic upgrade head\``;
+    } else if (c.stack === 'java') {
+        content = `- \`@Entity\` + \`@Repository\` (Spring Data) — never use \`EntityManager\` directly in services\n- Flyway/Liquibase manages all schema changes — no manual DDL`;
+    } else if (c.stack === 'kotlin') {
+        content = `- Room: \`@Entity\`/\`@Dao\`/\`@Database\` — use \`Flow<T>\` for reactive queries\n- Increment \`version\` in \`@Database\` and provide \`Migration\` objects for every schema change`;
+    } else {
+        content = `- [Team: document ORM/schema approach, migration tool, and rules here]`;
+    }
+    if (!content) return '';
+    return `\n---\n\n## Data Layer Patterns\n${content}\n`;
 }

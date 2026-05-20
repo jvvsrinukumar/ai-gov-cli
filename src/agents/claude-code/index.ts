@@ -14,11 +14,8 @@ import { generateSettingsJson } from './settings-json.js';
 import { generateConstitution } from '../../generators/constitution.js';
 import { generateArchitecture } from '../../generators/architecture.js';
 import { generateCodingStandards } from '../../generators/coding-standards.js';
-import { generateAIUsagePolicy } from '../../generators/ai-usage-policy.js';
 import { generateWorkflow } from '../../generators/workflow.js';
-import { generateSpecFirstWorkflow } from '../../generators/spec-first-workflow.js';
-import { generateFeatureReadme } from '../../generators/feature-readme.js';
-import { generatePromptTemplates } from '../../generators/prompt-templates.js';
+import { generateDeveloperReference } from '../../generators/developer-reference.js';
 import { generateSpecTemplates } from '../../generators/spec-templates.js';
 import { generateExtensions } from './extensions.js';
 import { generateMonorepoGovernance } from '../../generators/monorepo.js';
@@ -38,7 +35,6 @@ import { generateKnowledgeCommand } from './commands/knowledge.js';
 import { generateBacklogCommand } from './commands/backlog.js';
 import { generatePlanPhasesCommand } from './commands/plan-phases.js';
 import { generateJiraCommand } from './commands/jira.js';
-import { generateTaskEstimates } from '../../generators/task-estimates.js';
 
 export function generateClaudeCode(config: GovernanceConfig): void {
     console.log('');
@@ -113,16 +109,12 @@ export function generateClaudeCode(config: GovernanceConfig): void {
     safeWrite(join(dir, '.claude', 'CLAUDE.md'), generateMasterClaudeMd(config), opts);
     generateSettingsJson(config, opts);
 
-    log.section('Steering:');
+    log.section('Steering (5 files):');
     safeWrite(join(dir, '.claude', 'steering', 'constitution.md'), generateConstitution(config), opts);
     safeWrite(join(dir, '.claude', 'steering', 'architecture.md'), generateArchitecture(config), opts);
     safeWrite(join(dir, '.claude', 'steering', 'coding-standards.md'), generateCodingStandards(config), opts);
-    safeWrite(join(dir, '.claude', 'steering', 'ai-usage-policy.md'), generateAIUsagePolicy(config), opts);
     safeWrite(join(dir, '.claude', 'steering', 'workflow.md'), generateWorkflow(config), opts);
-    safeWrite(join(dir, '.claude', 'steering', 'spec-first-workflow.md'), generateSpecFirstWorkflow(config), opts);
-    safeWrite(join(dir, '.claude', 'steering', 'feature-readme.md'), generateFeatureReadme(config), opts);
-    safeWrite(join(dir, '.claude', 'steering', 'prompt-templates.md'), generatePromptTemplates(config), opts);
-    safeWrite(join(dir, '.claude', 'steering', 'task-estimates.md'), generateTaskEstimates(config), opts);
+    safeWrite(join(dir, '.claude', 'steering', 'developer-reference.md'), generateDeveloperReference(config), opts);
 
     log.section('Hooks:');
     generateAllHooks(config, opts);

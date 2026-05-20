@@ -64,7 +64,7 @@ describe('Kiro init integration', () => {
         expect(existsSync(join(tmpDir, '.kiro', 'steering', 'constitution.md'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'steering', 'coding-standards.md'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'steering', 'workflow.md'))).toBe(true);
-        expect(existsSync(join(tmpDir, '.kiro', 'steering', 'task-estimates.md'))).toBe(true);
+        expect(existsSync(join(tmpDir, '.kiro', 'steering', 'developer-reference.md'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'block-dangerous-commands.kiro.hook'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'protect-files.kiro.hook'))).toBe(true);
         expect(existsSync(join(tmpDir, '.kiro', 'hooks', 'check-secrets.kiro.hook'))).toBe(true);
@@ -82,10 +82,10 @@ describe('Kiro init integration', () => {
         expect(hook.then.prompt).toContain('jira_get');
     });
 
-    test('kiro init generates task-estimates.md with front-matter', () => {
+    test('kiro init generates developer-reference.md with front-matter', () => {
         const config = makeKiroConfig('react', {}, { projectDir: tmpDir });
         runGovernance(config);
-        const content = readFileSync(join(tmpDir, '.kiro', 'steering', 'task-estimates.md'), 'utf-8');
+        const content = readFileSync(join(tmpDir, '.kiro', 'steering', 'developer-reference.md'), 'utf-8');
         expect(content.startsWith('---')).toBe(true);
         expect(content).toContain('[~');
         expect(content).toContain('[S]');

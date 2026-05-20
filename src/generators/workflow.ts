@@ -1,4 +1,6 @@
 import type { GovernanceConfig } from '../types.js';
+import { generateAIUsagePolicy } from './ai-usage-policy.js';
+import { generateSpecFirstWorkflow } from './spec-first-workflow.js';
 
 export function generateWorkflow(c: GovernanceConfig): string {
     const scaffoldStep = c.scan.scaffoldTool
@@ -58,5 +60,12 @@ ${c.blocks.layerExecOrder}
 | Install | \`${c.profile.installCmd}\` |
 | Run     | \`${c.profile.runCmd}\` |${buildLine}${codegenLine}${analyzeLine}${formatLine}
 | Test    | \`${c.profile.testCmd}\` |
-`;
+
+---
+
+${generateAIUsagePolicy(c)}
+
+---
+
+${generateSpecFirstWorkflow(c)}`;
 }

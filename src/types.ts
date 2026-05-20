@@ -123,6 +123,9 @@ export interface ScanResult {
     detectedHasLinterConfig: boolean;
     detectedHasFormatterConfig: boolean;
     detectedDotenv: boolean;
+    // Domain + security sensitivity (v20.4)
+    detectedDomainContext: string;   // 'healthcare' | 'fintech' | 'logistics' | 'general'
+    detectedDataSensitivity: string; // 'health' | 'pii' | 'general'
     // Computed
     highRiskFiles: string[];
     mixedArch: boolean;
@@ -216,6 +219,7 @@ export function createDefaultScanResult(): ScanResult {
         detectedValidationLib: '', detectedInfra: '',
         detectedHasLinterConfig: false, detectedHasFormatterConfig: false,
         detectedDotenv: false,
+        detectedDomainContext: 'general', detectedDataSensitivity: 'general',
         highRiskFiles: [], mixedArch: false, mixedArchNote: '',
         scaffoldTool: '', scaffoldCmdFeature: '',
         hasLegacyZones: false, legacyZones: [], cleanZones: [], legacyZoneNote: '',
