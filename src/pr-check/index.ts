@@ -11,6 +11,7 @@ import { checkTestCoverage } from './checks/test-coverage.js';
 import { checkTodos } from './checks/todos.js';
 import { checkCommitMessages } from './checks/commit-messages.js';
 import { checkPRDescription } from './checks/pr-description.js';
+import { checkKnowledgeFreshness } from './checks/knowledge-freshness.js';
 import { formatTerminal } from './formatters/terminal.js';
 import { formatGithub } from './formatters/github.js';
 import { formatGitlab } from './formatters/gitlab.js';
@@ -68,6 +69,7 @@ export async function runPRCheck(
     results.push(checkTodos(diff, filesToCheck));
     results.push(checkCommitMessages(projectDir, baseBranch));
     results.push(checkPRDescription(projectDir));
+    results.push(checkKnowledgeFreshness(projectDir));
 
     const hasBlockers = results.some(r => r.status === 'fail');
     const output = formatOutput(results, changedFiles, format);

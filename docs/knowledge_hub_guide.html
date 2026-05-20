@@ -1,0 +1,1759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knowledge Hub Guide — AI Governance Framework</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+/* ── reset ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --sidebar-w:268px;
+  --topbar-h:52px;
+  --bg:#0f1117;
+  --sidebar-bg:#0a0c10;
+  --border:#1e2230;
+  --accent:#5b8fff;
+  --accent-dim:#2a3a5c;
+  --content-bg:#ffffff;
+  --text:#1a1d27;
+  --text-dim:#6b7280;
+  --text-muted:#9ca3af;
+  --code-bg:#f4f6fa;
+  --code-border:#e2e7f0;
+  --inferred-bg:#fef3c7;--inferred-text:#92400e;--inferred-border:#fbbf24;
+  --confirmed-bg:#d1fae5;--confirmed-text:#065f46;--confirmed-border:#34d399;
+  --unknown-bg:#f3f4f6;--unknown-text:#374151;--unknown-border:#9ca3af;
+  --stale-bg:#fee2e2;--stale-text:#991b1b;--stale-border:#f87171;
+  --unverif-bg:#ede9fe;--unverif-text:#5b21b6;--unverif-border:#a78bfa;
+  --gate1:#3b82f6;--gate2:#8b5cf6;--gate3:#10b981;
+  --radius:8px;
+}
+
+html{scroll-behavior:smooth;font-size:16px}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  display:flex;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── sidebar ── */
+.sidebar{
+  position:fixed;
+  top:0;left:0;
+  width:var(--sidebar-w);
+  height:100vh;
+  background:var(--sidebar-bg);
+  border-right:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  z-index:100;
+  transition:transform 0.3s ease;
+}
+.sidebar-logo{
+  padding:24px 20px 16px;
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+}
+.sidebar-logo .wordmark{
+  font-family:'DM Serif Display',serif;
+  font-size:1.05rem;
+  color:#fff;
+  letter-spacing:-0.01em;
+  line-height:1.3;
+}
+.sidebar-logo .sub{
+  font-size:0.68rem;
+  color:#4b5563;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  margin-top:4px;
+  font-family:'IBM Plex Mono',monospace;
+}
+.sidebar-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:var(--accent-dim);
+  color:var(--accent);
+  font-size:0.6rem;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  font-family:'IBM Plex Mono',monospace;
+  padding:3px 8px;
+  border-radius:20px;
+  margin-top:8px;
+}
+.sidebar-badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--accent);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+.nav{
+  flex:1;
+  overflow-y:auto;
+  padding:12px 0;
+  scrollbar-width:thin;
+  scrollbar-color:var(--border) transparent;
+}
+.nav-section{
+  padding:12px 20px 4px;
+  font-size:0.6rem;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  color:#374151;
+  font-family:'IBM Plex Mono',monospace;
+}
+.nav a{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:7px 20px;
+  color:#6b7280;
+  text-decoration:none;
+  font-size:0.82rem;
+  font-weight:400;
+  transition:all 0.15s;
+  border-left:2px solid transparent;
+  position:relative;
+}
+.nav a:hover{color:#e5e7eb;background:rgba(255,255,255,0.03)}
+.nav a.active{color:#fff;border-left-color:var(--accent);background:rgba(91,143,255,0.08)}
+.nav a .num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;
+  color:#374151;
+  min-width:18px;
+}
+.nav a.active .num{color:var(--accent)}
+
+/* ── main ── */
+.main{
+  margin-left:var(--sidebar-w);
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+}
+
+/* ── topbar ── */
+.topbar{
+  position:sticky;
+  top:0;
+  height:var(--topbar-h);
+  background:rgba(255,255,255,0.96);
+  backdrop-filter:blur(12px);
+  border-bottom:1px solid #e5e7eb;
+  display:flex;
+  align-items:center;
+  padding:0 40px;
+  z-index:50;
+  gap:12px;
+}
+.topbar-crumb{
+  font-size:0.75rem;
+  color:var(--text-muted);
+  font-family:'IBM Plex Mono',monospace;
+}
+.topbar-sep{color:#d1d5db}
+.topbar-current{
+  font-size:0.8rem;
+  color:var(--text);
+  font-weight:500;
+}
+.topbar-right{
+  margin-left:auto;
+  display:flex;
+  gap:8px;
+}
+.topbar-tag{
+  font-size:0.65rem;
+  letter-spacing:0.08em;
+  text-transform:uppercase;
+  font-family:'IBM Plex Mono',monospace;
+  padding:3px 10px;
+  border-radius:20px;
+  border:1px solid;
+}
+.topbar-tag.cc{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.topbar-tag.kiro{background:#faf5ff;color:#6d28d9;border-color:#ddd6fe}
+.hamburger{display:none;background:none;border:none;cursor:pointer;padding:8px;color:var(--text)}
+
+/* ── content ── */
+.content{
+  background:var(--content-bg);
+  flex:1;
+  padding:48px 56px 80px;
+  max-width:960px;
+  width:100%;
+}
+
+/* ── sections ── */
+.section{
+  margin-bottom:72px;
+  scroll-margin-top:calc(var(--topbar-h) + 24px);
+}
+.section-header{
+  display:flex;
+  align-items:baseline;
+  gap:16px;
+  margin-bottom:28px;
+  padding-bottom:16px;
+  border-bottom:2px solid #f3f4f6;
+}
+.section-num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.7rem;
+  color:var(--accent);
+  letter-spacing:0.1em;
+  flex-shrink:0;
+}
+.section-title{
+  font-family:'DM Serif Display',serif;
+  font-size:1.75rem;
+  font-weight:400;
+  color:var(--text);
+  letter-spacing:-0.02em;
+  line-height:1.2;
+}
+.section-title em{font-style:italic;color:var(--accent)}
+
+h3{font-size:1.05rem;font-weight:600;color:var(--text);margin:28px 0 12px;letter-spacing:-0.01em}
+h4{font-size:0.9rem;font-weight:600;color:#374151;margin:20px 0 8px}
+p{line-height:1.7;color:#374151;margin-bottom:14px;font-size:0.95rem}
+ul,ol{padding-left:20px;margin-bottom:14px}
+li{line-height:1.7;color:#374151;font-size:0.95rem;margin-bottom:4px}
+strong{font-weight:600;color:var(--text)}
+
+/* ── critical order box ── */
+.order-box{
+  background:linear-gradient(135deg,#0f172a 0%,#1e1b4b 100%);
+  border-radius:12px;
+  padding:28px 32px;
+  margin:24px 0;
+  position:relative;
+  overflow:hidden;
+}
+.order-box::before{
+  content:'ENFORCE THIS ORDER';
+  position:absolute;
+  top:16px;right:20px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.55rem;
+  letter-spacing:0.2em;
+  color:#4f46e5;
+  opacity:0.8;
+}
+.order-steps{display:flex;gap:0;align-items:center;flex-wrap:wrap;gap:4px}
+.order-step{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:rgba(255,255,255,0.06);
+  border:1px solid rgba(255,255,255,0.1);
+  border-radius:8px;
+  padding:12px 16px;
+  flex:1;
+  min-width:160px;
+}
+.order-step-num{
+  width:28px;height:28px;
+  border-radius:50%;
+  background:var(--accent);
+  color:#fff;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.75rem;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  font-weight:500;
+}
+.order-step-text{color:#e5e7eb;font-size:0.82rem;line-height:1.4}
+.order-step-text code{font-family:'IBM Plex Mono',monospace;color:#93c5fd;font-size:0.8rem}
+.order-arrow{color:#4b5563;font-size:1.2rem;flex-shrink:0}
+.order-note{
+  margin-top:16px;
+  font-size:0.78rem;
+  color:#6b7280;
+  font-family:'IBM Plex Mono',monospace;
+  line-height:1.6;
+}
+.order-note strong{color:#f59e0b}
+
+/* ── confidence tags ── */
+.tag{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.72rem;
+  font-weight:500;
+  padding:3px 10px;
+  border-radius:20px;
+  border:1px solid;
+  white-space:nowrap;
+  vertical-align:middle;
+}
+.tag-inferred{background:var(--inferred-bg);color:var(--inferred-text);border-color:var(--inferred-border)}
+.tag-confirmed{background:var(--confirmed-bg);color:var(--confirmed-text);border-color:var(--confirmed-border)}
+.tag-unknown{background:var(--unknown-bg);color:var(--unknown-text);border-color:var(--unknown-border)}
+.tag-stale{background:var(--stale-bg);color:var(--stale-text);border-color:var(--stale-border)}
+.tag-unverifiable{background:var(--unverif-bg);color:var(--unverif-text);border-color:var(--unverif-border)}
+
+/* ── confidence cards ── */
+.tag-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin:20px 0}
+.tag-card{
+  border-radius:10px;
+  border:1px solid;
+  padding:16px 18px;
+}
+.tag-card.inferred{background:var(--inferred-bg);border-color:var(--inferred-border)}
+.tag-card.confirmed{background:var(--confirmed-bg);border-color:var(--confirmed-border)}
+.tag-card.unknown{background:var(--unknown-bg);border-color:var(--unknown-border)}
+.tag-card.stale{background:var(--stale-bg);border-color:var(--stale-border)}
+.tag-card.unverifiable{background:var(--unverif-bg);border-color:var(--unverif-border)}
+.tag-card-label{font-family:'IBM Plex Mono',monospace;font-size:0.78rem;font-weight:500;margin-bottom:8px}
+.tag-card.inferred .tag-card-label{color:var(--inferred-text)}
+.tag-card.confirmed .tag-card-label{color:var(--confirmed-text)}
+.tag-card.unknown .tag-card-label{color:var(--unknown-text)}
+.tag-card.stale .tag-card-label{color:var(--stale-text)}
+.tag-card.unverifiable .tag-card-label{color:var(--unverif-text)}
+.tag-card-desc{font-size:0.82rem;line-height:1.5;color:#374151}
+
+/* ── callout ── */
+.callout{
+  display:flex;
+  gap:14px;
+  padding:16px 20px;
+  border-radius:10px;
+  margin:20px 0;
+  border:1px solid;
+}
+.callout.info{background:#eff6ff;border-color:#bfdbfe}
+.callout.warn{background:#fffbeb;border-color:#fcd34d}
+.callout.success{background:#f0fdf4;border-color:#bbf7d0}
+.callout.critical{background:#fff1f2;border-color:#fecdd3}
+.callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.callout-body{font-size:0.88rem;line-height:1.6;color:#374151}
+.callout-body strong{color:var(--text)}
+
+/* ── tabs ── */
+.tabs{margin:24px 0}
+.tab-bar{
+  display:flex;
+  gap:0;
+  border-bottom:2px solid #e5e7eb;
+  margin-bottom:0;
+}
+.tab-btn{
+  padding:10px 20px;
+  font-size:0.82rem;
+  font-weight:500;
+  color:var(--text-dim);
+  background:none;
+  border:none;
+  border-bottom:2px solid transparent;
+  margin-bottom:-2px;
+  cursor:pointer;
+  transition:all 0.15s;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:'DM Sans',sans-serif;
+}
+.tab-btn:hover{color:var(--text);background:#f9fafb}
+.tab-btn.active{color:var(--accent);border-bottom-color:var(--accent);background:#fff}
+.tab-btn .tab-icon{font-size:0.95rem}
+.tab-panel{display:none;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 10px 10px;overflow:hidden}
+.tab-panel.active{display:block}
+
+/* ── code blocks ── */
+pre{
+  background:#0f1117;
+  color:#e2e8f0;
+  border-radius:10px;
+  padding:20px 24px;
+  overflow-x:auto;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.8rem;
+  line-height:1.7;
+  margin:16px 0;
+  border:1px solid #1e2230;
+  position:relative;
+}
+.tab-panel pre{border-radius:0;margin:0;border:none;border-top:1px solid #1e2230}
+pre .comment{color:#4b5563}
+pre .cmd{color:#93c5fd}
+pre .arg{color:#a5f3fc}
+pre .string{color:#86efac}
+pre .flag{color:#fbbf24}
+pre .output{color:#6ee7b7}
+code:not(pre code){
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.82em;
+  background:var(--code-bg);
+  color:#be185d;
+  padding:2px 6px;
+  border-radius:4px;
+  border:1px solid var(--code-border);
+}
+
+/* ── terminal output ── */
+.terminal{
+  background:#0a0c10;
+  border-radius:10px;
+  overflow:hidden;
+  margin:16px 0;
+  border:1px solid #1e2230;
+}
+.terminal-bar{
+  background:#161b22;
+  padding:10px 16px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border-bottom:1px solid #1e2230;
+}
+.terminal-dot{width:12px;height:12px;border-radius:50%}
+.terminal-dot.r{background:#ff5f57}
+.terminal-dot.y{background:#febc2e}
+.terminal-dot.g{background:#28c840}
+.terminal-label{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:#4b5563;margin-left:auto}
+.terminal-body{padding:18px 20px;font-family:'IBM Plex Mono',monospace;font-size:0.78rem;line-height:1.8;color:#e2e8f0}
+.terminal-body .prompt{color:#4ade80}
+.terminal-body .result-ok{color:#34d399}
+.terminal-body .result-warn{color:#fbbf24}
+.terminal-body .result-info{color:#60a5fa}
+.terminal-body .capture{color:#a78bfa;font-style:italic}
+
+/* ── gate cards ── */
+.gates{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:24px 0}
+.gate-card{
+  border-radius:12px;
+  overflow:hidden;
+  border:1px solid #e5e7eb;
+}
+.gate-header{
+  padding:14px 18px;
+  font-weight:600;
+  font-size:0.88rem;
+  color:#fff;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.gate-header .gate-num{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.65rem;
+  opacity:0.75;
+}
+.gate-1 .gate-header{background:var(--gate1)}
+.gate-2 .gate-header{background:var(--gate2)}
+.gate-3 .gate-header{background:var(--gate3)}
+.gate-body{padding:14px 18px;background:#fafafa}
+.gate-body ul{padding-left:14px;margin:0}
+.gate-body li{font-size:0.8rem;line-height:1.6;color:#374151;margin-bottom:4px}
+.gate-capture{
+  margin-top:10px;
+  padding:8px 12px;
+  border-radius:6px;
+  font-size:0.75rem;
+  font-family:'IBM Plex Mono',monospace;
+}
+.gate-1 .gate-capture{background:var(--confirmed-bg);color:var(--confirmed-text)}
+.gate-2 .gate-capture{background:#f3f4f6;color:#6b7280}
+.gate-3 .gate-capture{background:#f3f4f6;color:#6b7280}
+
+/* ── comparison table ── */
+table{width:100%;border-collapse:collapse;margin:16px 0;font-size:0.88rem}
+thead tr{background:#f8fafc;border-bottom:2px solid #e2e8f0}
+th{padding:11px 16px;text-align:left;font-weight:600;color:var(--text);font-size:0.82rem}
+td{padding:11px 16px;border-bottom:1px solid #f1f5f9;color:#374151;vertical-align:top}
+td:first-child{font-weight:500;color:var(--text);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafbff}
+.cc-col{color:#1d4ed8}
+.kiro-col{color:#6d28d9}
+
+/* ── mermaid ── */
+.diagram-wrap{
+  background:#fafbff;
+  border:1px solid #e2e8f0;
+  border-radius:12px;
+  padding:24px;
+  margin:20px 0;
+  overflow-x:auto;
+}
+.diagram-note{
+  font-size:0.72rem;
+  color:var(--text-muted);
+  font-family:'IBM Plex Mono',monospace;
+  margin-bottom:12px;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.diagram-note::before{content:'⚠';opacity:0.6}
+
+/* ── re-run table ── */
+.rerun-table{margin:16px 0}
+.rerun-table table{font-size:0.85rem}
+.rerun-table td:first-child{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.78rem;
+  color:#374151;
+  background:#fafafa;
+}
+.never-run{
+  background:linear-gradient(90deg,#fff7ed,#fef3c7);
+  border:1px solid #fcd34d;
+  border-radius:8px;
+  padding:12px 16px;
+  margin:16px 0;
+  font-size:0.85rem;
+  color:#92400e;
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+}
+.never-run strong{color:#78350f}
+
+/* ── audit output ── */
+.audit-output{
+  background:#0a0c10;
+  border-radius:10px;
+  padding:20px 24px;
+  margin:16px 0;
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.8rem;
+  line-height:1.9;
+  border:1px solid #1e2230;
+  color:#e2e8f0;
+}
+.audit-output .section-head{color:#60a5fa;font-weight:500}
+.audit-output .ok{color:#34d399}
+.audit-output .warn{color:#fbbf24}
+.audit-output .err{color:#f87171}
+.audit-output .num{color:#c4b5fd}
+
+/* ── db section ── */
+.db-engines{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:16px 0}
+.db-card{
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
+  border-radius:10px;
+  padding:14px 16px;
+}
+.db-card-engine{font-weight:600;font-size:0.88rem;color:var(--text);margin-bottom:4px}
+.db-card-file{font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--accent);margin-bottom:6px}
+.db-card-count{font-size:0.78rem;color:var(--text-dim)}
+
+/* ── responsive ── */
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0}
+  .hamburger{display:flex}
+  .topbar{padding:0 20px}
+  .content{padding:32px 24px 60px}
+  .gates{grid-template-columns:1fr}
+  .order-steps{flex-direction:column}
+  .order-arrow{transform:rotate(90deg)}
+}
+
+/* ── print ── */
+@media print{
+  .sidebar,.topbar,.hamburger{display:none!important}
+  .main{margin-left:0}
+  .content{padding:0;max-width:100%}
+  pre,code{white-space:pre-wrap;word-break:break-word}
+  .tab-panel{display:block!important}
+  .tab-bar{display:none}
+}
+
+/* ── thesis hero ── */
+.thesis-hero{
+  background:linear-gradient(135deg,#0f172a 0%,#1a1040 60%,#0f1f35 100%);
+  border-radius:16px;
+  padding:40px 44px;
+  margin-bottom:56px;
+  position:relative;
+  overflow:hidden;
+  border:1px solid #1e2230;
+}
+.thesis-hero::before{
+  content:'';
+  position:absolute;
+  top:-60px;right:-60px;
+  width:240px;height:240px;
+  background:radial-gradient(circle,rgba(91,143,255,0.15) 0%,transparent 70%);
+  pointer-events:none;
+}
+.thesis-label{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.62rem;
+  letter-spacing:0.18em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:16px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.thesis-label::before{
+  content:'';
+  width:24px;height:1px;
+  background:var(--accent);
+  opacity:0.6;
+}
+.thesis-headline{
+  font-family:'DM Serif Display',serif;
+  font-size:1.9rem;
+  color:#fff;
+  letter-spacing:-0.02em;
+  line-height:1.25;
+  margin-bottom:20px;
+}
+.thesis-headline em{color:#93c5fd;font-style:italic}
+.thesis-body{font-size:0.92rem;color:#94a3b8;line-height:1.75;margin-bottom:28px;max-width:640px}
+.thesis-body strong{color:#e2e8f0}
+.thesis-compare{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
+  margin-bottom:28px;
+}
+.thesis-col{
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:10px;
+  padding:18px 20px;
+}
+.thesis-col-head{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.65rem;
+  letter-spacing:0.12em;
+  text-transform:uppercase;
+  margin-bottom:12px;
+  padding-bottom:8px;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.thesis-col.bad .thesis-col-head{color:#f87171}
+.thesis-col.good .thesis-col-head{color:#34d399}
+.thesis-col-row{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  font-size:0.78rem;
+  color:#94a3b8;
+  margin-bottom:7px;
+  line-height:1.5;
+}
+.thesis-col.bad .thesis-col-row::before{content:'✗';color:#f87171;flex-shrink:0;font-size:0.7rem}
+.thesis-col.good .thesis-col-row::before{content:'✓';color:#34d399;flex-shrink:0;font-size:0.7rem}
+.thesis-col-row strong{color:#e2e8f0}
+.thesis-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.thesis-table th{
+  padding:8px 14px;
+  text-align:left;
+  color:#6b7280;
+  font-weight:500;
+  font-size:0.7rem;
+  letter-spacing:0.06em;
+  text-transform:uppercase;
+  border-bottom:1px solid rgba(255,255,255,0.08);
+}
+.thesis-table td{
+  padding:9px 14px;
+  border-bottom:1px solid rgba(255,255,255,0.05);
+  color:#94a3b8;
+  vertical-align:top;
+}
+.thesis-table td:first-child{color:#e2e8f0;font-weight:500}
+.thesis-table tr:last-child td{border-bottom:none}
+.thesis-table .hi{color:#34d399}
+.thesis-table .lo{color:#6b7280}
+@media(max-width:700px){
+  .thesis-compare{grid-template-columns:1fr}
+  .thesis-hero{padding:28px 24px}
+  .thesis-headline{font-size:1.4rem}
+}
+
+/* ── scroll indicator ── */
+.scroll-progress{
+  position:fixed;
+  top:0;left:var(--sidebar-w);right:0;
+  height:2px;
+  background:linear-gradient(90deg,var(--accent),#818cf8);
+  transform-origin:left;
+  transform:scaleX(0);
+  z-index:200;
+  transition:transform 0.1s;
+}
+@media(max-width:900px){.scroll-progress{left:0}}
+
+/* ── overlay ── */
+.overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.5);
+  z-index:99;
+}
+.overlay.show{display:block}
+</style>
+</head>
+<body>
+
+<div class="scroll-progress" id="progress"></div>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="wordmark">Knowledge Hub<br>Guide</div>
+    <div class="sub">AI Governance Framework</div>
+    <div class="sidebar-badge">v20.2.0 live</div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Overview</div>
+    <a href="#s1" class="active"><span class="num">01</span>What is the Knowledge Hub</a>
+    <a href="#s2"><span class="num">02</span>Confidence Model</a>
+    <a href="#s3"><span class="num">03</span>The Correct Order</a>
+    <div class="nav-section">Workflows</div>
+    <a href="#s4"><span class="num">04</span>Bootstrap — Team Lead</a>
+    <a href="#s5"><span class="num">05</span>3-Gate New Feature Flow</a>
+    <a href="#s6"><span class="num">06</span>Edit Feature</a>
+    <a href="#s7"><span class="num">07</span>Fix &amp; Hotfix</a>
+    <a href="#s8"><span class="num">08</span>Refactor</a>
+    <div class="nav-section">Reference</div>
+    <a href="#s9"><span class="num">09</span>When to Re-run</a>
+    <a href="#s10"><span class="num">10</span>Release Audit</a>
+    <a href="#s11"><span class="num">11</span>Agent Comparison</a>
+    <a href="#s12"><span class="num">12</span>DB Schema Discovery</a>
+    <a href="#s13"><span class="num">13</span>Governance During Development</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <button class="hamburger" onclick="toggleSidebar()" aria-label="Menu">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="17" y2="6"/><line x1="3" y1="12" x2="17" y2="12"/><line x1="3" y1="18" x2="17" y2="18"/></svg>
+    </button>
+    <span class="topbar-crumb">ai-gov</span>
+    <span class="topbar-sep">›</span>
+    <span class="topbar-current" id="topbar-current">Knowledge Hub Guide</span>
+    <div class="topbar-right">
+      <span class="topbar-tag cc">Claude Code</span>
+      <span class="topbar-tag kiro">Kiro</span>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- THESIS HERO -->
+    <div class="thesis-hero">
+      <div class="thesis-label">Why this exists</div>
+      <h1 class="thesis-headline">AI-readable <em>persistent memory</em>,<br>stored in git.</h1>
+      <p class="thesis-body">
+        AI agents are powerful — but <strong>stateless</strong>. Every session starts from zero. Every developer who joins starts from zero. Every agent upgrade starts from zero. Sprint handoffs, stack switches, tool changes — context lost every time.<br><br>
+        The Knowledge Hub solves this: git-committed knowledge files that any AI agent reads in seconds, regardless of which stack, which agent, or which developer — giving instant, accurate context without re-explaining anything.
+      </p>
+
+      <div class="thesis-compare">
+        <div class="thesis-col bad">
+          <div class="thesis-col-head">Without governance</div>
+          <div class="thesis-col-row">Day 1, Node.js: AI reads codebase, works well</div>
+          <div class="thesis-col-row">Day 1, Python: AI reads codebase, works well</div>
+          <div class="thesis-col-row"><strong>Day 30, return to Node.js: starts from zero</strong></div>
+          <div class="thesis-col-row"><strong>New developer joins: starts from zero</strong></div>
+          <div class="thesis-col-row"><strong>Sprint handoff: context lost</strong></div>
+          <div class="thesis-col-row"><strong>Agent upgrade: context lost</strong></div>
+          <div class="thesis-col-row"><strong>Switch Claude Code → Kiro: context lost</strong></div>
+        </div>
+        <div class="thesis-col good">
+          <div class="thesis-col-head">With governance</div>
+          <div class="thesis-col-row"><code>knowledge/</code> committed to git</div>
+          <div class="thesis-col-row">Any agent reads it in 2 seconds</div>
+          <div class="thesis-col-row">Stack, patterns, DB, env vars — known instantly</div>
+          <div class="thesis-col-row">Confirmed business rules — never re-inferred</div>
+          <div class="thesis-col-row">New developer: open one file, productive immediately</div>
+          <div class="thesis-col-row">Agent upgrade: same context, no re-setup</div>
+          <div class="thesis-col-row">Claude Code ↔ Kiro: shared <code>knowledge/</code>, seamless</div>
+        </div>
+      </div>
+
+      <table class="thesis-table">
+        <thead>
+          <tr>
+            <th>Project type</th>
+            <th>Knowledge Hub value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Solo, 1 stack, simple codebase</td>
+            <td class="lo">Low — AI fits everything in one context window. Overhead without benefit.</td>
+          </tr>
+          <tr>
+            <td>Team of 3+, single stack</td>
+            <td class="hi">High — knowledge survives developer turnover, agent upgrades, sprint handoffs.</td>
+          </tr>
+          <tr>
+            <td>Any size, multi-stack or multi-project</td>
+            <td class="hi">Very high — switch between Node.js, Python, Java projects without re-explaining architecture every time.</td>
+          </tr>
+          <tr>
+            <td>Consulting / agency — new client project every few months</td>
+            <td class="hi">Extremely high — every project has accurate AI context from day 1, not day 30.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- S1 -->
+    <div class="section" id="s1">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <h2 class="section-title">What is the <em>Knowledge Hub</em></h2>
+      </div>
+      <p>The Knowledge Hub is a <strong>persistent, git-committed intelligence layer</strong> that sits between your codebase and your AI agent. It solves one specific problem: <strong>AI agents have no memory across sessions</strong>. Every <code>/fix</code> or <code>/new-feature</code> starts from zero — the agent re-reads the same files, re-infers the same patterns, and sometimes draws different conclusions.</p>
+      <p>The Knowledge Hub breaks that reset cycle. Knowledge files are committed to git, read automatically by every developer command, and grow as a byproduct of normal sprint work — without anyone writing documentation.</p>
+
+      <div class="diagram-wrap">
+        <div class="diagram-note">Requires internet connection to render diagram (Mermaid CDN)</div>
+        <div class="mermaid">
+graph TD
+  A["Team lead runs /tech-knowledge + /product-knowledge"] --> B["AI reads codebase, writes knowledge files"]
+  B --> C["Team lead runs /audit — validates before committing"]
+  C --> D{Knowledge health?}
+  D -->|"✓ All current"| E["Commit + push to git"]
+  D -->|"⚠ Stale entries"| F["Re-run /tech-knowledge scope"]
+  F --> C
+  E --> G["/new-feature, /fix, /edit-feature read knowledge/ automatically"]
+  G --> H["Developer approves Gate 1"]
+  H --> I["Silent capture writes CONFIRMED entries"]
+  I --> J["Release audit — /audit before every push"]
+  style A fill:#1e3a5f,stroke:#3b82f6,color:#93c5fd
+  style C fill:#1e3a5f,stroke:#3b82f6,color:#93c5fd
+  style E fill:#14532d,stroke:#22c55e,color:#86efac
+  style H fill:#3730a3,stroke:#818cf8,color:#c7d2fe
+  style I fill:#14532d,stroke:#22c55e,color:#86efac
+  style J fill:#1e3a5f,stroke:#3b82f6,color:#93c5fd
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body"><strong>What it is not:</strong> This is not a documentation system. You are not writing docs. The AI extracts, you verify, git tracks history. Knowledge grows as a byproduct of normal work.</div>
+      </div>
+    </div>
+
+    <!-- S2 -->
+    <div class="section" id="s2">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <h2 class="section-title">Confidence <em>Model</em></h2>
+      </div>
+      <div class="callout success">
+        <span class="callout-icon">✅</span>
+        <div class="callout-body"><strong>All tags are read — the tag controls trust level, not whether the file is used.</strong> A knowledge file with only <span class="tag tag-inferred">[INFERRED]</span> entries (e.g. right after bootstrapping) is still loaded and provides valuable context.</div>
+      </div>
+
+      <div class="tag-cards">
+        <div class="tag-card inferred">
+          <div class="tag-card-label">[INFERRED]</div>
+          <div class="tag-card-desc">AI extracted from code — not human-verified. <strong>Still read and used by all commands.</strong> AI verifies against actual code before acting. If code contradicts the entry, the discrepancy is noted.</div>
+        </div>
+        <div class="tag-card confirmed">
+          <div class="tag-card-label">[CONFIRMED]</div>
+          <div class="tag-card-desc">Human-verified via Gate 1 approval or manual edit. <strong>Trust fully.</strong> Never overwritten by AI. Protected by pre-commit guard — removal requires env-var bypass.</div>
+        </div>
+        <div class="tag-card unknown">
+          <div class="tag-card-label">[UNKNOWN]</div>
+          <div class="tag-card-desc">Observable but not understood. Requires human input. Flag for team discussion. Do not rely on for code generation.</div>
+        </div>
+        <div class="tag-card stale">
+          <div class="tag-card-label">[STALE] — audit only</div>
+          <div class="tag-card-desc">Code contradicts the entry — the thing changed or was removed. Re-run <code>/tech-knowledge</code> or <code>/product-knowledge</code> for that scope.</div>
+        </div>
+        <div class="tag-card unverifiable">
+          <div class="tag-card-label">[UNVERIFIABLE] — audit only</div>
+          <div class="tag-card-desc">No code found to verify the entry — may be deleted or moved. Human review required.</div>
+        </div>
+      </div>
+
+      <h3>Merge rules — what happens at Gate 1 approval</h3>
+      <ul>
+        <li><span class="tag tag-confirmed">[CONFIRMED]</span> entries → <strong>never overwritten</strong>. Only a human can change them.</li>
+        <li><span class="tag tag-inferred">[INFERRED]</span> entry that requirements confirm → upgraded to <span class="tag tag-confirmed">[CONFIRMED]</span></li>
+        <li><span class="tag tag-inferred">[INFERRED]</span> entry requirements don't address → left unchanged</li>
+        <li>New entries from requirements not in file → appended as <span class="tag tag-confirmed">[CONFIRMED]</span></li>
+      </ul>
+    </div>
+
+    <!-- S3 -->
+    <div class="section" id="s3">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <h2 class="section-title">The Correct <em>Order</em></h2>
+      </div>
+      <div class="order-box">
+        <div class="order-steps">
+          <div class="order-step">
+            <div class="order-step-num">1</div>
+            <div class="order-step-text"><code>/tech-knowledge</code><br>Writes HOW file</div>
+          </div>
+          <div class="order-arrow">→</div>
+          <div class="order-step">
+            <div class="order-step-num">2</div>
+            <div class="order-step-text"><code>/product-knowledge</code><br>Writes WHAT file</div>
+          </div>
+          <div class="order-arrow">→</div>
+          <div class="order-step">
+            <div class="order-step-num">3</div>
+            <div class="order-step-text"><code>/audit</code><br>Validates before commit</div>
+          </div>
+          <div class="order-arrow">→</div>
+          <div class="order-step">
+            <div class="order-step-num">4</div>
+            <div class="order-step-text"><code>git commit + push</code><br>Only after audit passes</div>
+          </div>
+        </div>
+        <div class="order-note">
+          <strong>⚠ Why /audit before push matters:</strong> Running /audit after knowledge commands catches [UNVERIFIABLE] entries before they are committed. Once committed and read by the team's /new-feature and /fix, bad entries generate code based on wrong assumptions. Catching it before push costs nothing — catching it after three sprints costs a lot.
+        </div>
+      </div>
+    </div>
+
+    <!-- S4 -->
+    <div class="section" id="s4">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <h2 class="section-title">Bootstrap — <em>Team Lead</em></h2>
+      </div>
+      <p>Run once per project before developers onboard. Establishes the knowledge baseline that all developer commands will read from.</p>
+
+      <div class="tabs">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(this,'boot-cc')"><span class="tab-icon">⌨️</span> Claude Code</button>
+          <button class="tab-btn" onclick="switchTab(this,'boot-kiro')"><span class="tab-icon">🔮</span> Kiro</button>
+        </div>
+        <div class="tab-panel active" id="boot-cc">
+<pre><span class="comment"># Step 1 — Init governance</span>
+<span class="cmd">npx ai-gov init</span>
+
+<span class="comment"># Step 2 — Knowledge commands (whole project first, then per feature area)</span>
+<span class="cmd">/tech-knowledge</span>              <span class="comment"># → knowledge/tech-overview.md</span>
+<span class="cmd">/product-knowledge</span>           <span class="comment"># → knowledge/product-overview.md</span>
+
+<span class="cmd">/tech-knowledge auth</span>         <span class="comment"># → knowledge/tech-auth.md</span>
+<span class="cmd">/product-knowledge auth</span>      <span class="comment"># → knowledge/product-auth.md</span>
+<span class="cmd">/tech-knowledge payments</span>
+<span class="cmd">/product-knowledge payments</span>
+
+<span class="comment"># Step 3 — AUDIT before committing</span>
+<span class="comment"># KNOWLEDGE HEALTH must show all current before proceeding</span>
+<span class="cmd">/audit</span>
+<span class="comment"># If stale/unverifiable → re-run /tech-knowledge [scope] → /audit again</span>
+
+<span class="comment"># Step 4 — Only now commit and push</span>
+<span class="cmd">git add</span> <span class="arg">knowledge/ .claude/</span>
+<span class="cmd">git commit</span> <span class="flag">-m</span> <span class="string">"chore: bootstrap governance + knowledge hub"</span>
+<span class="cmd">git push</span></pre>
+        </div>
+        <div class="tab-panel" id="boot-kiro">
+<pre><span class="comment"># Step 1 — Init governance (Kiro agent)</span>
+<span class="cmd">npx ai-gov init</span> <span class="flag">--agent kiro</span>
+
+<span class="comment"># Step 2 — Trigger from Kiro workflow panel:</span>
+<span class="comment">#   → "Tech Knowledge" workflow → enter scope (empty = whole project)</span>
+<span class="comment">#   → "Product Knowledge" workflow → enter scope</span>
+<span class="comment">#   Repeat for each feature area: auth, payments, etc.</span>
+
+<span class="comment"># Each workflow asks: "What scope should I map?"</span>
+<span class="comment"># Leave empty → overview · name a feature → scoped file</span>
+
+<span class="comment"># Step 3 — Trigger "Audit" workflow in Kiro panel</span>
+<span class="comment">#   KNOWLEDGE HEALTH must show all current before proceeding</span>
+
+<span class="comment"># Step 4 — Commit and push (same as Claude Code)</span>
+<span class="cmd">git add</span> <span class="arg">knowledge/ .kiro/</span>
+<span class="cmd">git commit</span> <span class="flag">-m</span> <span class="string">"chore: bootstrap governance + knowledge hub"</span>
+<span class="cmd">git push</span></pre>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">🔄</span>
+        <div class="callout-body"><strong>Before every release:</strong> Re-run knowledge commands for any scopes that changed significantly this release → <code>/audit</code> → commit → push. Knowledge health must be clean before tagging.</div>
+      </div>
+    </div>
+
+    <!-- S5 -->
+    <div class="section" id="s5">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <h2 class="section-title">3-Gate New Feature <em>Flow</em></h2>
+      </div>
+      <p>The spec-first workflow. No files are written until Gate 3 is approved. Knowledge is read before Gate 1 and written automatically after Gate 1.</p>
+
+      <div class="gates">
+        <div class="gate-card gate-1">
+          <div class="gate-header"><span class="gate-num">GATE 1</span>Requirements</div>
+          <div class="gate-body">
+            <ul>
+              <li>Knowledge preamble reads <code>knowledge/tech-[slug].md</code> + <code>product-[slug].md</code> silently <strong>before anything</strong></li>
+              <li>Requirements drafted in chat only — no files written</li>
+              <li>Developer says: <strong>ok</strong></li>
+            </ul>
+            <div class="gate-capture">
+              ↳ AUTOMATIC: Silent capture writes [CONFIRMED] entries to knowledge/product-[slug].md
+            </div>
+          </div>
+        </div>
+        <div class="gate-card gate-2">
+          <div class="gate-header"><span class="gate-num">GATE 2</span>Design</div>
+          <div class="gate-body">
+            <ul>
+              <li>Architecture layer map shown in chat</li>
+              <li>Data flow + error handling strategy</li>
+              <li>Developer says: <strong>ok</strong></li>
+            </ul>
+            <div class="gate-capture" style="background:#f3f4f6;color:#6b7280">
+              No knowledge capture — design is structural, not business rules. No files written.
+            </div>
+          </div>
+        </div>
+        <div class="gate-card gate-3">
+          <div class="gate-header"><span class="gate-num">GATE 3</span>Tasks</div>
+          <div class="gate-body">
+            <ul>
+              <li>Phase breakdown shown in chat (Phase 1 Domain → Phase 5 Tests)</li>
+              <li>Developer says: <strong>ok</strong></li>
+              <li>ExitPlanMode → specs/ written → code generated</li>
+            </ul>
+            <div class="gate-capture" style="background:#f3f4f6;color:#6b7280">
+              Product knowledge already captured at Gate 1 — no further action. Tech knowledge unchanged (new feature follows existing patterns).
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>What gets captured at Gate 1</h3>
+      <ul>
+        <li><strong>User Flows</strong> — from Overview + Acceptance Criteria (observable steps)</li>
+        <li><strong>Domain Objects</strong> — entities or data types explicitly named</li>
+        <li><strong>Permissions &amp; Roles</strong> — any role or access rule stated</li>
+        <li><strong>Business States</strong> — conditions, status values, state transitions</li>
+      </ul>
+
+      <div class="diagram-wrap">
+        <div class="diagram-note">Requires internet connection to render (Mermaid CDN)</div>
+        <div class="mermaid">
+sequenceDiagram
+  participant D as Developer
+  participant AI as AI Agent
+  participant K as knowledge/
+  participant S as specs/
+
+  Note over AI,K: Knowledge preamble reads silently
+  AI->>K: reads tech-[slug].md + product-[slug].md
+  AI->>D: Gate 1 — Requirements shown in chat
+  D->>AI: ok
+  AI->>K: Silent capture → [CONFIRMED] entries written
+  Note over AI,K: ↳ Knowledge captured (1 line only)
+  AI->>D: Gate 2 — Design shown in chat
+  D->>AI: ok
+  Note over AI: No knowledge action
+  AI->>D: Gate 3 — Tasks shown in chat
+  D->>AI: ok
+  AI->>S: Write requirements.md + design.md + tasks.md
+  AI->>AI: Generate code phase by phase
+        </div>
+      </div>
+
+      <h3>Side-by-side agent example — user notifications feature</h3>
+      <div class="tabs">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(this,'feat-cc')"><span class="tab-icon">⌨️</span> Claude Code</button>
+          <button class="tab-btn" onclick="switchTab(this,'feat-kiro')"><span class="tab-icon">🔮</span> Kiro</button>
+        </div>
+        <div class="tab-panel active" id="feat-cc">
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="terminal-dot r"></div><div class="terminal-dot y"></div><div class="terminal-dot g"></div>
+              <div class="terminal-label">Claude Code — /new-feature user-notifications</div>
+            </div>
+            <div class="terminal-body">
+<span class="prompt">You:</span> /new-feature user-notifications
+<br><br>
+<span class="result-info">── Preamble: reading knowledge/tech-overview.md + knowledge/product-overview.md ──</span>
+<br>
+<span class="result-info">Gate 1 shown in chat. Developer reviews requirements...</span>
+<br><br>
+<span class="prompt">You:</span> ok
+<br>
+<span class="capture">↳ Knowledge captured: knowledge/product-notifications.md (3 entries added)</span>
+<br><br>
+<span class="result-info">Gate 2 shown in chat. Developer reviews design...</span>
+<br><br>
+<span class="prompt">You:</span> ok
+<br>
+<span class="result-info">Gate 3 shown in chat. Developer reviews task breakdown...</span>
+<br><br>
+<span class="prompt">You:</span> ok
+<br><br>
+<span class="result-ok">specs/user-notifications/requirements.md ✓</span>
+<br>
+<span class="result-ok">specs/user-notifications/design.md ✓</span>
+<br>
+<span class="result-ok">specs/user-notifications/tasks.md ✓</span>
+<br><br>
+<span class="prompt">You:</span> all
+<br><br>
+<span class="result-ok">Phase 1 Domain ✓ (3 files)</span>
+<br>
+<span class="result-ok">Phase 2 Repository ✓ (migration generated)</span>
+<br>
+<span class="result-ok">Phase 3 Service ✓</span>
+<br>
+<span class="result-ok">Phase 4 Controller + Module ✓</span>
+<br>
+<span class="result-ok">Phase 5 Tests ✓ — npm test: 41 passed</span>
+            </div>
+          </div>
+        </div>
+        <div class="tab-panel" id="feat-kiro">
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="terminal-dot r"></div><div class="terminal-dot y"></div><div class="terminal-dot g"></div>
+              <div class="terminal-label">Kiro — "New Feature" workflow panel</div>
+            </div>
+            <div class="terminal-body">
+<span class="result-info">[User triggers "New Feature" workflow in Kiro panel]</span>
+<br><br>
+<span class="result-info">── Fresh askAgent session — reads disk state first ──</span>
+<br><br>
+<span class="result-info">Kiro reads .kiro/specs/ for in-progress features. None found.</span>
+<br><br>
+<span class="result-info">Kiro:</span> What feature are you building?
+— Feature name + brief description (1-2 sentences)
+<br><br>
+<span class="prompt">You:</span> user-notifications — allow users to see and mark
+read in-app notifications created by system events
+<br><br>
+<span class="result-info">── Preamble: reading knowledge/tech-overview.md ──</span>
+<br>
+<span class="result-info">Gate 1 shown. Developer reviews requirements...</span>
+<br><br>
+<span class="prompt">You:</span> ok
+<br>
+<span class="capture">↳ Knowledge captured: knowledge/product-notifications.md (3 entries added)</span>
+<br><br>
+<span class="result-info">Gate 2 → Gate 3 → specs written → code generated</span>
+<br>
+<span class="result-ok">Same output as Claude Code — knowledge/ directory shared</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">🔑</span>
+        <div class="callout-body"><strong>Key Kiro difference:</strong> Each workflow runs as a fresh <code>askAgent</code> session with no conversation history. That's why STEP 0 reads disk state first, and the knowledge preamble is embedded directly in the hook's prompt string. Output is identical — mechanism differs.</div>
+      </div>
+
+      <h3>Files generated by <code>/product-knowledge</code></h3>
+      <p>Every run of <code>/product-knowledge</code> produces or offers:</p>
+      <table>
+        <thead><tr><th>File</th><th>Always?</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>knowledge/product-[scope].md</code></td>
+            <td><strong>Yes — committed</strong></td>
+            <td>The WHAT file. User flows, domain objects, permissions, business states. For backend stacks also includes API Endpoint Catalog and Contribution Workflow.</td>
+          </tr>
+          <tr>
+            <td><code>knowledge/product-[scope].html</code></td>
+            <td>Optional (say <code>html</code>)</td>
+            <td>HTML export with rendered Mermaid flow + ER diagrams. <strong>Not committed — gitignored.</strong> Requires internet for diagram rendering.</td>
+          </tr>
+          <tr>
+            <td><code>knowledge/conflicts/[a]-vs-[b].md</code></td>
+            <td>Via <code>/detect-conflicts</code></td>
+            <td>Cross-feature conflict report — surfaced when <code>/detect-conflicts</code> finds contradicting business rules between two product knowledge files. Team lead decision inbox.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout success">
+        <span class="callout-icon">♻️</span>
+        <div class="callout-body"><strong>Product knowledge grows automatically after bootstrap.</strong> Every Gate 1 approval in <code>/new-feature</code> or <code>/edit-feature</code> silently appends <span class="tag tag-confirmed">[CONFIRMED]</span> entries to <code>knowledge/product-[slug].md</code>. The team lead only needs to re-run <code>/product-knowledge</code> when business rules or flows change significantly — not after every feature.</div>
+      </div>
+    </div>
+
+    <!-- S6 -->
+    <div class="section" id="s6">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <h2 class="section-title"><em>Edit</em> Feature</h2>
+      </div>
+      <p>Same 3-gate flow as <code>/new-feature</code> with one critical difference in silent capture.</p>
+      <ul>
+        <li>Knowledge preamble reads existing knowledge for that scope — same as new-feature</li>
+        <li>Gate 1 shows a <strong>diff view</strong> — changed items marked <code>&lt;!-- NEW --&gt;</code> or <code>&lt;!-- CHANGED: ... --&gt;</code></li>
+        <li>Silent capture fires after Gate 1 — but <strong>only extracts from marked items</strong></li>
+        <li>Does not re-capture unchanged requirements already in the knowledge file</li>
+        <li>Gate 2 and Gate 3 — identical to new-feature</li>
+      </ul>
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">If Gate 1 requirements have no <code>&lt;!-- NEW --&gt;</code> or <code>&lt;!-- CHANGED --&gt;</code> markers, capture outputs: <code>↳ Knowledge capture: no extractable entries in requirements.</code></div>
+      </div>
+    </div>
+
+    <!-- S7 -->
+    <div class="section" id="s7">
+      <div class="section-header">
+        <span class="section-num">07</span>
+        <h2 class="section-title">Fix &amp; <em>Hotfix</em></h2>
+      </div>
+      <p>Knowledge preamble reads first — the AI knows the <em>documented intended behaviour</em> before diagnosing. If a <span class="tag tag-confirmed">[CONFIRMED]</span> entry says "notifications are user-scoped — never leak across users" and the bug is about data leaking, the AI flags the connection immediately.</p>
+
+      <h3>DO-NOT-CAPTURE blocklist</h3>
+      <p>After the fix is applied, silent capture fires — but the blocklist is checked first. <strong>Default is no capture.</strong></p>
+      <table>
+        <thead><tr><th>Blocked — never captured</th><th>Captured — business-meaningful only</th></tr></thead>
+        <tbody>
+          <tr><td>null / undefined check</td><td rowspan="8" style="vertical-align:middle;color:#065f46;background:#f0fdf4">Root cause is a <strong>misunderstood requirement</strong>, <strong>unenforced business constraint</strong>, or <strong>missing role / permission check</strong>.<br><br>Tagged <span class="tag tag-inferred">[INFERRED]</span> under <code>## Business Rules</code>.<br>Source: <em>bug fix · /fix · [date]</em></td></tr>
+          <tr><td>Off-by-one error</td></tr>
+          <tr><td>Typo, wrong constant value</td></tr>
+          <tr><td>Missing await / type coercion</td></tr>
+          <tr><td>Wrong import path</td></tr>
+          <tr><td>Test-only change, lint cleanup</td></tr>
+          <tr><td>Dependency upgrade</td></tr>
+          <tr><td>Race condition (no domain implication)</td></tr>
+        </tbody>
+      </table>
+
+      <div class="tabs" style="margin-top:20px">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(this,'fix-cc')"><span class="tab-icon">⌨️</span> Claude Code</button>
+          <button class="tab-btn" onclick="switchTab(this,'fix-kiro')"><span class="tab-icon">🔮</span> Kiro</button>
+        </div>
+        <div class="tab-panel active" id="fix-cc">
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="terminal-dot r"></div><div class="terminal-dot y"></div><div class="terminal-dot g"></div>
+              <div class="terminal-label">Claude Code — /fix</div>
+            </div>
+            <div class="terminal-body">
+<span class="comment"># Business-meaningful bug → captured</span>
+<span class="capture">↳ Knowledge captured: knowledge/product-notifications.md (1 rule added from bug fix)</span>
+<br><br>
+<span class="comment"># Technical bug → not captured</span>
+<span class="capture">↳ Knowledge capture: fix was technical — no business rules extracted.</span>
+            </div>
+          </div>
+        </div>
+        <div class="tab-panel" id="fix-kiro">
+          <div class="terminal">
+            <div class="terminal-bar">
+              <div class="terminal-dot r"></div><div class="terminal-dot y"></div><div class="terminal-dot g"></div>
+              <div class="terminal-label">Kiro — "Fix" workflow</div>
+            </div>
+            <div class="terminal-body">
+<span class="result-info">[User triggers "Fix" workflow in Kiro panel]</span>
+<span class="result-info">Kiro reads disk, asks: "What needs fixing?"</span>
+<br>
+<span class="comment"># Same blocklist logic, same capture output</span>
+<span class="capture">↳ Knowledge captured: knowledge/product-payments.md (1 rule added from bug fix)</span>
+<span class="comment"># — or —</span>
+<span class="capture">↳ Knowledge capture: fix was technical — no business rules extracted.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <span class="callout-icon">⚡</span>
+        <div class="callout-body"><strong>Hotfix</strong> is identical to fix — same preamble, same capture logic. Optimised for production emergencies: faster diagnosis, no spec file written, deploys immediately after gate approval.</div>
+      </div>
+    </div>
+
+    <!-- S8 -->
+    <div class="section" id="s8">
+      <div class="section-header">
+        <span class="section-num">08</span>
+        <h2 class="section-title"><em>Refactor</em></h2>
+      </div>
+      <p>Preamble reads <code>knowledge/tech-[slug].md</code> specifically — the AI knows the existing layer structure before proposing changes. Refactor proposals stay consistent with documented architecture.</p>
+      <ul>
+        <li><strong>Preamble reads:</strong> <code>knowledge/tech-[slug].md</code> (HOW the code is built)</li>
+        <li><strong>No silent capture</strong> — refactors change structure, not business rules</li>
+        <li><strong>After refactor:</strong> <code>knowledge/tech-[slug].md</code> may become stale — <code>/audit</code> catches this at the next release audit. Team lead re-runs <code>/tech-knowledge [scope]</code> to refresh.</li>
+        <li><strong>Team lead action:</strong> re-run <code>/tech-knowledge [scope]</code> to refresh</li>
+      </ul>
+    </div>
+
+    <!-- S9 -->
+    <div class="section" id="s9">
+      <div class="section-header">
+        <span class="section-num">09</span>
+        <h2 class="section-title">When to <em>Re-run</em></h2>
+      </div>
+      <div class="rerun-table">
+        <table>
+          <thead><tr><th>Trigger</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td>First time on project</td><td><code>/tech-knowledge</code> then <code>/product-knowledge</code> — whole project first, then per feature area</td></tr>
+            <tr><td>/audit reports stale entries</td><td>Re-run for that scope only: <code>/tech-knowledge auth</code></td></tr>
+            <tr><td>Major refactor / new architectural pattern</td><td>Re-run for the affected scope</td></tr>
+            <tr><td>New developer onboarding</td><td><code>/knowledge all</code> — read-only viewer, no re-scan needed</td></tr>
+            <tr><td>New feature area added</td><td><code>/tech-knowledge [area]</code> + <code>/product-knowledge [area]</code></td></tr>
+            <tr><td>Before every release</td><td>Re-run changed scopes → <code>/audit</code> → commit → push</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="never-run">
+        <span style="font-size:1.1rem">🚫</span>
+        <div><strong>Never re-run just because time passed.</strong> Only re-run when <code>/audit</code> reports something stale, after a significant structural change, or as a release gate. They are cheap to read but expensive to regenerate.</div>
+      </div>
+
+      <div class="callout success">
+        <span class="callout-icon">✅</span>
+        <div class="callout-body">
+          <strong>Product knowledge grows automatically via Gate 1</strong> — no manual <code>/product-knowledge</code> re-run needed per feature. Every Gate 1 approval silently appends <span class="tag tag-confirmed">[CONFIRMED]</span> entries.<br><br>
+          <strong>Tech knowledge only goes stale on structural changes</strong> — new ORM, new architectural layer, new auth approach. Routine features that follow existing patterns do not require a re-run.
+        </div>
+      </div>
+    </div>
+
+    <!-- S10 -->
+    <div class="section" id="s10">
+      <div class="section-header">
+        <span class="section-num">10</span>
+        <h2 class="section-title">Release <em>Audit</em></h2>
+      </div>
+      <p>The team lead runs <code>/audit</code> at two points: <strong>before every push after knowledge commands</strong> (bootstrap and release prep), and whenever something seems broken. It is not a passive weekly check — it is an active quality gate that must pass before code reaches the repo.</p>
+
+      <div class="callout critical">
+        <span class="callout-icon">🚨</span>
+        <div class="callout-body"><strong>Rule:</strong> knowledge commands → <code>/audit</code> → commit + push. Never commit knowledge files without running <code>/audit</code> first. A stale or unverifiable entry committed to the repo will be read as fact by every developer's <code>/new-feature</code> and <code>/fix</code> for the rest of the sprint.</div>
+      </div>
+
+      <h3>Team lead checklist — before every release</h3>
+      <table>
+        <thead><tr><th>Step</th><th>Action</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>Identify scopes that changed this release</td><td>Only re-run knowledge for scopes with significant structural changes — new ORM, new layer, new auth approach</td></tr>
+          <tr><td>2</td><td><code>/tech-knowledge [changed-scope]</code></td><td>Refreshes HOW file for changed scopes</td></tr>
+          <tr><td>3</td><td><code>/product-knowledge [changed-scope]</code></td><td>Refreshes WHAT file — only if business rules or flows changed significantly; Gate 1 captures handle most updates automatically</td></tr>
+          <tr><td>4</td><td><code>/audit</code></td><td>Validates all knowledge entries against live code. Must show zero stale, zero unverifiable before proceeding</td></tr>
+          <tr><td>5</td><td>Fix any stale/unverifiable entries flagged</td><td>Re-run <code>/tech-knowledge [scope]</code> for each flagged file → <code>/audit</code> again</td></tr>
+          <tr><td>6</td><td><code>/detect-conflicts</code></td><td>Surfaces contradicting business rules across features — generates decision inbox in <code>knowledge/conflicts/</code></td></tr>
+          <tr><td>7</td><td>Resolve open conflicts</td><td>Edit conflict files, mark decisions, commit</td></tr>
+          <tr><td>8</td><td><code>git add knowledge/ && git commit && git push</code></td><td>Only after audit shows all current</td></tr>
+          <tr><td>9</td><td>Tag the release</td><td>Knowledge is clean — all commands have accurate context for next sprint</td></tr>
+        </tbody>
+      </table>
+
+      <div class="tabs" style="margin-top:24px">
+        <div class="tab-bar">
+          <button class="tab-btn active" onclick="switchTab(this,'audit-cc')"><span class="tab-icon">⌨️</span> Claude Code</button>
+          <button class="tab-btn" onclick="switchTab(this,'audit-kiro')"><span class="tab-icon">🔮</span> Kiro</button>
+        </div>
+        <div class="tab-panel active" id="audit-cc">
+<pre><span class="comment"># Step 4 — run audit (after re-running knowledge commands for changed scopes)</span>
+<span class="cmd">/audit</span>
+
+<span class="comment"># Step 5 — if stale entries flagged:</span>
+<span class="cmd">/tech-knowledge notifications</span>   <span class="comment"># re-scan flagged scope</span>
+<span class="cmd">/audit</span>                           <span class="comment"># confirm clean</span>
+
+<span class="comment"># Step 6 — conflict detection</span>
+<span class="cmd">/detect-conflicts</span>                <span class="comment"># generates knowledge/conflicts/ inbox</span>
+
+<span class="comment"># Step 8 — commit and push</span>
+<span class="cmd">git add</span> <span class="arg">knowledge/</span>
+<span class="cmd">git commit</span> <span class="flag">-m</span> <span class="string">"chore(knowledge): release prep — refresh + audit clean"</span>
+<span class="cmd">git push</span></pre>
+        </div>
+        <div class="tab-panel" id="audit-kiro">
+<pre><span class="comment"># Step 2-3 — trigger "Tech Knowledge" + "Product Knowledge" workflows in panel</span>
+<span class="comment"># Step 4 — trigger "Audit" workflow in Kiro panel</span>
+<span class="comment"># Step 5 — if stale: re-trigger "Tech Knowledge" for flagged scope → re-audit</span>
+<span class="comment"># Step 6 — trigger "Detect Conflicts" workflow</span>
+<span class="comment"># Step 8 — same git commands as Claude Code</span>
+<span class="cmd">git add</span> <span class="arg">knowledge/</span>
+<span class="cmd">git commit</span> <span class="flag">-m</span> <span class="string">"chore(knowledge): release prep — refresh + audit clean"</span>
+<span class="cmd">git push</span></pre>
+        </div>
+      </div>
+
+      <h3>What /audit checks</h3>
+      <table>
+        <thead><tr><th>Check</th><th>What it looks for</th><th>Blocker?</th></tr></thead>
+        <tbody>
+          <tr><td>Architecture compliance</td><td>Layer violations — code that skips layers or calls across wrong boundaries</td><td>Yes</td></tr>
+          <tr><td>File size</td><td>Files exceeding 200-line limit (configurable)</td><td>Warn</td></tr>
+          <tr><td>Dead code</td><td>Exported functions with zero internal references</td><td>Warn</td></tr>
+          <tr><td>Knowledge health</td><td>Every entry in <code>knowledge/*.md</code> verified against live code — [STALE] / [UNVERIFIABLE] flagged</td><td>Action required</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Knowledge health output</h3>
+      <div class="audit-output">
+<span class="section-head">━━━ KNOWLEDGE HEALTH ━━━</span><br>
+<br>
+&nbsp;&nbsp;Files checked:&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">4</span><br>
+&nbsp;&nbsp;Entries checked:&nbsp;&nbsp;<span class="num">31</span><br>
+<br>
+&nbsp;&nbsp;<span class="ok">✓ Current:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;29</span><br>
+&nbsp;&nbsp;<span class="warn">⚠ Stale:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1</span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#4b5563">← code changed since knowledge was written</span><br>
+&nbsp;&nbsp;<span class="err">? Unverifiable:&nbsp;&nbsp;&nbsp;1</span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#4b5563">← entry references a file that no longer exists</span><br>
+<br>
+&nbsp;&nbsp;Stale entries (require action):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="warn">knowledge/tech-notifications.md</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Notification entity: fields id, user_id, message, read_at" [INFERRED]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— code now has: channel_id field added (src/notifications/entities/notification.entity.ts:8)<br>
+<br>
+&nbsp;&nbsp;Unverifiable (human review needed):<br>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="err">knowledge/tech-auth.md</span><br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Token stored in localStorage" [INFERRED]<br>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;— no code found at previously referenced location<br>
+<br>
+&nbsp;&nbsp;Recommended action:<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Re-run <span class="result-info">/tech-knowledge notifications</span> → verify → commit<br>
+&nbsp;&nbsp;&nbsp;&nbsp;Re-run <span class="result-info">/tech-knowledge auth</span> → verify → commit
+      </div>
+
+      <div class="callout success">
+        <span class="callout-icon">✅</span>
+        <div class="callout-body">When <code>/audit</code> shows <strong>all entries current, zero stale, zero unverifiable</strong> — knowledge is clean. Commit, push, tag the release.</div>
+      </div>
+    </div>
+
+    <!-- S11 -->
+    <div class="section" id="s11">
+      <div class="section-header">
+        <span class="section-num">11</span>
+        <h2 class="section-title">Agent <em>Comparison</em></h2>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Aspect</th><th class="cc-col">Claude Code</th><th class="kiro-col">Kiro</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Trigger</td><td class="cc-col"><code>/tech-knowledge [scope]</code> in terminal</td><td class="kiro-col">"Tech Knowledge" workflow in panel</td></tr>
+          <tr><td>Scope input</td><td class="cc-col">From <code>$ARGUMENTS</code> directly</td><td class="kiro-col">STEP 0 interactive question</td></tr>
+          <tr><td>Output file</td><td class="cc-col"><code>knowledge/*.md</code></td><td class="kiro-col">Same <code>knowledge/*.md</code></td></tr>
+          <tr><td>Session type</td><td class="cc-col">Inline in current Claude session</td><td class="kiro-col">Fresh <code>askAgent</code> session per workflow</td></tr>
+          <tr><td>Knowledge preamble</td><td class="cc-col">Injected via <code>generateKnowledgePreambleCommand()</code></td><td class="kiro-col">Embedded in hook's <code>then.prompt</code> string</td></tr>
+          <tr><td>Gate 1 silent capture</td><td class="cc-col">Automatic after approval word</td><td class="kiro-col">Same — automatic after approval word</td></tr>
+          <tr><td><code>knowledge/</code> directory</td><td class="cc-col">Shared — same files</td><td class="kiro-col">Shared — same files</td></tr>
+          <tr><td>Spec location</td><td class="cc-col"><code>specs/[feature]/</code></td><td class="kiro-col"><code>.kiro/specs/[feature]/</code></td></tr>
+        </tbody>
+      </table>
+      <div class="callout success">
+        <span class="callout-icon">🤝</span>
+        <div class="callout-body">Both agents write to the same <code>knowledge/</code> directory. Teams using both (e.g. Kiro for development, Claude Code for reviews) share knowledge seamlessly — no duplication or conflict.</div>
+      </div>
+    </div>
+
+    <!-- S12 -->
+    <div class="section" id="s12">
+      <div class="section-header">
+        <span class="section-num">12</span>
+        <h2 class="section-title">DB Schema <em>Discovery</em></h2>
+      </div>
+      <p>When <code>/tech-knowledge</code> detects a database, STEP 5 gains a <code>sql</code> export option. Generates a committed, project-aware discovery file — not a generic cheatsheet.</p>
+
+      <div class="callout info">
+        <span class="callout-icon">📋</span>
+        <div class="callout-body">The generated file includes a project-aware header: engine, ORM, migration table name, and connection host. The migration history query (#15 for PostgreSQL) uses the <strong>exact ORM-specific table name</strong> — <code>_prisma_migrations</code>, <code>typeorm_migrations</code>, <code>alembic_version</code>, <code>flyway_schema_history</code>, etc.</div>
+      </div>
+
+      <div class="db-engines">
+        <div class="db-card">
+          <div class="db-card-engine">🐘 PostgreSQL</div>
+          <div class="db-card-file">knowledge/db-schema-discovery.sql</div>
+          <div class="db-card-count">15 queries — schemas, tables, columns, PKs, FKs, indexes, enums, views, functions, triggers, multi-tenant, soft-delete, sizes, running queries, migration history</div>
+        </div>
+        <div class="db-card">
+          <div class="db-card-engine">🐬 MySQL / MariaDB</div>
+          <div class="db-card-file">knowledge/db-schema-discovery.sql</div>
+          <div class="db-card-count">7 queries — INFORMATION_SCHEMA equivalents, FKs, indexes, enums, table sizes, migration history</div>
+        </div>
+        <div class="db-card">
+          <div class="db-card-engine">🍃 MongoDB</div>
+          <div class="db-card-file">knowledge/db-schema-discovery.js</div>
+          <div class="db-card-count">7 mongosh commands — collections, sample docs, indexes, stats</div>
+        </div>
+        <div class="db-card">
+          <div class="db-card-engine">🪨 SQLite</div>
+          <div class="db-card-file">knowledge/db-schema-discovery.sql</div>
+          <div class="db-card-count">7 PRAGMA statements — tables, columns, FKs, indexes, DDL</div>
+        </div>
+        <div class="db-card">
+          <div class="db-card-engine">⚡ Redis</div>
+          <div class="db-card-file">knowledge/db-schema-discovery.sh</div>
+          <div class="db-card-count">9 redis-cli commands — keyspace, memory, SCAN, TTL, key types</div>
+        </div>
+      </div>
+
+      <h3>Connect with any SQL client</h3>
+      <p>The knowledge file provides connection parameters in a tool-agnostic format — works with any client:</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin:12px 0">
+        <span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.8rem;color:#374151">DBeaver</span>
+        <span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.8rem;color:#374151">SQL Workbench/J</span>
+        <span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.8rem;color:#374151">DataGrip</span>
+        <span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.8rem;color:#374151">TablePlus</span>
+        <span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.8rem;color:#374151">pgAdmin</span>
+        <span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.8rem;color:#374151">Beekeeper Studio</span>
+        <span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.8rem;color:#374151">HeidiSQL</span>
+        <span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.8rem;color:#374151">psql CLI</span>
+        <span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.8rem;color:#374151">mysql CLI</span>
+        <span style="background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;padding:5px 12px;font-size:0.8rem;color:#374151">sqlite3</span>
+      </div>
+    </div>
+
+    <!-- S13 -->
+    <div class="section" id="s13">
+      <div class="section-header">
+        <span class="section-num">13</span>
+        <h2 class="section-title">Governance <em>During Development</em></h2>
+      </div>
+      <p>When a developer generates tasks and writes code using <code>/new-feature</code>, <code>/fix</code>, or <code>/edit-feature</code>, the governance framework operates on four layers simultaneously — without the developer doing anything extra.</p>
+
+      <div class="diagram-wrap">
+        <div class="diagram-note">Requires internet to render (Mermaid CDN)</div>
+        <div class="mermaid">
+graph TD
+  A["Developer: /new-feature payments"] --> B["Knowledge Preamble reads\nknowledge/tech-payments.md\nknowledge/product-payments.md"]
+  B --> C["Steering files loaded\nCLAUDE.md → architecture.md\ncoding-standards.md"]
+  C --> D["Gate 1 → Gate 2 → Gate 3\nspecs/ written, code generated"]
+  D --> E["Hooks fire on every file write\nformat-code · analyze-code\ncheck-file-size · check-secrets\nspec-first-gate · pre-write-secrets-gate"]
+  D --> F["git commit\npre-commit hook runs\nknowledge-confirmed · secrets · file-size\ncommit-msg format enforced"]
+  F --> G["PR opened\nai-gov pr-check runs in CI\nViolations as PR comments\nBlocks merge if blockers"]
+  style B fill:#1e3a5f,stroke:#3b82f6,color:#93c5fd
+  style C fill:#3730a3,stroke:#818cf8,color:#c7d2fe
+  style E fill:#14532d,stroke:#22c55e,color:#86efac
+  style F fill:#78350f,stroke:#f59e0b,color:#fef3c7
+  style G fill:#7f1d1d,stroke:#ef4444,color:#fecaca
+        </div>
+      </div>
+
+      <h3>Layer 1 — Steering Files (read before code is generated)</h3>
+      <p>These files are automatically available to the AI in every session via <code>CLAUDE.md</code>. They define the rules the AI must not violate when generating code.</p>
+      <table>
+        <thead><tr><th>File</th><th>Contains</th><th>When read</th></tr></thead>
+        <tbody>
+          <tr><td><code>CLAUDE.md</code></td><td>Stack, layer flow, naming rules, file size limit, high-risk files list. Always loaded — no explicit read needed.</td><td>Every session, automatically</td></tr>
+          <tr><td><code>.claude/steering/architecture.md</code></td><td>Layer responsibilities, forbidden cross-layer calls, legacy zone boundaries, architecture patterns. Read when the task involves non-standard structure.</td><td>On demand — AI reads when task requires it</td></tr>
+          <tr><td><code>.claude/steering/coding-standards.md</code></td><td>Naming conventions, import order, error handling patterns, state management rules. Read when the pattern isn't covered in CLAUDE.md.</td><td>On demand — AI reads when pattern is ambiguous</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Layer 2 — Hooks (fire automatically on every file write)</h3>
+      <p>Hooks are shell scripts or Kiro hook files that the framework installs into <code>.claude/hooks/</code> or <code>.kiro/hooks/</code>. They fire automatically — the developer sees the output inline, no extra command needed.</p>
+      <table>
+        <thead><tr><th>Hook</th><th>Fires when</th><th>What it does</th></tr></thead>
+        <tbody>
+          <tr><td><code>spec-first-gate</code></td><td>Any file write attempt</td><td>Blocks code generation if no Gate 3-approved spec exists. Enforces spec-first — no code before spec.</td></tr>
+          <tr><td><code>pre-write-secrets-gate</code></td><td>Before writing any file</td><td>Scans the content about to be written for credential patterns. Blocks the write if secrets detected.</td></tr>
+          <tr><td><code>format-code</code></td><td>After each file write</td><td>Runs the stack's formatter (<code>prettier</code>, <code>ruff format</code>, <code>dart format</code>, <code>spotless</code>) on the written file.</td></tr>
+          <tr><td><code>analyze-code</code></td><td>After each file write</td><td>Runs the stack's linter (<code>eslint</code>, <code>ruff check</code>, <code>dart analyze</code>, <code>checkstyle</code>) on the written file.</td></tr>
+          <tr><td><code>check-file-size</code></td><td>After each file write</td><td>Warns if the file exceeds 200 lines (configurable). Flags for refactoring before it becomes a problem.</td></tr>
+          <tr><td><code>check-secrets</code></td><td>After each file write</td><td>Post-write scan for accidentally included credentials, tokens, or PII.</td></tr>
+          <tr><td><code>check-feature-readme</code></td><td>After feature folder created</td><td>Reminds the developer to write a README for the new feature. Not a blocker — a nudge.</td></tr>
+          <tr><td><code>check-consistency</code></td><td>After each file write</td><td>Checks naming conventions match what's documented in CLAUDE.md and coding-standards.md.</td></tr>
+          <tr><td><code>post-task-checklist</code> <em>(Kiro)</em></td><td>After each task completed</td><td>Verifies: architecture compliance, no skipped layers, tests written, file size, tasks.md updated, Jira reminder.</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout info">
+        <span class="callout-icon">💡</span>
+        <div class="callout-body">All hooks are installed by <code>ai-gov init</code> and fire without developer action. The developer sees the output inline in the chat or panel. If a hook flags an issue, the AI resolves it before moving to the next file.</div>
+      </div>
+
+      <h3>Layer 3 — Git Hooks (fire at <code>git commit</code>)</h3>
+      <p><code>ai-gov init --git-hooks</code> installs wrappers in <code>.git/hooks/</code> that call the governance checks at commit time.</p>
+      <table>
+        <thead><tr><th>Hook</th><th>Fires when</th><th>Checks run</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>.git/hooks/pre-commit</code></td>
+            <td>Every <code>git commit</code></td>
+            <td>
+              <strong>knowledge-confirmed.sh</strong> — blocks removal of any <code>[CONFIRMED]</code> entry from <code>knowledge/*.md</code>. Bypass: <code>AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit</code><br>
+              <strong>check-secrets.sh</strong> — blocks credentials, tokens, API keys in staged files<br>
+              <strong>check-file-size.sh</strong> — warns on files exceeding the line limit
+            </td>
+          </tr>
+          <tr>
+            <td><code>.git/hooks/commit-msg</code></td>
+            <td>Every <code>git commit</code></td>
+            <td>Enforces commit message format — must include ticket prefix or conventional commit type. Blocks commit if format violated.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot r"></div><div class="terminal-dot y"></div><div class="terminal-dot g"></div>
+          <div class="terminal-label">git commit — hooks firing</div>
+        </div>
+        <div class="terminal-body">
+<span class="prompt">$</span> git commit -m "feat(auth): add JWT refresh endpoint"
+<br><br>
+<span class="result-info">→ pre-commit: running knowledge-confirmed check...</span>
+<br>
+<span class="result-ok">  ✓ No [CONFIRMED] entries removed</span>
+<br>
+<span class="result-info">→ pre-commit: running secrets check...</span>
+<br>
+<span class="result-ok">  ✓ No credentials detected</span>
+<br>
+<span class="result-info">→ pre-commit: running file-size check...</span>
+<br>
+<span class="result-ok">  ✓ All files within 200-line limit</span>
+<br>
+<span class="result-info">→ commit-msg: validating format...</span>
+<br>
+<span class="result-ok">  ✓ Format valid</span>
+<br><br>
+<span class="result-ok">[main a3f8c12] feat(auth): add JWT refresh endpoint</span>
+<br>
+<span class="result-ok"> 4 files changed, 87 insertions(+)</span>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">⚠️</span>
+        <div class="callout-body">Use <code>--no-verify</code> sparingly — it bypasses <strong>all</strong> governance checks including secrets scanning. Use the targeted bypass <code>AI_GOV_KNOWLEDGE_OVERRIDE=1</code> to bypass only the knowledge guard while keeping secrets and file-size checks active.</div>
+      </div>
+
+      <h3>Layer 4 — PR Check (runs in CI on every pull request)</h3>
+      <p><code>ai-gov init --ci github</code> (or <code>gitlab</code> / <code>bitbucket</code>) installs a CI workflow that runs <code>ai-gov pr-check</code> on every PR. It diffs the branch against <code>main</code> and checks the changed files against governance rules.</p>
+      <table>
+        <thead><tr><th>What it checks</th><th>Output format</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>Architecture violations in changed files</td><td rowspan="4" style="vertical-align:middle"><code>terminal</code> (local)<br><code>github</code> (PR comment)<br><code>gitlab</code> (MR note)<br><code>json</code> (for tooling)</td><td rowspan="4" style="vertical-align:middle">Exit code 0 = no blockers (merge allowed)<br>Exit code 1 = blockers found (merge blocked)</td></tr>
+          <tr><td>Files exceeding line limit</td></tr>
+          <tr><td>Secrets accidentally added</td></tr>
+          <tr><td>Spec exists for each new feature folder</td></tr>
+        </tbody>
+      </table>
+
+      <div class="terminal">
+        <div class="terminal-bar">
+          <div class="terminal-dot r"></div><div class="terminal-dot y"></div><div class="terminal-dot g"></div>
+          <div class="terminal-label">GitHub Actions — ai-gov pr-check</div>
+        </div>
+        <div class="terminal-body">
+<span class="result-info">→ ai-gov pr-check --base main --format github</span>
+<br><br>
+<span class="result-ok">✓ Architecture: no violations in 6 changed files</span>
+<br>
+<span class="result-ok">✓ File size: all within limit</span>
+<br>
+<span class="result-warn">⚠ Spec missing: src/payments/refund/ has no spec in specs/refund/</span>
+<br>
+<span class="result-warn">  → Run /new-feature refund to create spec before merging</span>
+<br><br>
+<span class="result-warn">1 warning, 0 blockers — merge allowed but spec recommended</span>
+        </div>
+      </div>
+
+      <h3>Full developer flow — what fires and when</h3>
+      <table>
+        <thead><tr><th>Action</th><th>What fires</th></tr></thead>
+        <tbody>
+          <tr><td>Type <code>/new-feature payments</code></td><td>Knowledge preamble reads <code>knowledge/tech-payments.md</code> + <code>product-payments.md</code> silently</td></tr>
+          <tr><td>Developer says <strong>ok</strong> at Gate 1</td><td>Silent capture writes <span class="tag tag-confirmed">[CONFIRMED]</span> entries to <code>knowledge/product-payments.md</code></td></tr>
+          <tr><td>Developer says <strong>ok</strong> at Gate 3</td><td><code>specs/payments/</code> written · ExitPlanMode called · code generation begins</td></tr>
+          <tr><td>AI writes each source file</td><td><code>spec-first-gate</code> · <code>pre-write-secrets-gate</code> · <code>format-code</code> · <code>analyze-code</code> · <code>check-file-size</code> · <code>check-secrets</code> · <code>check-consistency</code></td></tr>
+          <tr><td>Task complete (Kiro)</td><td><code>post-task-checklist</code> fires — architecture, tests, spec update, Jira</td></tr>
+          <tr><td><code>git commit</code></td><td><code>knowledge-confirmed.sh</code> · <code>check-secrets.sh</code> · <code>check-file-size.sh</code> · commit-msg format check</td></tr>
+          <tr><td>PR opened</td><td><code>ai-gov pr-check</code> runs in CI · violations posted as PR comments · blockers block merge</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<script>
+// Mermaid
+mermaid.initialize({startOnLoad:true,theme:'neutral',securityLevel:'loose'});
+
+// Tabs
+function switchTab(btn, panelId) {
+  const bar = btn.closest('.tab-bar');
+  const tabs = btn.closest('.tabs');
+  bar.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  tabs.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(panelId).classList.add('active');
+}
+
+// Sidebar toggle (mobile)
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('show');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+}
+
+// Scroll progress
+window.addEventListener('scroll', () => {
+  const doc = document.documentElement;
+  const scrolled = doc.scrollTop / (doc.scrollHeight - doc.clientHeight);
+  document.getElementById('progress').style.transform = `scaleX(${scrolled})`;
+});
+
+// Active nav + topbar
+const sections = document.querySelectorAll('.section');
+const navLinks = document.querySelectorAll('.nav a');
+const topbarCurrent = document.getElementById('topbar-current');
+const sectionTitles = {
+  s1:'What is the Knowledge Hub', s2:'Confidence Model',
+  s3:'The Correct Order', s4:'Bootstrap — Team Lead',
+  s5:'3-Gate New Feature Flow', s6:'Edit Feature',
+  s7:'Fix & Hotfix', s8:'Refactor',
+  s9:'When to Re-run', s10:'Release Audit',
+  s11:'Agent Comparison', s12:'DB Schema Discovery',
+  s13:'Governance During Development'
+};
+
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const id = e.target.id;
+      navLinks.forEach(l => {
+        l.classList.toggle('active', l.getAttribute('href') === '#' + id);
+      });
+      topbarCurrent.textContent = sectionTitles[id] || 'Knowledge Hub Guide';
+    }
+  });
+}, {rootMargin:'-20% 0px -70% 0px'});
+
+sections.forEach(s => obs.observe(s));
+
+// Close sidebar on nav click (mobile)
+navLinks.forEach(l => l.addEventListener('click', closeSidebar));
+</script>
+</body>
+</html>

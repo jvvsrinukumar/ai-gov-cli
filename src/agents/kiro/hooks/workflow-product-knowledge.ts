@@ -138,7 +138,26 @@ Entry point: \`[file]\`
 - Source: \`[file]\`
 (If none detected: "No explicit state machines or status enums observed.")
 
+${isBackend ? `---
+
+## API Endpoint Catalog [INFERRED]
+
+| Method | Path | Auth Required | Description |
+|--------|------|--------------|-------------|
+| [method] | /[path] | [JWT / Public / Role] | [what it does] |
+(Derived from controller/router files — one row per route.)
+
 ---
+
+## Contribution Workflow [INFERRED]
+
+1. Branch: [naming convention from git history]
+2. Make code change
+3. If DB schema changed: generate migration → review SQL → commit alongside code
+4. Run linter and tests
+5. Commit + open PR
+
+` : ''}---
 
 ## Needs Clarification
 

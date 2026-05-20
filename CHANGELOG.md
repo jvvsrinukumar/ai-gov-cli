@@ -7,6 +7,84 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [20.3.0] — 2026-05-20
+
+### Knowledge Freshness in PR Check + Documentation Overhaul
+
+v20.3 closes the team-lead-discipline gap (AC-4 from the honest assessment) by wiring automated knowledge freshness detection into `ai-gov pr-check`. It also ships a complete documentation overhaul of the Knowledge Hub guide — both the markdown and HTML versions — reflecting all v20.2 additions and the framework's core thesis.
+
+### Added
+
+- **`src/pr-check/checks/knowledge-freshness.ts`** — new `checkKnowledgeFreshness` check. Reads the `Generated: ... (git: HASH)` line from each `knowledge/tech-*.md` file, runs `git diff --stat HASH..HEAD` against source paths, and warns when > 10 files or > 200 lines have changed since the knowledge was last written. Same thresholds as the drift detection in `/tech-knowledge`. Status: `warn` (not a blocker — team leads refresh knowledge, not developers). Skips gracefully when no `knowledge/` directory exists.
+- **`docs/knowledge_hub_guide.html`** — complete standalone HTML guide (1,759 lines). Dark sidebar navigation, sticky topbar, tabbed Claude Code / Kiro examples for all major workflows, Mermaid diagrams, confidence tag pills ([INFERRED] amber · [CONFIRMED] green · [STALE] red), terminal output blocks, gate cards, DB engine cards, mobile-responsive, print-friendly. 13 sections including the new "Governance During Development" section (steering files, hooks, git hooks, PR check) and "Release Audit" (replacing "Weekly Audit" with full 9-step team lead checklist). Thesis hero block at top explains the framework's core purpose: AI-readable persistent memory across stacks, agents, developers, and sessions.
+- **Governance During Development section** (in HTML guide) — documents all 4 governance layers: steering files (CLAUDE.md, architecture.md, coding-standards.md), hooks (9 hooks with trigger + action table), git hooks (pre-commit + commit-msg with terminal example), PR check (format options, exit codes, CI example output). Full developer flow table mapping every action to what fires.
+
+### Changed
+
+- **`src/pr-check/index.ts`** — registers `checkKnowledgeFreshness` in the PR check pipeline (runs after `checkPRDescription`).
+- **`docs/knowledge_hub_guide.md`** — complete rewrite of section 3.1 (`/tech-knowledge`): files generated table, all sections explained individually with examples, full Database section (step-by-step connect with any SQL client, terminal CLI alternatives, SQL debugging queries, MongoDB equivalent), STEP 3.5 scanning explained, db-schema-discovery.sql shown in full (15 PostgreSQL queries, ORM migration table mapping), complete NestJS + React example sessions. Section 3.2 (`/product-knowledge`) updated with files generated table and backend-only sections. Section 3.4 (Kiro) updated with v20.3 hook structure. Section 9 (Team Workflow) enforces correct order: knowledge commands → audit → commit → push. Section 10 renamed "Release Audit" with full 9-step team lead release checklist.
+- **`docs/knowledge_hub_guide.md` confidence model** — clarified that all tags are read; the tag controls trust level, not whether the file is used. Added bold callout: "A knowledge file with only [INFERRED] entries is still loaded and provides valuable context."
+- **CI generators** (`github.ts`, `gitlab.ts`, `bitbucket.ts`) — install script updated: `ai-gov@20.1.0` → `ai-gov@20.3.0`.
+
+### Version alignment
+
+- `package.json` 20.2.0 → 20.3.0
+- `src/constants.ts` VERSION + HOOK_VERSION → 20.3.0
+- CI install scripts → `ai-gov@20.3.0`
+- `tests/knowledge-hub.test.ts` version assertion updated
+- `docs/knowledge_hub_guide.md` header → v20.3.0
+
+### Migration
+
+No migration required. The knowledge freshness check in `pr-check` is additive — existing projects pick it up automatically on next `ai-gov upgrade`. Projects without a `knowledge/` directory receive a `skip` result, not a warning.
+
+---
+
+## [20.2.0] — 2026-05-19
+
+### Knowledge Hub Enrichment — Zero-Knowledge Developer Onboarding
+
+v20.2 makes `/tech-knowledge` and `/product-knowledge` the only thing a developer with no backend experience needs to get productive. Previously the generated knowledge files covered architecture only (layer map, patterns, file inventory). Now they also cover everything a developer needs on day 1: how to run the project, what every `.env` variable means, how to connect to and query the database, migration workflows, stack-specific gotchas, API access, and debugging.
+
+### Added
+
+- **`buildStackPrimer(stack, subtype)`** in `src/agents/claude-code/commands/tech-knowledge.ts` — per-stack plain-English explanation of the framework (NestJS modules/DI, FastAPI Depends() chain, Express middleware order, Spring Boot annotations, etc.). Emitted at the top of `knowledge/tech-[scope].md` for all backend stacks.
+- **`buildMigrationBlock(orm, stack)`** — ORM-specific migration command table. Covers TypeORM, Prisma (includes `prisma studio`), Sequelize, Drizzle, MikroORM, Mongoose, Alembic (Python), Flyway/Liquibase (Java). Injected into both the Daily Commands table and the Database section.
+- **`buildStackNotesBlock(stack, subtype)`** — bullet list of beginner traps per subtype: NestJS module registration, Express middleware order, Fastify plugin isolation, FastAPI venv activation + Pydantic version check + session scope, Django INSTALLED_APPS, Spring Boot Maven wrapper + Lombok + profiles.
+- **`buildDbDiscoverySql(orm, dbDriver, stack)`** — generates ready-to-run schema discovery queries for PostgreSQL (15 queries), MySQL (10 queries), SQLite, MongoDB (`.js`), and Redis (`.sh`). Migration history query uses ORM-specific table name (`_prisma_migrations`, `typeorm_migrations`, `alembic_version`, `flyway_schema_history`, `SequelizeMeta`). Project-aware header includes engine, ORM, and schema name.
+- **STEP 3.5 — Scan Developer Environment** added to `/tech-knowledge` for backend stacks. Instructs the AI to read `.env.example` / `.env` (names + comments only, never values) / source fallback (`process.env`, `os.getenv`, Pydantic `BaseSettings`, `@Value`) before writing the knowledge file.
+- **8 new output sections** in `knowledge/tech-[scope].md` for backend stacks:
+  - `## Stack Primer` — 3-5 line framework orientation
+  - `## First-Run Guide` — numbered steps from `git clone` to first API call (absorbs prerequisites)
+  - `## Environment Variables` — scanned table with purpose + required flag for every variable
+  - `## Developer Daily Commands` — install, start, test, build, format, lint, create/apply/rollback migration
+  - `## Database` — engine, ORM, connection parameters (tool-agnostic: works with DBeaver, SQL Workbench/J, DataGrip, TablePlus, pgAdmin, Beekeeper Studio, HeidiSQL, and any other client), terminal CLI commands, migration workflow
+  - `## Stack-Specific Notes` — per-subtype gotcha list
+  - `## API Access` — base URL, auth mechanism, copy-paste curl for JWT token, Swagger URL (unconditional for all backends; sparser when nothing detected)
+  - `## Logging & Debugging` — log location, log level env var, debugger attach command per stack
+- **`sql` export option** added to STEP 5 of `/tech-knowledge`. When a DB is detected, offering `sql` generates `knowledge/db-schema-discovery.sql` (committed to git — permanent project exploration tool, not a generic cheatsheet).
+- **`## API Endpoint Catalog`** added to `knowledge/product-[scope].md` for backend stacks. Derives one row per route from controller/router files.
+- **`## Contribution Workflow`** added to `knowledge/product-[scope].md` for backend stacks. Branch naming, code change, migration generation, lint, test, PR.
+- Kiro `workflow-tech-knowledge` and `workflow-product-knowledge` hooks updated with lightweight section references (section names + brief instructions, not full inline templates — keeps hook prompt size controlled and avoids drift).
+
+### Changed
+
+- **`src/profiles.ts` — `nodejsProfile()`** — added `buildCmd: 'npm run build'` (was absent; the only stack missing a build command).
+- **`src/agents/claude-code/commands/tech-knowledge.ts`** — connection block language changed from "Connect via DBeaver / pgAdmin / psql / TablePlus" to "Connect with any SQL client" with a non-exhaustive list. All discovery file headers use inclusive "any SQL client or CLI" wording. Terminal CLI alternatives (`psql`, `mysql`, `sqlite3`) added alongside GUI instructions.
+- **`tests/knowledge-hub.test.ts`** — version assertion updated from `20.1.0` to `20.2.0`.
+
+### Version alignment
+
+- `package.json` 20.1.0 → 20.2.0
+- `src/constants.ts` VERSION + HOOK_VERSION → 20.2.0
+- `tests/knowledge-hub.test.ts` version assertion updated
+
+### Migration
+
+No migration required. Projects running v20.1.0 pick up all new knowledge sections on the next `/tech-knowledge` or `/product-knowledge` run after upgrading (`npx ai-gov upgrade`). Frontend stacks (React, Angular, Flutter, Kotlin, SwiftUI, Next.js) are unaffected — all new sections are gated on `isBackend`.
+
+---
+
 ## [20.1.0] — 2026-05-19
 
 ### Workspace-level Jira sync — close the cross-project gap

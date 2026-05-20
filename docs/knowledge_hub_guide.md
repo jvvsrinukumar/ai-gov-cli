@@ -1,9 +1,9 @@
 # Knowledge Hub Guide
-## Claude Code + Kiro — All 5 Phases + v19.1 Hardening
+## Claude Code + Kiro — All 5 Phases + v20.3 Developer Onboarding
 
 **Audience:** Developers, team leads
-**Version:** v19.1.0 · **Date:** 2026-05-18
-**Status:** Shipped — all phases active, hardened
+**Version:** v20.3.0 · **Date:** 2026-05-20
+**Status:** Shipped — all phases active, zero-knowledge developer onboarding, automated knowledge freshness in PR check
 
 ---
 
@@ -29,10 +29,10 @@
 1. [What the Knowledge Hub Is](#1-what-the-knowledge-hub-is)
 2. [The Confidence Model — INFERRED / CONFIRMED / STALE](#2-the-confidence-model)
 3. [Phase 1 — Extract Knowledge On Demand](#3-phase-1--extract-knowledge-on-demand)
-   - 3.1 [Claude Code: /tech-knowledge](#31-claude-code-tech-knowledge)
-   - 3.2 [Claude Code: /product-knowledge](#32-claude-code-product-knowledge)
+   - 3.1 [Claude Code: /tech-knowledge](#31-claude-code-tech-knowledge) *(v20.2: +8 backend sections, STEP 3.5, SQL export)*
+   - 3.2 [Claude Code: /product-knowledge](#32-claude-code-product-knowledge) *(v20.2: +API Endpoint Catalog, Contribution Workflow)*
    - 3.3 [Claude Code: /knowledge (read-only viewer)](#33-claude-code-knowledge-read-only-viewer)
-   - 3.4 [Kiro: Tech Knowledge workflow](#34-kiro-tech-knowledge-workflow)
+   - 3.4 [Kiro: Tech Knowledge workflow](#34-kiro-tech-knowledge-workflow) *(v20.2: backend sections included)*
    - 3.5 [Kiro: Product Knowledge workflow](#35-kiro-product-knowledge-workflow)
 4. [Phase 2 — Context Builder (Read Before Acting)](#4-phase-2--context-builder)
 5. [Phase 3 — Silent Capture (Write After Gate 1 or Fix)](#5-phase-3--silent-capture)
@@ -41,7 +41,7 @@
    - 7.1 [Claude Code: /detect-conflicts](#71-claude-code-detect-conflicts)
    - 7.2 [Kiro: Detect Conflicts workflow](#72-kiro-detect-conflicts-workflow)
 8. [The knowledge/ Directory Layout](#8-the-knowledge-directory-layout)
-9. [Team Workflow — Day-to-Day Usage](#9-team-workflow--day-to-day-usage)
+9. [Team Workflow — Day-to-Day Usage](#9-team-workflow--day-to-day-usage) *(v20.2: correct order enforced)*
 10. [Stack-Specific Examples](#10-stack-specific-examples)
 11. [Pre-commit Guard & Bypass (v19.1)](#11-pre-commit-guard--bypass-v191)
 
@@ -54,14 +54,15 @@ The Knowledge Hub is a persistent, git-committed intelligence layer that sits be
 The Knowledge Hub breaks that reset cycle:
 
 ```
-Developer runs /tech-knowledge
-    → AI reads codebase, writes knowledge/tech-auth.md
-        → knowledge/ committed to git
-            → Every future /fix or /new-feature reads knowledge/ first
-                → Developer approves /new-feature Gate 1
-                    → AI writes [CONFIRMED] entries silently to knowledge/product-auth.md
-                        → /audit checks if knowledge still matches code
-                            → /detect-conflicts surfaces contradictions across features
+Team lead runs /tech-knowledge + /product-knowledge
+    → AI reads codebase, writes knowledge/tech-auth.md + knowledge/product-auth.md
+        → Team lead runs /audit (validates knowledge health before committing)
+            → knowledge/ committed + pushed to git
+                → Every /new-feature, /fix, /edit-feature reads knowledge/ first (automatic)
+                    → Developer approves /new-feature Gate 1
+                        → AI writes [CONFIRMED] entries silently to knowledge/product-auth.md
+                            → Weekly /audit checks if knowledge still matches code
+                                → /detect-conflicts surfaces contradictions across features
 ```
 
 **What it is not:** This is not a documentation system. You are not writing docs. The AI extracts, you verify, git tracks history. Knowledge grows as a byproduct of normal work.
@@ -74,9 +75,11 @@ Every entry in every knowledge file carries one of three tags. This is the core 
 
 | Tag | Meaning | Source | Trust level |
 |-----|---------|--------|-------------|
-| `[INFERRED]` | AI extracted from code — not human-verified | `/tech-knowledge`, `/product-knowledge` | Use as starting point. Verify against actual code. |
+| `[INFERRED]` | AI extracted from code — not human-verified | `/tech-knowledge`, `/product-knowledge` | **Still read and used by all commands.** Treated as a strong hint — AI verifies against actual code before acting. If code contradicts an `[INFERRED]` entry, the discrepancy is noted in the response. |
 | `[CONFIRMED]` | Human-verified — explicitly approved | Gate 1 approval in `/new-feature` or `/edit-feature`, or manual edit | Trust fully. Never overwritten by AI. |
 | `[UNKNOWN]` | Observable but not understood — requires human input | "Needs Clarification" section in extraction | Do not rely on — flag for team discussion. |
+
+**All tags are read — the tag controls trust level, not whether the file is used.** A knowledge file with only `[INFERRED]` entries (e.g. immediately after bootstrapping, before any Gate 1 approvals) is still loaded by the preamble and provides valuable context. The AI treats `[INFERRED]` entries as educated guesses to verify, not facts to skip.
 
 **Merge rules (enforced silently after Gate 1):**
 
@@ -101,113 +104,551 @@ mands. You run them once to bootstrap knowledge for a feature or the whole proje
 
 ### 3.1 Claude Code: `/tech-knowledge`
 
-**When:** After project setup, before a sprint, or when onboarding a new team member.
+**When:** Team lead runs it once at project bootstrap, and again whenever `/audit` reports stale entries or a significant structural change lands (new ORM, new layer, new auth approach). Developers never need to run it during normal sprint work.
 
-**What it does:** Reads the codebase and writes `knowledge/tech-[scope].md` — the HOW file. Layers, patterns, conventions, file inventory.
+**What it does:** Scans the live codebase and writes a committed knowledge file — the HOW file. It answers: *How is this codebase built? What patterns does it use? How do I run it locally? How do I connect to the database and write queries?*
 
-**Usage:**
+For backend stacks (Node.js, Python, Java) it also runs **STEP 3.5** — scanning `.env.example`, manifest scripts, and ORM config files — to produce 8 additional developer-setup sections. The goal: a developer with zero backend experience should be able to read `knowledge/tech-overview.md` and go from `git clone` to a running server with a connected database, without asking anyone anything.
+
+---
+
+#### Usage
 
 ```
-/tech-knowledge                 → knowledge/tech-overview.md  (whole project)
+/tech-knowledge                 → knowledge/tech-overview.md   (whole project)
 /tech-knowledge auth            → knowledge/tech-auth.md
 /tech-knowledge payments        → knowledge/tech-payments.md
-/tech-knowledge state           → knowledge/tech-state.md
-/tech-knowledge user auth       → knowledge/tech-user-auth.md  (slugified)
+/tech-knowledge user auth       → knowledge/tech-user-auth.md  (spaces become hyphens)
 ```
-
-**Example session (React project, `/tech-knowledge auth`):**
-
-```
-You: /tech-knowledge auth
-
-Claude: [reads src/features/auth/, src/hooks/useAuth.ts, src/api/auth.ts, src/store/authSlice.ts]
-
-━━━ TECH KNOWLEDGE WRITTEN ━━━
-
-  File: knowledge/tech-auth.md
-  Scope: auth
-  Layers mapped: 4
-  Files inventoried: 7
-  Unknowns flagged: 2
-
-  All entries are [INFERRED]. Review and promote to [CONFIRMED] as needed.
-  "Needs Clarification" items require human input — code cannot answer them.
-```
-
-**Output file — `knowledge/tech-auth.md`:**
-
-```markdown
-# Tech Knowledge — auth | React / TypeScript
-
-> ⚠ Auto-generated [INFERRED]. Do not add secrets, PII, or credentials.
-> Manual edits will be overwritten on next run until Phase 3.
-
-Generated: 2026-05-07
 
 ---
 
-## Layer Map
+#### Files generated
 
-UI → src/features/auth/LoginPage.tsx — login form, handles submit [INFERRED]
-UI → src/features/auth/ResetPasswordPage.tsx — reset flow [INFERRED]
-Hook → src/hooks/useAuth.ts — auth state + actions, wraps Redux [INFERRED]
-Store → src/store/authSlice.ts — Redux slice: user, token, isAuthenticated [INFERRED]
-API → src/api/auth.ts — axios calls: /login, /logout, /refresh, /reset-password [INFERRED]
-Guard → src/components/PrivateRoute.tsx — redirects to /login if !isAuthenticated [INFERRED]
-Types → src/types/auth.ts — User, AuthState, LoginPayload [INFERRED]
+Every run of `/tech-knowledge` produces or offers:
+
+| File | Always? | Description |
+|------|---------|-------------|
+| `knowledge/tech-[scope].md` | **Yes** | The main knowledge file — committed to git |
+| `knowledge/tech-[scope].html` | Optional (say `html`) | HTML export with rendered Mermaid diagrams. **Not committed.** Requires internet. |
+| `knowledge/db-schema-discovery.sql` | Optional (say `sql`, backend + DB only) | Ready-to-run discovery queries for the detected DB engine. **Committed to git.** |
 
 ---
 
-## Patterns in Use
+#### All sections in the generated knowledge file
+
+**Sections every stack gets:**
+
+---
+
+**`## Stack Primer`** *(backend stacks only)*
+
+3-5 lines explaining what the framework is in plain English before anything else. A developer who has never seen NestJS, FastAPI, or Spring Boot reads this first and understands the request flow before looking at any code.
+
+Examples:
+- NestJS: *"Every feature is a Module. Services are injected via constructor. Controllers handle HTTP. Guards enforce auth. Dev command: `npm run start:dev`. Swagger at `/api`."*
+- FastAPI: *"`Depends()` is the DI system — chain it for auth, DB sessions, validation. Pydantic validates all input/output. Swagger auto-generates at `/docs`."*
+- Spring Boot: *"`@RestController` handles HTTP. `@Service` beans contain business logic. `./mvnw` is the Maven wrapper — no global Maven needed."*
+
+---
+
+**`## Layer Map`**
+
+Every significant source file mapped to its architectural layer. One line per file.
+
+```
+Controller → src/auth/auth.controller.ts — HTTP endpoints, JWT guard [INFERRED]
+Service    → src/auth/auth.service.ts — login, token generation [INFERRED]
+Repository → src/auth/auth.repository.ts — user DB queries [INFERRED]
+Entity     → src/auth/entities/user.entity.ts — users table mapping [INFERRED]
+```
+
+---
+
+**`## Layer Flow Diagram`**
+
+Mermaid graph showing how layers connect. Gives an instant visual of request flow.
+
+```mermaid
+graph LR
+  Controller --> Service
+  Service --> Repository
+  Repository --> Entity
+  Entity --> DB[(PostgreSQL)]
+```
+
+---
+
+**`## Patterns in Use`**
 
 | Pattern | Value | Confidence |
 |---------|-------|------------|
-| HTTP client | axios (src/api/auth.ts) | [INFERRED] |
-| State management | Redux Toolkit (authSlice) | [INFERRED] |
-| Data access | REST API | [INFERRED] |
-| DI | none (direct import) | [INFERRED] |
-| Naming (files) | camelCase hooks, PascalCase pages | [INFERRED] |
-| Naming (classes) | N/A (functional components) | [INFERRED] |
-| Error handling | try/catch in API layer, toast notifications | [INFERRED] |
+| HTTP client | axios | [INFERRED] |
+| ORM | TypeORM | [INFERRED] |
+| DI | NestJS DI | [INFERRED] |
+| Auth | Passport JWT | [INFERRED] |
+| Error handling | HttpException + GlobalExceptionFilter | [INFERRED] |
+| Naming (files) | kebab-case | [INFERRED] |
 
 ---
 
-## File Inventory
+**`## File Inventory`**
 
-| File | Layer | Lines | Notes |
-|------|-------|-------|-------|
-| src/features/auth/LoginPage.tsx | UI | 87 | Calls useAuth().login |
-| src/features/auth/ResetPasswordPage.tsx | UI | 64 | Two-step: email then OTP |
-| src/hooks/useAuth.ts | Hook | 42 | Dispatches to authSlice |
-| src/store/authSlice.ts | Store | 95 | Stores token in localStorage |
-| src/api/auth.ts | API | 56 | Axios with interceptor for token refresh |
-| src/components/PrivateRoute.tsx | Guard | 22 | Checks isAuthenticated |
-| src/types/auth.ts | Types | 18 | User, AuthState, LoginPayload |
+Every significant file with layer, line count, and a brief note about what it does. Useful for finding where to make a change without reading all the code.
 
 ---
 
-## Conventions
+**`## Conventions`**
 
-- Auth-related hooks named useAuth* [INFERRED]
-- Feature components co-located in src/features/[feature]/ [INFERRED]
-- API functions exported from src/api/[domain].ts [INFERRED]
-- Guard components in src/components/ not in features/ [INFERRED]
+Naming rules, import order, folder structure patterns observed in the codebase.
 
 ---
 
-## Needs Clarification
+**`## Needs Clarification`**
 
-- Token stored in localStorage — is this intentional given XSS risk? [UNKNOWN]
-- OTP expiry time is hardcoded to 300s — business requirement or default? [UNKNOWN]
+Things the AI observed but cannot understand from code alone. `[UNKNOWN]` entries are questions for the team — WHY decisions, hardcoded thresholds, architectural choices with no comments.
+
+---
+
+**Sections backend stacks additionally get** (Node.js, Python, Java — produced by STEP 3.5):
+
+---
+
+**`## First-Run Guide`**
+
+Numbered steps from `git clone` to a running server. Steps 1-2 cover prerequisites inline — there is no separate prerequisites list.
+
+Example (NestJS + PostgreSQL):
+```
+1. Check Node.js version: node --version — compare against .nvmrc
+   Install correct version: nvm install 18.20.0 && nvm use
+2. Install dependencies: npm install
+3. Configure environment:
+   cp .env.example .env
+   Open .env and fill in real values (see Environment Variables below)
+4. Create or connect to database:
+   If local: createdb mydb (PostgreSQL CLI) — or create via pgAdmin/DBeaver
+   If remote: team lead provides DB_HOST, DB_USER, DB_PASSWORD values
+5. Run migrations: npm run migration:run
+6. Seed test data: npm run seed (if available — or skip)
+7. Start dev server: npm run start:dev
+8. Verify: open http://localhost:3000/api — Swagger UI should appear
+```
+
+---
+
+**`## Environment Variables`**
+
+Table of every `.env` variable the project uses, scanned from `.env.example` (or derived from source code if `.env.example` doesn't exist).
+
+**How STEP 3.5 scans for variables (in priority order):**
+1. `.env.example` — read fully (committed template, safe to read)
+2. `.env.template` or `.env.sample` — read fully
+3. `.env` — read **variable names and comments only** — never record actual values
+4. Source code fallback — scans for `process.env.VAR`, `os.getenv('VAR')`, Pydantic `BaseSettings` class fields, `@Value("${...}")` Spring annotations
+
+Example output:
+
+| Variable | Example Value | Required | Purpose |
+|----------|--------------|----------|---------|
+| DATABASE_URL | postgresql://user:pass@localhost:5432/mydb | yes | Primary DB connection string |
+| DB_HOST | localhost | yes | DB hostname (alternative to DATABASE_URL) |
+| DB_PORT | 5432 | yes | DB port |
+| DB_NAME | myapp_dev | yes | Database name |
+| DB_USER | postgres | yes | DB username |
+| DB_PASSWORD | secret | yes | DB password |
+| JWT_SECRET | change-me-32-chars-minimum | yes | JWT signing key |
+| JWT_EXPIRES_IN | 7d | no | Token lifetime (default: 7d) |
+| PORT | 3000 | no | HTTP server port |
+| NODE_ENV | development | no | Controls error verbosity + ORM sync |
+| LOG_LEVEL | debug | no | Logging verbosity |
+
+> ⚠ Never commit `.env` — it contains real credentials. `.env.example` is the committed template.
+
+---
+
+**`## Developer Daily Commands`**
+
+Every command a developer runs day-to-day, including the full migration workflow.
+
+| Task | Command |
+|------|---------|
+| Install deps | `npm install` |
+| Start dev server | `npm run start:dev` |
+| Run all tests | `npm test` |
+| Build | `npm run build` |
+| Format code | `npx prettier --write` |
+| Lint | `npx eslint .` |
+| Create migration | `npm run migration:generate -- -n DescribeName` |
+| Apply migrations | `npm run migration:run` |
+| Rollback 1 step | `npm run migration:revert` |
+
+**Migration workflow — when you change a DB schema:**
+```
+1. Edit the TypeORM entity (or SQLAlchemy model / Prisma schema)
+2. Generate: npm run migration:generate -- -n AddUserPhoneField
+3. Review the generated SQL in src/migrations/ — verify it does what you expect
+4. Apply: npm run migration:run
+5. Rollback if wrong: npm run migration:revert
+6. Commit the migration file alongside the entity change
+```
+
+---
+
+**`## Database`**
+
+The most important section for backend developers. Covers everything needed to connect, explore, and query the database.
+
+**What the section contains:**
+
+```markdown
+## Database [INFERRED]
+
+| Property | Value | Confidence |
+|----------|-------|------------|
+| Engine | PostgreSQL 15 | [INFERRED] |
+| ORM / driver | TypeORM | [INFERRED] |
+| Connection var | DB_HOST + DB_PORT + DB_NAME + DB_USER + DB_PASSWORD | [INFERRED] |
+| Migrations dir | src/migrations/ | [INFERRED] |
+| Run migrations | npm run migration:run | [INFERRED] |
+| Rollback | npm run migration:revert | [INFERRED] |
+
+**Step 1 — get the connection details from .env**
+Open your .env file. The values you need:
+  DB_HOST=localhost      (or remote hostname from team lead)
+  DB_PORT=5432
+  DB_NAME=myapp_dev
+  DB_USER=postgres
+  DB_PASSWORD=yourpassword
+
+**Step 2 — connect with any SQL client**
+
+Works with: DBeaver, SQL Workbench/J, DataGrip, TablePlus, pgAdmin, Beekeeper Studio,
+            HeidiSQL, Navicat, Azure Data Studio, or any other SQL client.
+
+In your SQL client, create a new PostgreSQL connection:
+  Connection type: PostgreSQL
+  Host:     value of DB_HOST
+  Port:     value of DB_PORT  (default: 5432)
+  Database: value of DB_NAME
+  Username: value of DB_USER
+  Password: value of DB_PASSWORD
+
+Or single-URL format (some clients accept this):
+  postgresql://DB_USER:DB_PASSWORD@DB_HOST:DB_PORT/DB_NAME
+
+**Step 3 — connect from terminal (alternative)**
+  psql -h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME
+
+MySQL equivalent:
+  mysql -h $DB_HOST -P $DB_PORT -u $DB_USER -p$DB_PASSWORD $DB_NAME
+
+**Verify connection (paste into your SQL client or terminal):**
+  SELECT 1;                          -- confirms connection works
+  SELECT current_database();         -- confirms correct database
+  SELECT version();                  -- shows DB version
+
+**Explore tables:**
+  SELECT table_name FROM information_schema.tables
+  WHERE table_schema = 'public' ORDER BY table_name;
+
+**Migration history (TypeORM):**
+  SELECT * FROM typeorm_migrations ORDER BY timestamp DESC LIMIT 20;
+```
+
+---
+
+**`## Stack-Specific Notes`**
+
+Per-framework gotchas that trip up beginners. Not obvious from reading code.
+
+Examples:
+- NestJS: *"Every feature must be in a Module or NestJS won't find it. Dev command is `npm run start:dev`, not `npm run dev`."*
+- FastAPI: *"Activate virtual env before anything: `source venv/bin/activate`. `async def` routes are non-blocking; `def` routes run in a thread pool."*
+- Express: *"Middleware order matters — `express.json()` must be before route handlers. Error middleware requires exactly 4 params `(err, req, res, next)`."*
+- Spring Boot: *"Use `./mvnw` — no global Maven needed. Lombok `@Data` generates getters/setters at compile time — not visible in source."*
+
+---
+
+**`## API Access`**
+
+Everything needed to actually call the API during development.
+
+```markdown
+## API Access [INFERRED]
+
+Base URL (dev): http://localhost:3000
+Auth mechanism: JWT Bearer token (Passport + passport-jwt detected)
+API docs:       http://localhost:3000/api  (Swagger — via @nestjs/swagger)
+
+**Get auth token (copy-paste this curl):**
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"user@example.com","password":"yourpassword"}'
+→ Copy the "access_token" value from the JSON response
+
+**Use the token in any request:**
+curl -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+     http://localhost:3000/users/profile
+
+**In Postman / Insomnia / Bruno:**
+Add header: Authorization: Bearer YOUR_TOKEN_HERE
+
+**No auth detected?**
+Try hitting endpoints directly without a token — endpoints appear to be open.
+```
+
+---
+
+**`## Logging & Debugging`**
+
+```markdown
+## Logging & Debugging [INFERRED]
+
+Logs:      stdout (console) — or check if Logger writes to a file
+Log level: LOG_LEVEL env var (set in .env) — default: info
+
+**Attach debugger (VS Code):**
+  NestJS:  npm run start:debug    ← starts with --inspect flag
+  Express: node --inspect src/app.js
+
+  Then in VS Code: Run > Start Debugging (needs launch.json — check .vscode/)
+
+**Python FastAPI:**
+  Add to .vscode/launch.json:
+  { "module": "uvicorn", "args": ["app.main:app","--reload"], "justMyCode": false }
+
+**Java Spring Boot:**
+  mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"
+  Then attach remote debugger in IntelliJ/VS Code on port 5005
+
+**Read logs when something breaks:**
+  tail -f app.log           (if writing to file)
+  docker logs -f container  (if running in Docker)
+  kubectl logs -f pod-name  (if running in Kubernetes)
+```
+
+---
+
+#### The optional SQL export — `knowledge/db-schema-discovery.sql`
+
+When `/tech-knowledge` detects a database, STEP 5 offers a `sql` export option. This generates a **committed**, **project-aware** discovery file — not a generic cheatsheet.
+
+**What makes it project-aware:**
+- Header comment includes project name, detected engine, detected ORM, and DB host
+- Migration history query (#15 for PostgreSQL) uses the **exact ORM-specific table name** — no guessing
+
+| ORM detected | Migration history query uses |
+|-------------|------------------------------|
+| Prisma | `SELECT * FROM _prisma_migrations` |
+| TypeORM | `SELECT * FROM typeorm_migrations` |
+| Sequelize | `SELECT * FROM "SequelizeMeta"` |
+| MikroORM | `SELECT * FROM mikro_orm_migrations` |
+| Alembic (Python) | `SELECT * FROM alembic_version` |
+| Flyway (Java) | `SELECT * FROM flyway_schema_history` |
+
+**PostgreSQL discovery file — 15 queries:**
+
+```sql
+-- Generated for: myapp · Engine: PostgreSQL · ORM: TypeORM
+-- Run in: DBeaver, SQL Workbench/J, DataGrip, pgAdmin, psql, or any SQL client
+
+-- 1. All schemas
+SELECT schema_name FROM information_schema.schemata
+WHERE schema_name NOT IN ('pg_catalog','information_schema') ORDER BY schema_name;
+
+-- 2. Tables + approximate row counts
+SELECT schemaname, tablename, n_live_tup AS approx_rows
+FROM pg_stat_user_tables ORDER BY n_live_tup DESC;
+
+-- 3. All columns + types (replace 'public' with your schema)
+SELECT table_name, column_name, data_type, is_nullable, column_default
+FROM information_schema.columns WHERE table_schema = 'public'
+ORDER BY table_name, ordinal_position;
+
+-- 4. Primary keys
+SELECT tc.table_name, kcu.column_name
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = 'public';
+
+-- 5. Foreign keys (relationship map)
+SELECT tc.table_name AS from_table, kcu.column_name AS from_col,
+       ccu.table_name AS to_table, ccu.column_name AS to_col
+FROM information_schema.table_constraints tc
+JOIN information_schema.key_column_usage kcu ON tc.constraint_name = kcu.constraint_name
+JOIN information_schema.constraint_column_usage ccu ON tc.constraint_name = ccu.constraint_name
+WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = 'public';
+
+-- 6. Indexes
+SELECT indexname, tablename, indexdef FROM pg_indexes
+WHERE schemaname = 'public' ORDER BY tablename;
+
+-- 7. Enum types + values
+SELECT t.typname AS enum_name, e.enumlabel AS enum_value
+FROM pg_type t JOIN pg_enum e ON t.oid = e.enumtypid
+JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+WHERE n.nspname = 'public' ORDER BY t.typname, e.enumsortorder;
+
+-- 8. Views
+SELECT table_name, view_definition FROM information_schema.views
+WHERE table_schema = 'public';
+
+-- 9. Functions / stored procedures
+SELECT routine_name, routine_type FROM information_schema.routines
+WHERE routine_schema = 'public';
+
+-- 10. Triggers
+SELECT trigger_name, event_object_table, action_timing
+FROM information_schema.triggers WHERE trigger_schema = 'public';
+
+-- 11. Multi-tenant tables (always filter by these columns)
+SELECT table_name, column_name FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND column_name IN ('org_id','tenant_id','organization_id','workspace_id');
+
+-- 12. Soft-delete tables (always add WHERE deleted_at IS NULL)
+SELECT table_name, column_name FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND column_name IN ('deleted_at','is_deleted','archived_at');
+
+-- 13. Table sizes on disk
+SELECT relname AS table_name,
+       pg_size_pretty(pg_total_relation_size(relid)) AS total_size
+FROM pg_stat_user_tables ORDER BY pg_total_relation_size(relid) DESC;
+
+-- 14. Currently running queries (slow query investigation)
+SELECT pid, now() - query_start AS duration, state, left(query,100) AS query_preview
+FROM pg_stat_activity WHERE state != 'idle' AND query_start IS NOT NULL
+ORDER BY duration DESC;
+
+-- 15. Migration history (TypeORM detected)
+SELECT * FROM typeorm_migrations ORDER BY timestamp DESC LIMIT 20;
+```
+
+**How to use the discovery file:**
+
+1. Open your SQL client (DBeaver, SQL Workbench/J, DataGrip, TablePlus, pgAdmin, Beekeeper Studio, or any other)
+2. Connect using the parameters from the Database section in `knowledge/tech-overview.md`
+3. Open `knowledge/db-schema-discovery.sql`
+4. Run queries 1-2 first to orient yourself (schemas, table list + row counts)
+5. Run queries 3-5 to understand the data model (columns, PKs, FKs)
+6. Run query 15 to check migration history
+
+**Writing queries to debug issues:**
+
+Once connected, here are the most useful queries for daily debugging:
+
+```sql
+-- Check if a record exists
+SELECT * FROM users WHERE email = 'test@example.com';
+
+-- See the last N records (most recently created)
+SELECT * FROM orders ORDER BY created_at DESC LIMIT 20;
+
+-- Check soft-deleted records (if the table has deleted_at)
+SELECT * FROM users WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC LIMIT 10;
+
+-- Find records in a specific status
+SELECT * FROM payments WHERE status = 'PENDING' ORDER BY created_at DESC;
+
+-- Check a relationship (JOIN)
+SELECT u.email, p.amount, p.status
+FROM users u
+JOIN payments p ON p.user_id = u.id
+WHERE u.email = 'test@example.com';
+
+-- Count records by status (useful for understanding data distribution)
+SELECT status, COUNT(*) FROM payments GROUP BY status ORDER BY COUNT DESC;
+
+-- Check if an index exists on a column (use EXPLAIN if query is slow)
+EXPLAIN ANALYZE SELECT * FROM users WHERE email = 'test@example.com';
+-- If Seq Scan → no index on email, that's why it's slow
+-- If Index Scan → index exists, query is efficient
+
+-- See what a migration actually changed (TypeORM)
+SELECT * FROM typeorm_migrations ORDER BY timestamp DESC LIMIT 5;
+
+-- Rollback a test insert without committing
+BEGIN;
+INSERT INTO users (email, created_at) VALUES ('test@debug.com', NOW());
+SELECT * FROM users WHERE email = 'test@debug.com'; -- verify
+ROLLBACK; -- nothing persisted
+```
+
+**MongoDB equivalent (if project uses Mongoose):**
+
+```js
+// Run in mongosh or MongoDB Compass shell
+db.users.findOne({ email: 'test@example.com' })
+db.orders.find().sort({ createdAt: -1 }).limit(20)
+db.payments.countDocuments({ status: 'PENDING' })
+db.payments.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }])
+```
+
+---
+
+#### Example session and output — complete
+
+**Running `/tech-knowledge` on a NestJS + PostgreSQL project:**
+
+```
+You: /tech-knowledge
+
+Claude: [reads src/, .env.example, package.json, datasource.ts]
+
+━━━ TECH KNOWLEDGE WRITTEN ━━━
+
+  File:             knowledge/tech-overview.md
+  Git hash:         a3f8c12
+  Scope:            whole project
+  Layers mapped:    5
+  Files inventoried:24
+  Unknowns flagged: 2
+  Dev quickstart:   yes — First-Run, Env Vars, Daily Commands, Database included
+  Database:         yes — PostgreSQL + TypeORM (migration history: typeorm_migrations)
+  Export:           none
+
+  All new entries are [INFERRED]. Commit this file to git.
+  Re-run /tech-knowledge when significant code changes occur.
+  "Needs Clarification" items require human input — code cannot answer them.
+
+Want an additional export? Reply with a format or skip:
+  - html — HTML export — requires internet to render Mermaid diagrams
+  - sql  — DB schema discovery queries for TypeORM — generates knowledge/db-schema-discovery.sql (committed to git)
+  - skip or (no reply) — done
+
+You: sql
+
+Claude: knowledge/db-schema-discovery.sql written — 15 queries for PostgreSQL + TypeORM
+        Commit alongside knowledge/tech-overview.md
 ```
 
 ---
 
 ### 3.2 Claude Code: `/product-knowledge`
 
-**When:** After `/tech-knowledge` for the same scope, or independently when you want to document WHAT, not HOW.
+**When:** At bootstrap (once, before any features exist). After that, product knowledge grows automatically via Gate 1 silent capture — no manual re-run needed per feature.
 
-**What it does:** Reads the codebase and writes `knowledge/product-[scope].md` — the WHAT file. User flows, domain objects, permissions, business states.
+**What it does:** Reads the codebase and writes `knowledge/product-[scope].md` — the WHAT file. User flows, domain objects, permissions, business states. For backend stacks, also produces an API Endpoint Catalog and a Contribution Workflow section.
+
+**Sections produced — all stacks:**
+
+| Section | Purpose |
+|---------|---------|
+| User Flows | Step-by-step flows derived from routes/navigation + component names |
+| Domain Objects | Entities/models with fields, business meaning, relationships |
+| Domain Relationships | ER diagram (Mermaid) |
+| Permissions & Roles | Who can do what — derived from guards/middleware |
+| Business States | Status enums and state transitions |
+| Needs Clarification | WHY questions code cannot answer |
+
+**Additional sections for backend stacks only:**
+
+| Section | Purpose |
+|---------|---------|
+| API Endpoint Catalog | One row per route: method, path, auth required, description |
+| Contribution Workflow | Branch naming, code change, migration, lint, test, PR — how to contribute |
 
 **Usage:**
 
@@ -314,6 +755,29 @@ Entry point: `src/payments/payments.controller.ts:findAll`
 - Minimum payment amount is 50 (cents?) — is this a business rule or Stripe minimum? [UNKNOWN]
 - REFUNDED payments can apparently be refunded again — is this intentional? [UNKNOWN]
 - currency enum only has USD/EUR/GBP but Stripe supports more — intentional restriction? [UNKNOWN]
+
+---
+
+## API Endpoint Catalog [INFERRED]
+
+*(Derived from controller/router files — one row per route)*
+
+| Method | Path | Auth Required | Description |
+|--------|------|--------------|-------------|
+| GET | /payments | JWT required | List user's payments (paginated, filtered by userId from JWT) |
+| POST | /payments | JWT required | Create payment — calls Stripe, saves as PENDING |
+| POST | /payments/:id/refund | JWT required (owner or admin) | Initiate Stripe refund — sets status to REFUNDED |
+
+---
+
+## Contribution Workflow [INFERRED]
+
+1. Branch: `[feature/description or fix/issue-id — from git history]`
+2. Make code change
+3. If DB schema changed: `npm run migration:generate -- -n Name` → review generated SQL → commit alongside code
+4. Run linter: `npx eslint .`
+5. Run tests: `npm test`
+6. Commit + open PR
 ```
 
 ---
@@ -374,44 +838,46 @@ In Kiro, the same extraction runs as a **userTriggered workflow hook**. You trig
 
 **How it works differently from Claude Code:**
 - Kiro asks for scope in STEP 0 (interactive) — Claude Code reads scope from `$ARGUMENTS` directly.
-- The hook runs as an `askAgent` action — Kiro spins up an agent session to execute it.
+- The hook runs as a fresh `askAgent` session — no conversation history. Context comes from disk.
 - Output file is identical: `knowledge/tech-[slug].md`.
+- For backend stacks, STEP 1.5 instructs the agent to scan `.env.example`, manifest scripts, and DB config before writing — same as Claude Code's STEP 3.5.
+- The hook prompt is **lightweight by design** — it references the output section names and instructs the agent to follow the full Claude Code structure, rather than duplicating all templates inline. This keeps hook prompt size controlled.
 
-**Example Kiro session:**
+**Example Kiro session (NestJS backend):**
 
 ```
-[User triggers "Tech Knowledge" workflow in Kiro]
+[User triggers "Tech Knowledge" workflow in Kiro panel]
 
 Kiro: What scope should I map?
   — Leave empty for a whole-project overview
   — Name a feature (e.g. 'auth', 'payments')
   — Name a layer (e.g. 'services', 'data')
-  — Name a pattern (e.g. 'state', 'error handling')
 
 User: auth
 
-Kiro: [reads codebase, writes knowledge/tech-auth.md]
+Kiro: [reads codebase + .env.example + package.json scripts + datasource.ts]
 
   File: knowledge/tech-auth.md
   Layers mapped: 4
-  Files inventoried: 7
-  Unknowns flagged: 2
+  Files inventoried: 9
+  Unknowns flagged: 1
+  Dev quickstart: yes (First-Run, Env Vars, Daily Commands, Database included)
   All entries [INFERRED] — review and promote to [CONFIRMED] as needed.
 ```
 
-**Hook JSON structure:**
+**Hook JSON structure (v20.2):**
 
 ```json
 {
   "name": "Tech Knowledge",
-  "version": "17.2.0",
-  "description": "Extract technical knowledge from codebase — patterns, layers, conventions",
+  "version": "20.2.0",
+  "description": "Extract technical knowledge from codebase — patterns, layers, conventions, dev setup",
   "when": {
     "type": "userTriggered"
   },
   "then": {
     "type": "askAgent",
-    "prompt": "TECH KNOWLEDGE — Extract technical knowledge for React / TypeScript.\n..."
+    "prompt": "TECH KNOWLEDGE — Extract technical knowledge for Node.js (NestJS) (backend).\n\nSTEP 0: Ask scope...\nSTEP 1: Read source files...\nSTEP 1.5: Scan .env.example, package.json scripts, DB config (backend)...\nSTEP 2: Write knowledge file — Stack Primer, Layer Map, Patterns, File Inventory,\n        Conventions, First-Run Guide, Env Variables, Daily Commands, Database,\n        Stack-Specific Notes, API Access, Logging & Debugging, Needs Clarification\nSTEP 3: Optional export (html / sql) + report"
   }
 }
 ```
@@ -424,7 +890,7 @@ Identical pattern to Tech Knowledge. Hook: `.kiro/hooks/workflow-product-knowled
 
 STEP 0 asks: *"What product area should I document?"*
 
-Output: `knowledge/product-[slug].md` — same structure as Claude Code output.
+Output: `knowledge/product-[slug].md` — same structure as Claude Code output, including API Endpoint Catalog and Contribution Workflow sections for backend stacks.
 
 ---
 
@@ -828,38 +1294,82 @@ knowledge/*.md merge=union
 
 ## 9. Team Workflow — Day-to-Day Usage
 
+### Knowledge hub commands must run before /audit, and /audit must run before push
+
+This is the enforced order. Running `/audit` before knowledge commands means no baseline to check drift against. Committing before `/audit` means potentially pushing stale or unverifiable entries that every `/new-feature` and `/fix` will read as fact.
+
+```
+/tech-knowledge → /product-knowledge → /audit → commit + push
+```
+
+---
+
 **Project bootstrap (team lead, once):**
 
 ```bash
-# After ai-gov init
-/tech-knowledge          # maps whole project → knowledge/tech-overview.md
-/product-knowledge       # maps whole product → knowledge/product-overview.md
+# Step 1 — Init governance
+npx ai-gov init
 
-# Per major feature area
-/tech-knowledge auth
-/product-knowledge auth
-/tech-knowledge payments
-/product-knowledge payments
+# Step 2 — Generate knowledge (whole project first, then per feature area)
+/tech-knowledge              # → knowledge/tech-overview.md
+/product-knowledge           # → knowledge/product-overview.md
 
-# Commit
-git add knowledge/
-git commit -m "chore: bootstrap Knowledge Hub"
+/tech-knowledge auth         # → knowledge/tech-auth.md
+/product-knowledge auth      # → knowledge/product-auth.md
+/tech-knowledge payments     # → knowledge/tech-payments.md
+/product-knowledge payments  # → knowledge/product-payments.md
+
+# Step 3 — Audit BEFORE committing
+# /audit validates every knowledge entry against live code.
+# If KNOWLEDGE HEALTH shows stale or unverifiable entries, fix them now —
+# not after they are committed and read by the whole team.
+/audit
+# If entries flagged → re-run /tech-knowledge [scope] for flagged files → /audit again
+# If KNOWLEDGE HEALTH = all current → proceed
+
+# Step 4 — Only now commit and push
+git add knowledge/ .claude/
+git commit -m "chore: bootstrap governance + knowledge hub"
+git push
 ```
+
+---
 
 **During a sprint (developer, recurring):**
 
 ```bash
 # Knowledge is read automatically by /new-feature, /fix, /explore, etc.
-# No action needed for Phase 2 to work.
+# No developer action needed for Phase 2 to work.
 
 # After Gate 1 approval in /new-feature or /edit-feature:
 # ↳ Knowledge captured: knowledge/product-payments.md (2 entries added)
-# This happens silently — no developer action needed.
+# Product knowledge is updated silently — no developer action needed.
+# Tech knowledge does not need updating after a feature that follows existing patterns.
+# Tech knowledge only needs re-running when a new architectural pattern is introduced.
 
 # To browse existing knowledge without re-scanning code:
 /knowledge auth
 /knowledge product
 /knowledge all
+```
+
+**Before each release (team lead):**
+
+```bash
+# Same order as bootstrap — always knowledge → audit → push
+
+# 1. Re-run knowledge for any scopes that changed significantly this release
+/tech-knowledge auth         # if auth layer was refactored
+/product-knowledge payments  # if payment flows changed
+
+# 2. Audit to validate health before tagging the release
+/audit
+# KNOWLEDGE HEALTH must show no stale/unverifiable entries before tagging
+
+# 3. Commit refreshed knowledge files
+git add knowledge/
+git commit -m "chore(knowledge): refresh for vX.Y.Z release"
+git push
 ```
 
 **Resolving stale `[CONFIRMED]` entries (team lead):**
@@ -880,7 +1390,7 @@ AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit -m "chore(auth): regenerate after token-s
 ```bash
 /audit
 # Includes ━━━ KNOWLEDGE HEALTH ━━━ section automatically
-# If stale entries found: re-run extraction for those files
+# If stale entries found: re-run /tech-knowledge [scope] for flagged files, then commit
 ```
 
 **After multiple features shipped (team lead, recurring):**
@@ -899,6 +1409,25 @@ AI_GOV_KNOWLEDGE_OVERRIDE=1 git commit -m "chore(auth): regenerate after token-s
 # 3. Re-run /tech-knowledge [scope] or /product-knowledge [scope]
 # 4. [CONFIRMED] entries for that scope may need manual review
 ```
+
+---
+
+### When to re-run knowledge hub commands
+
+| Trigger | Action |
+|---------|--------|
+| First time on a project | `/tech-knowledge` then `/product-knowledge` for whole project and each feature area |
+| `/audit` reports stale entries | Re-run for that scope only — e.g. `/tech-knowledge auth` |
+| Major refactor or new architectural pattern introduced | Re-run for the affected scope |
+| New developer onboarding | Run `/knowledge all` (read-only viewer — no re-scan needed) |
+| New feature area added | `/tech-knowledge [new-area]` + `/product-knowledge [new-area]` |
+| Before every release | Re-run for changed scopes → `/audit` → commit → push |
+
+**Never re-run knowledge hub commands just because time passed** — only re-run when `/audit` reports something stale, after a significant structural change, or as a release gate. They are cheap to read but expensive to regenerate.
+
+**Product knowledge after Gate 1:** `/product-knowledge` only needs to be run at bootstrap. After that, every Gate 1 approval in `/new-feature` or `/edit-feature` silently captures and appends `[CONFIRMED]` entries automatically. Product knowledge grows as a byproduct of normal sprint work — no manual re-run needed per feature.
+
+**Tech knowledge after code generation:** Tech knowledge only goes stale when something structural changes (new ORM, new layer, new architecture pattern). Routine features that follow existing patterns do not require a re-run — the steering files (`architecture.md`, `coding-standards.md`) cover the rules, and the existing `knowledge/tech-overview.md` covers the patterns already in place.
 
 ---
 

@@ -9,6 +9,8 @@ export function generateProductKnowledgeCommand(c: GovernanceConfig): string {
   const layerFlow = profile.layerFlow;
   const isBackend = c.isBackend;
   const scan = c.scan;
+  const analyzeCmd = profile.analyzeCmd;
+  const testCmd = profile.testCmd;
 
   // Stack-adaptive reading strategy
   let readingStrategy: string;
@@ -249,7 +251,29 @@ stateDiagram-v2
 ...
 
 *(If no state machines detected: "No explicit state machines or status enums observed.")*
+${isBackend ? `
+---
 
+## API Endpoint Catalog [INFERRED]
+
+*(Derived from controller/router files — one row per route.)*
+
+| Method | Path | Auth Required | Description |
+|--------|------|--------------|-------------|
+| [GET/POST/PUT/DELETE/PATCH] | /[path] | [JWT / Public / Role:admin] | [what it does] |
+...
+
+---
+
+## Contribution Workflow [INFERRED]
+
+1. Branch: \`[naming convention from git history — e.g. feature/description or fix/issue-id]\`
+2. Make code change
+3. If DB schema changed: generate migration → review SQL → commit migration alongside code change
+4. Run linter: \`${analyzeCmd}\`
+5. Run tests: \`${testCmd}\`
+6. Commit + open PR
+` : ''}
 ---
 
 ## Drift Detected

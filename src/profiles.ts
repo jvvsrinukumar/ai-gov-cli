@@ -86,7 +86,7 @@ function nodejsProfile(): Partial<BaseProfile> {
         layerFlow: 'Route → Model', layerNames: ['Route', 'Model'],
         layerUI: 'Route', layerState: 'Model', layerLogic: 'Model',
         layerAdapter: 'Model', layerData: 'Model',
-        testCmd: 'npm test', installCmd: 'npm install',
+        testCmd: 'npm test', buildCmd: 'npm run build', installCmd: 'npm install',
         cleanCmd: 'rm -rf node_modules && npm install', runCmd: 'node src/app.js',
         sourceDir: 'src/', manifestFile: 'package.json',
         diFramework: 'N/A', stateFramework: 'N/A',
