@@ -854,7 +854,6 @@ export function generateWorkspaceKiroHooks(config: WorkspaceConfig, opts: WriteO
     w('block-dangerous-commands.kiro.hook', generateWsBlockDangerous(hookVersion));
     w('pre-write-secrets-gate.kiro.hook', generateWsPreWriteSecretsGate(hookVersion));
     w('check-secrets.kiro.hook', generateWsCheckSecrets(hookVersion));
-    w('require-task-type.kiro.hook', generateWsRequireTaskType(hookVersion));
     w('session-continuity.kiro.hook', generateWsSessionContinuity(hookVersion, projects));
 
     // userTriggered workspace workflow hooks (these appear in the Kiro tab)
