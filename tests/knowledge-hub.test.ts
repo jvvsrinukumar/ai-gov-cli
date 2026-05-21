@@ -748,7 +748,7 @@ describe('pre-commit knowledge-confirmed wiring (v19.1)', () => {
 describe('version (v20.5)', () => {
     test('VERSION is 20.4.0', async () => {
         const { VERSION, HOOK_VERSION } = await import('../src/constants.js');
-        expect(VERSION).toBe('20.5.2');
-        expect(HOOK_VERSION).toBe('20.5.2');
+        expect(VERSION).toBe('20.5.3');
+        expect(HOOK_VERSION).toBe('20.5.3');
     });
 });

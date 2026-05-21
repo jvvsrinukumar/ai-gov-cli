@@ -11,9 +11,7 @@ export function generateAuditCommand(c: GovernanceConfig): string {
 
   const expectedHooks = [
     'protect-files.sh', 'block-dangerous-commands.sh', 'check-secrets.sh',
-    'session-continuity.sh', 'require-task-type.sh', 'format-code.sh', 'analyze-code.sh',
-    'check-feature-readme.sh', 'check-consistency.sh', 'check-file-size.sh',
-    'post-task-checklist.sh',
+    'session-continuity.sh', 'format-code.sh', 'analyze-code.sh', 'post-task-checklist.sh',
   ].join(', ');
 
   const specHookNote = `check-spec-exists.sh — conditional: registered in settings.json only when \`specs/\` has feature directories beyond \`_template/\`. Intentionally absent on a fresh project.`;

@@ -18,10 +18,7 @@ export function generateWorkflowAudit(c: GovernanceConfig): string {
     'pre-write-secrets-gate.kiro.hook',
     'check-secrets.kiro.hook',
     'session-continuity.kiro.hook',
-    'require-task-type.kiro.hook',
-    'check-feature-readme.kiro.hook',
-    'check-consistency.kiro.hook',
-    'check-file-size.kiro.hook',
+    'analyze-code.kiro.hook',
     'post-task-checklist.kiro.hook',
   ].join(', ');
 
