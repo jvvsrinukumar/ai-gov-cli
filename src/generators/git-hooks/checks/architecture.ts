@@ -76,11 +76,12 @@ get_layer_regex() {
         tr -d ' '
 }
 
-# Convert path regex "presentation/|screens/" to import regex "presentation|screens"
-# by stripping trailing slashes — works for slash-based (JS/Dart/Python) and
-# dot-based (Java/Kotlin) import statements alike
+# Convert path regex "presentation/|screens/" to import regex with word boundaries.
+# Produces [./]segment[./] — matches .ui. (Kotlin/Java dot imports) and /ui/ (JS/Dart/Python
+# slash imports) but not substrings like uuid, guide, fastapi, or ModelMapper.
 paths_to_import_regex() {
-    echo "$1" | tr '|' '\\n' | sed 's|/||g' | paste -sd '|' - 2>/dev/null || echo "$1"
+    echo "$1" | tr '|' '\\n' | sed 's|/$||' | \\
+        sed 's|.*|[./]&[./]|' | paste -sd '|' - 2>/dev/null || echo "$1"
 }
 
 # --- Main violation scan ---

@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ai-gov v20.5.0 — Team Assessment</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --ink:#0f1117;--ink2:#374151;--ink3:#6b7280;--ink4:#9ca3af;
+  --page:#fafaf8;--surface:#ffffff;--surface2:#f4f4f0;
+  --border:#e5e5e0;--border2:#d4d4c8;
+  --accent:#1a1a2e;--accent2:#2563eb;
+  --green:#15803d;--green-bg:#f0fdf4;--green-border:#bbf7d0;
+  --red:#dc2626;--red-bg:#fef2f2;--red-border:#fecaca;
+  --amber:#92400e;--amber-bg:#fffbeb;--amber-border:#fcd34d;
+  --blue:#1d4ed8;--blue-bg:#eff6ff;--blue-border:#bfdbfe;
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{background:var(--page);color:var(--ink);font-family:'DM Sans',sans-serif;font-weight:400;line-height:1.6}
+
+.container{max-width:900px;margin:0 auto;padding:0 32px}
+@media(max-width:640px){.container{padding:0 16px}}
+
+/* ── hero ── */
+.hero{background:var(--accent);padding:64px 0 48px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;right:-120px;top:-80px;width:400px;height:400px;background:radial-gradient(circle,rgba(37,99,235,0.25) 0%,transparent 70%)}
+.hero-label{font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:12px}
+.hero-title{font-family:'Fraunces',serif;font-size:2.4rem;font-weight:700;color:#fff;letter-spacing:-0.02em;line-height:1.2;margin-bottom:8px}
+.hero-title em{color:#93c5fd;font-style:italic}
+.hero-sub{font-size:0.88rem;color:rgba(255,255,255,0.5);margin-bottom:28px}
+.verdict-chip{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:100px;padding:10px 20px;font-size:0.8rem;color:rgba(255,255,255,0.8);font-family:'DM Mono',monospace}
+.verdict-chip .dot{width:8px;height:8px;border-radius:50%;background:#4ade80}
+
+/* ── nav ── */
+.nav-strip{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.nav-inner{display:flex;gap:0;overflow-x:auto;scrollbar-width:none;max-width:900px;margin:0 auto;padding:0 32px}
+.nav-inner::-webkit-scrollbar{display:none}
+.nav-link{padding:12px 16px;font-size:0.75rem;color:var(--ink3);white-space:nowrap;text-decoration:none;border-bottom:2px solid transparent;transition:all 0.15s;font-weight:500;letter-spacing:0.02em}
+.nav-link:hover{color:var(--ink);border-bottom-color:var(--border2)}
+.nav-link.active{color:var(--accent2);border-bottom-color:var(--accent2)}
+
+/* ── sections ── */
+.section{padding:56px 0;border-bottom:1px solid var(--border)}
+.section:last-child{border-bottom:none;padding-bottom:80px}
+.section-label{font-family:'DM Mono',monospace;font-size:0.62rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--ink4);margin-bottom:10px}
+.section-title{font-family:'Fraunces',serif;font-size:1.6rem;font-weight:600;letter-spacing:-0.02em;color:var(--ink);margin-bottom:20px;line-height:1.3}
+.section-title em{font-style:italic;color:var(--accent2)}
+p{color:var(--ink2);line-height:1.75;margin-bottom:14px;font-size:0.95rem}
+p:last-child{margin-bottom:0}
+strong{color:var(--ink);font-weight:600}
+code{font-family:'DM Mono',monospace;font-size:0.82em;background:var(--surface2);padding:2px 6px;border-radius:4px;border:1px solid var(--border);color:var(--accent)}
+
+/* ── summary cards ── */
+.summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:28px 0}
+@media(max-width:640px){.summary-grid{grid-template-columns:1fr}}
+.summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.summary-card-num{font-family:'Fraunces',serif;font-size:2rem;font-weight:700;color:var(--ink);line-height:1;margin-bottom:4px}
+.summary-card-label{font-size:0.75rem;color:var(--ink3)}
+
+/* ── items ── */
+.items{display:flex;flex-direction:column;gap:14px;margin-top:24px}
+.item{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.item-header{display:flex;align-items:flex-start;gap:14px;padding:18px 20px;cursor:pointer;transition:background 0.1s}
+.item-header:hover{background:var(--surface2)}
+.item-icon{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:0.9rem;flex-shrink:0;margin-top:1px}
+.item-title{font-weight:600;font-size:0.92rem;color:var(--ink);line-height:1.4;flex:1}
+.item-toggle{font-size:0.7rem;color:var(--ink4);flex-shrink:0;padding:3px 8px;background:var(--surface2);border-radius:20px;border:1px solid var(--border);margin-top:2px;transition:all 0.15s}
+.item.open .item-toggle{background:var(--accent);color:#fff;border-color:var(--accent)}
+.item-body{display:none;padding:0 20px 18px 66px}
+.item.open .item-body{display:block}
+.item-desc{font-size:0.86rem;color:var(--ink2);line-height:1.75;margin-bottom:12px}
+
+.item.strength .item-icon{background:var(--green-bg);border:1px solid var(--green-border)}
+.item.concern .item-icon{background:var(--red-bg);border:1px solid var(--red-border)}
+
+.rebuttal{background:var(--green-bg);border:1px solid var(--green-border);border-radius:8px;padding:12px 16px}
+.rebuttal-label{font-family:'DM Mono',monospace;font-size:0.58rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--green);margin-bottom:6px}
+.rebuttal-text{font-size:0.84rem;color:var(--ink2);line-height:1.7}
+.rebuttal-text strong{color:var(--green)}
+
+/* ── how it works section ── */
+.workflow-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:28px 0}
+@media(max-width:640px){.workflow-grid{grid-template-columns:1fr}}
+.workflow-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:22px 24px}
+.workflow-card-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.workflow-card-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.workflow-card-title{font-weight:600;font-size:0.9rem;color:var(--ink)}
+.workflow-card-sub{font-size:0.72rem;color:var(--ink3);margin-top:1px}
+.workflow-step{display:flex;gap:10px;margin-bottom:8px;font-size:0.82rem;color:var(--ink2);line-height:1.5}
+.step-num{width:20px;height:20px;border-radius:50%;background:var(--accent);color:#fff;font-size:0.6rem;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-family:'DM Mono',monospace}
+.step-content code{font-size:0.78em}
+
+.steering-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:20px 0}
+@media(max-width:640px){.steering-grid{grid-template-columns:1fr}}
+.steering-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;border-left:3px solid var(--green)}
+.steering-name{font-family:'DM Mono',monospace;font-size:0.72rem;color:var(--accent);margin-bottom:5px;font-weight:500}
+.steering-desc{font-size:0.78rem;color:var(--ink2);line-height:1.5}
+
+.timeline{margin:20px 0}
+.tl-row{display:flex;gap:12px;margin-bottom:16px}
+.tl-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:5px;border:2px solid}
+.tl-content{flex:1}
+.tl-label{font-size:0.78rem;font-weight:600;color:var(--ink);margin-bottom:2px}
+.tl-sub{font-size:0.76rem;color:var(--ink3);line-height:1.5}
+
+.callout{display:flex;gap:12px;padding:14px 18px;border-radius:10px;margin:18px 0;border:1px solid}
+.callout.info{background:var(--blue-bg);border-color:var(--blue-border)}
+.callout.success{background:var(--green-bg);border-color:var(--green-border)}
+.callout.warn{background:var(--amber-bg);border-color:var(--amber-border)}
+.callout-icon{font-size:1rem;flex-shrink:0}
+.callout-body{font-size:0.83rem;color:var(--ink2);line-height:1.65}
+.callout-body strong{color:var(--ink)}
+
+/* ── philosophy ── */
+.philosophy{background:var(--accent);border-radius:16px;padding:32px 36px;margin:28px 0;position:relative;overflow:hidden}
+.philosophy::before{content:'"';position:absolute;right:24px;top:-10px;font-family:'Fraunces',serif;font-size:8rem;color:rgba(255,255,255,0.06);line-height:1}
+.philosophy-quote{font-family:'Fraunces',serif;font-size:1.2rem;font-style:italic;color:rgba(255,255,255,0.9);line-height:1.6;margin-bottom:12px}
+.philosophy-attr{font-size:0.72rem;color:rgba(255,255,255,0.4);font-family:'DM Mono',monospace}
+
+/* ── verdict ── */
+.verdict-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:24px 0}
+@media(max-width:600px){.verdict-grid{grid-template-columns:1fr}}
+.verdict-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.verdict-box-title{font-size:0.78rem;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px}
+.verdict-item{display:flex;align-items:flex-start;gap:8px;font-size:0.83rem;color:var(--ink2);line-height:1.5;margin-bottom:7px}
+.verdict-item::before{content:'→';color:var(--ink4);flex-shrink:0}
+.final-box{background:var(--accent);border-radius:16px;padding:36px 40px;margin:32px 0 0}
+.final-title{font-family:'Fraunces',serif;font-size:1.4rem;font-weight:700;color:#fff;letter-spacing:-0.01em;margin-bottom:16px}
+.final-row{display:flex;align-items:flex-start;gap:10px;font-size:0.84rem;color:rgba(255,255,255,0.7);line-height:1.6;margin-bottom:8px}
+.final-row::before{content:'✓';color:#4ade80;flex-shrink:0;font-weight:600}
+.final-caveat{margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.1);font-size:0.8rem;color:rgba(255,255,255,0.45);line-height:1.7}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="container">
+    <div class="hero-label">AI Governance Framework · Team Assessment</div>
+    <h1 class="hero-title">ai-gov <em>v20.5.0</em></h1>
+    <div class="hero-sub">Strengths · Concerns · Responses · How it works in practice</div>
+    <div class="verdict-chip"><div class="dot"></div>Technical quality: strong &nbsp;·&nbsp; All 8 ACs: PASSING &nbsp;·&nbsp; 1704/1704 tests</div>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav-strip">
+  <div class="nav-inner">
+    <a href="#what" class="nav-link">What it is</a>
+    <a href="#how" class="nav-link">How it works</a>
+    <a href="#strengths" class="nav-link">Strengths</a>
+    <a href="#concerns" class="nav-link">Concerns &amp; Responses</a>
+    <a href="#verdict" class="nav-link">Verdict</a>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- WHAT IT IS -->
+  <div class="section" id="what">
+    <div class="section-label">Overview</div>
+    <h2 class="section-title">What <em>ai-gov</em> is</h2>
+    <p>A CLI tool that generates governance scaffolding for AI coding agents (Claude Code and Kiro). Running <code>npx ai-gov init</code> in a project detects the stack and produces ~40 files — steering documents, IDE hooks, slash commands, spec templates — that give the AI agent consistent architectural context.</p>
+    <p>It supports <strong>9 stacks</strong> (Flutter, Kotlin, React, Next.js, Angular, Node.js, Python, Java, SwiftUI) and targets team-level consistency — preventing five developers using Claude Code on the same codebase from getting five different architectures generated at machine speed.</p>
+    <div class="summary-grid">
+      <div class="summary-card"><div class="summary-card-num">9</div><div class="summary-card-label">Stacks with full profiles and scanners</div></div>
+      <div class="summary-card"><div class="summary-card-num">40+</div><div class="summary-card-label">Governance files generated per project</div></div>
+      <div class="summary-card"><div class="summary-card-num">8/8</div><div class="summary-card-label">Production-ready acceptance criteria passing</div></div>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS IN PRACTICE -->
+  <div class="section" id="how">
+    <div class="section-label">Practical governance</div>
+    <h2 class="section-title">How it works <em>in practice</em></h2>
+    <p>The framework operates at four levels simultaneously — always-loaded steering context, automatic hooks on every tool use, git commit guards, and CI PR checks. Understanding which role belongs to which level is key to using it correctly.</p>
+
+    <h3 style="font-size:0.9rem;font-weight:600;color:var(--ink);margin:28px 0 16px;text-transform:uppercase;letter-spacing:0.05em">The 5 steering files — always loaded by the AI</h3>
+    <div class="steering-grid">
+      <div class="steering-card">
+        <div class="steering-name">constitution.md</div>
+        <div class="steering-desc">Hard rules, architecture invariants, high-risk files. Also: project domain context (healthcare/fintech/general) and data security rules (PHI/PII/general + per-stack additions). Highest priority — never violated.</div>
+      </div>
+      <div class="steering-card">
+        <div class="steering-name">architecture.md</div>
+        <div class="steering-desc">Layer flow, patterns, external service boundaries, data layer patterns (ORM-specific migration rules), naming conventions by layer and directory. The AI reads this before any architectural decision.</div>
+      </div>
+      <div class="steering-card">
+        <div class="steering-name">coding-standards.md</div>
+        <div class="steering-desc">Naming rules, type naming, error handling, file size limits (200 lines for frontend), import order. Stack-specific test conventions: MockK (Kotlin), Jest/NestJS (Node.js), React Testing Library (React), pytest (Python), JUnit 5 (Java).</div>
+      </div>
+      <div class="steering-card">
+        <div class="steering-name">workflow.md</div>
+        <div class="steering-desc">Feature/fix/refactor/hotfix flows, commands table, AI usage policy (prerequisites, forbidden actions), spec-first workflow with STOP gates and completeness criteria.</div>
+      </div>
+      <div class="steering-card">
+        <div class="steering-name">developer-reference.md</div>
+        <div class="steering-desc">Feature README template, prompt templates for each task type, task size/time estimate markers ([~1h], [S/M/L]) used by the /jira command.</div>
+      </div>
+    </div>
+
+    <h3 style="font-size:0.9rem;font-weight:600;color:var(--ink);margin:28px 0 16px;text-transform:uppercase;letter-spacing:0.05em">Team lead workflows</h3>
+    <div class="workflow-grid">
+      <div class="workflow-card">
+        <div class="workflow-card-head">
+          <div class="workflow-card-icon" style="background:#f0fdf4;border:1px solid #bbf7d0">🚀</div>
+          <div><div class="workflow-card-title">Project bootstrap</div><div class="workflow-card-sub">Once per project</div></div>
+        </div>
+        <div class="workflow-step"><div class="step-num">1</div><div class="step-content"><code>ai-gov init</code> — detects stack, writes all governance files</div></div>
+        <div class="workflow-step"><div class="step-num">2</div><div class="step-content"><code>/tech-knowledge</code> — maps HOW the codebase is built (layers, patterns, env vars, DB, daily commands)</div></div>
+        <div class="workflow-step"><div class="step-num">3</div><div class="step-content"><code>/product-knowledge</code> — maps WHAT the product does (flows, domain objects, permissions)</div></div>
+        <div class="workflow-step"><div class="step-num">4</div><div class="step-content"><code>/audit</code> — validates knowledge health before committing</div></div>
+        <div class="workflow-step"><div class="step-num">5</div><div class="step-content"><code>git commit + push</code> — only after audit passes</div></div>
+      </div>
+      <div class="workflow-card">
+        <div class="workflow-card-head">
+          <div class="workflow-card-icon" style="background:#eff6ff;border:1px solid #bfdbfe">🔄</div>
+          <div><div class="workflow-card-title">Release checklist</div><div class="workflow-card-sub">Before every release</div></div>
+        </div>
+        <div class="workflow-step"><div class="step-num">1</div><div class="step-content">Re-run <code>/tech-knowledge [scope]</code> for scopes that changed this release</div></div>
+        <div class="workflow-step"><div class="step-num">2</div><div class="step-content">Re-run <code>/product-knowledge [scope]</code> if business rules or flows changed</div></div>
+        <div class="workflow-step"><div class="step-num">3</div><div class="step-content"><code>/audit</code> — must show zero stale/unverifiable before tagging</div></div>
+        <div class="workflow-step"><div class="step-num">4</div><div class="step-content"><code>/detect-conflicts</code> — surfaces cross-feature rule contradictions</div></div>
+        <div class="workflow-step"><div class="step-num">5</div><div class="step-content"><code>git commit knowledge/ + push</code> — clean knowledge committed to repo</div></div>
+      </div>
+      <div class="workflow-card">
+        <div class="workflow-card-head">
+          <div class="workflow-card-icon" style="background:#faf5ff;border:1px solid #ddd6fe">👩‍💻</div>
+          <div><div class="workflow-card-title">Developer flow</div><div class="workflow-card-sub">First join (once) + every task</div></div>
+        </div>
+        <div class="workflow-step">
+          <div class="step-num" style="background:#f59e0b;font-size:0.55rem">1×</div>
+          <div class="step-content"><strong>First time only:</strong> <code>npx ai-gov onboard</code> — installs local <code>.git/hooks/</code> wrappers. Without this, pre-commit guards (secrets, file-size, knowledge-confirmed) will not fire on this machine.</div>
+        </div>
+        <div class="workflow-step"><div class="step-num">2</div><div class="step-content">Type <code>/new-feature [name]</code> — knowledge preamble reads context silently</div></div>
+        <div class="workflow-step"><div class="step-num">3</div><div class="step-content">Gate 1: review requirements → say <strong>ok</strong> → knowledge captured automatically</div></div>
+        <div class="workflow-step"><div class="step-num">4</div><div class="step-content">Gate 2: review design → Gate 3: review tasks → say ok</div></div>
+        <div class="workflow-step"><div class="step-num">5</div><div class="step-content">Code generated phase by phase. Hooks fire on every file write (format, secrets scan)</div></div>
+        <div class="workflow-step"><div class="step-num">6</div><div class="step-content"><code>git commit</code> — pre-commit guards run (knowledge, secrets, file size)</div></div>
+      </div>
+      <div class="workflow-card">
+        <div class="workflow-card-head">
+          <div class="workflow-card-icon" style="background:#fff7ed;border:1px solid #fed7aa">⬆️</div>
+          <div><div class="workflow-card-title">Upgrading existing projects</div><div class="workflow-card-sub">When updating to new ai-gov version</div></div>
+        </div>
+        <div class="workflow-step"><div class="step-num">1</div><div class="step-content"><code>ai-gov upgrade</code> — updates hooks and commands, prints migration notice</div></div>
+        <div class="workflow-step"><div class="step-num">2</div><div class="step-content"><code>ai-gov upgrade --force</code> — also regenerates steering files, deletes retired old files. <strong>Use this to migrate from 9 → 5 steering files.</strong></div></div>
+        <div class="workflow-step"><div class="step-num">3</div><div class="step-content"><code>ai-gov doctor</code> — verify all checks pass after upgrade</div></div>
+        <div class="workflow-step"><div class="step-num">4</div><div class="step-content"><code>git commit + push</code> — teammate gets new governance on next pull</div></div>
+      </div>
+    </div>
+
+    <h3 style="font-size:0.9rem;font-weight:600;color:var(--ink);margin:28px 0 16px;text-transform:uppercase;letter-spacing:0.05em">Zero-knowledge developer onboarding</h3>
+    <p>After <code>/tech-knowledge</code> runs on a backend project, a developer with no prior knowledge of the stack can open <code>knowledge/tech-overview.md</code> and find:</p>
+    <div class="timeline">
+      <div class="tl-row"><div class="tl-dot" style="background:var(--green);border-color:var(--green)"></div><div class="tl-content"><div class="tl-label">Stack Primer</div><div class="tl-sub">3–5 lines explaining the framework (NestJS modules, FastAPI Depends() chain, Spring Boot annotations)</div></div></div>
+      <div class="tl-row"><div class="tl-dot" style="background:var(--blue);border-color:var(--blue)"></div><div class="tl-content"><div class="tl-label">First-Run Guide</div><div class="tl-sub">Numbered steps from git clone to running server: runtime install, deps, .env setup, migrations, seed, start, verify</div></div></div>
+      <div class="tl-row"><div class="tl-dot" style="background:var(--green);border-color:var(--green)"></div><div class="tl-content"><div class="tl-label">Environment Variables</div><div class="tl-sub">Every .env variable: name, example value, required/optional, purpose — scanned from .env.example</div></div></div>
+      <div class="tl-row"><div class="tl-dot" style="background:var(--blue);border-color:var(--blue)"></div><div class="tl-content"><div class="tl-label">Database</div><div class="tl-sub">Connect with any SQL client (DBeaver, SQL Workbench/J, DataGrip, TablePlus, pgAdmin…), terminal CLI commands, migration workflow, SQL verification queries</div></div></div>
+      <div class="tl-row"><div class="tl-dot" style="background:var(--green);border-color:var(--green)"></div><div class="tl-content"><div class="tl-label">API Access</div><div class="tl-sub">Base URL, auth mechanism, copy-paste curl command to get a JWT token, Swagger/OpenAPI URL</div></div></div>
+      <div class="tl-row"><div class="tl-dot" style="background:var(--blue);border-color:var(--blue)"></div><div class="tl-content"><div class="tl-label">DB Schema Discovery</div><div class="tl-sub">Optional sql export: 15 ready-to-run queries (schemas, tables, columns, PKs, FKs, indexes, enums, multi-tenant detection, migration history). ORM-specific migration table injected automatically.</div></div></div>
+    </div>
+
+    <div class="callout success">
+      <div class="callout-icon">💡</div>
+      <div class="callout-body"><strong>Product knowledge grows automatically.</strong> Every time a developer approves Gate 1 in <code>/new-feature</code>, silent capture fires and writes <code>[CONFIRMED]</code> entries to <code>knowledge/product-[scope].md</code> — user flows, domain objects, business rules. No developer action required. The team lead only needs to re-run <code>/product-knowledge</code> at bootstrap or after major domain restructuring.</div>
+    </div>
+
+    <h3 style="font-size:0.9rem;font-weight:600;color:var(--ink);margin:28px 0 16px;text-transform:uppercase;letter-spacing:0.05em">What fires automatically (no developer action)</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:4px">
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid #f59e0b;border-radius:8px;padding:12px 14px">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:#92400e;margin-bottom:6px;letter-spacing:0.08em">PRE-TOOL (before writes)</div>
+        <div style="font-size:0.76rem;color:var(--ink2);line-height:1.6">Block dangerous commands<br>Protect steering/hooks files<br>Pre-write secrets scan<br>Spec-first gate (if enabled)</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid #a78bfa;border-radius:8px;padding:12px 14px">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:#6d28d9;margin-bottom:6px;letter-spacing:0.08em">POST-TOOL (after writes)</div>
+        <div style="font-size:0.76rem;color:var(--ink2);line-height:1.6">Auto-format file<br>Post-write secrets check<br>Lint once per task (Stop)<br>Task checklist (Stop)</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid #f87171;border-radius:8px;padding:12px 14px">
+        <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:#dc2626;margin-bottom:6px;letter-spacing:0.08em">GIT COMMIT</div>
+        <div style="font-size:0.76rem;color:var(--ink2);line-height:1.6">Block [CONFIRMED] removal<br>Block credential leaks<br>File size warning<br>Commit message format</div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-left:3px solid #2563eb;border-radius:8px;padding:12px 14px;margin-top:10px">
+      <div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:#1d4ed8;margin-bottom:6px;letter-spacing:0.08em">CI / PR CHECK (every pull request)</div>
+      <div style="font-size:0.76rem;color:var(--ink2)">Architecture violations · File size · Credential leaks · Spec coverage for new feature folders · <strong>Knowledge freshness</strong> — warns when knowledge files haven't been updated since significant source changes</div>
+    </div>
+  </div>
+
+  <!-- STRENGTHS -->
+  <div class="section" id="strengths">
+    <div class="section-label">What it does well</div>
+    <h2 class="section-title">Genuine <em>strengths</em></h2>
+    <div class="items">
+      <div class="item strength open">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">🎯</div>
+          <div class="item-title">The problem is real and clearly articulated</div>
+          <div class="item-toggle">▴</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">Five developers using Claude Code on the same codebase without shared rules produces chaos at machine speed. The framework addresses this directly — not with documentation, but with mechanical enforcement via hooks, steering context, and spec gates.</div>
+        </div>
+      </div>
+      <div class="item strength">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">🔍</div>
+          <div class="item-title">Comprehensive stack coverage and detection logic</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">9 stacks with detailed per-stack profiles — layer flows, commands, naming conventions, scanners that auto-detect state management, DI, ORM, routers, package managers. Detection handles monorepos, sub-modules, multi-module Maven/Gradle, Kotlin vs Java disambiguation, NestJS vs Express vs Fastify subtypes.</div>
+        </div>
+      </div>
+      <div class="item strength">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">⚡</div>
+          <div class="item-title">Well-designed command pipeline with persistent output</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc"><code>/tech-knowledge</code> → <code>/product-knowledge</code> → <code>/audit</code> → <code>/assess</code> → <code>/backlog</code> → <code>/new-feature</code> is a coherent workflow. Each command is self-contained, produces git-committed output that feeds the next, and uses completion contracts (grep-able terminal lines) for mechanical verification.</div>
+        </div>
+      </div>
+      <div class="item strength">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">🛡️</div>
+          <div class="item-title">Hook system is practical — high value, zero developer overhead</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">PreToolUse hooks that block secrets, enforce spec-first, and prevent dangerous shell commands are the kind of guardrails teams actually need. They work mechanically — they don't depend on AI judgement. That's their value. The exit-code protocol (0=allow, 2=block) is clean. Hooks fire automatically; developers don't have to remember anything.</div>
+        </div>
+      </div>
+      <div class="item strength">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">🧠</div>
+          <div class="item-title">Knowledge hub solves the AI memory problem correctly</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">AI agents have no memory across sessions. The knowledge hub breaks the reset cycle: git-committed files that grow as a byproduct of Gate 1 approvals, with drift detection (<code>/audit</code>) and conflict surfacing (<code>/detect-conflicts</code>). The <code>[INFERRED]</code> / <code>[CONFIRMED]</code> confidence model is well-reasoned — AI extracts, humans verify, git tracks history.</div>
+        </div>
+      </div>
+      <div class="item strength">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">🧪</div>
+          <div class="item-title">Strong test coverage — 1704 tests across 50 suites</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">Test suite covers scanners, generators, CLI integration, state migration, PR checks, Kiro hooks, knowledge commands, and property-based tests (fast-check). For a code generator producing AI context files, this level of coverage is genuinely solid. The generator tests catch regressions before teams see broken steering files.</div>
+        </div>
+      </div>
+      <div class="item strength">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">📋</div>
+          <div class="item-title">Honest about limitations — stated in README</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">"Not worth it for solo dev prototyping" and "Steering gives a better starting point, not absolute control" appear directly in the README. This honesty is not common in developer tooling and builds trust with teams evaluating adoption. The framework doesn't oversell what prompt-based governance can guarantee.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONCERNS + RESPONSES -->
+  <div class="section" id="concerns">
+    <div class="section-label">Concerns and responses</div>
+    <h2 class="section-title">Concerns &amp; <em>responses</em></h2>
+    <p>An independent assessment raised several concerns. Here is each concern alongside the team's reasoning and response.</p>
+    <div class="items" style="margin-top:24px">
+
+      <div class="item concern">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">⚠️</div>
+          <div class="item-title">1. Complexity vs. adoption barrier — ~40 files, hooks, steering, knowledge</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">The framework generates ~40 files and has significant cognitive overhead. There is no "light mode." A team wanting only hooks or only steering has to understand the whole system to know what is safe to remove.</div>
+          <div class="rebuttal">
+            <div class="rebuttal-label">Response</div>
+            <div class="rebuttal-text"><strong>The plan is to make this the standard way the team works with AI agents.</strong> If governance is the norm, the complexity is a one-time team setup cost — not per-developer friction. The CLI abstracts it: one command, one init, done. A developer doesn't need to understand all 40 files any more than they need to understand webpack to run <code>npm run build</code>.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item concern">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">⚠️</div>
+          <div class="item-title">2. Spec-first enforcement is heavy-handed — blocks all writes without a complete spec</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc"><code>check-spec-exists</code> blocks all file writes if a complete spec doesn't exist. For teams with existing features that predate the framework, every un-specced directory becomes un-editable until a retroactive spec is created.</div>
+          <div class="rebuttal">
+            <div class="rebuttal-label">Response</div>
+            <div class="rebuttal-text"><strong>This is intentional — it is an equalizer.</strong> AI agents generate code at machine speed. Without this gate, a junior developer asking Claude for a feature gets untethered architecture in 30 seconds. The spec gate forces human thought before machine execution. Junior or senior, everyone follows the same flow. That is the concept: not friction, but discipline. Existing unspecced features are addressed at onboarding by creating retroactive specs — which also documents what already exists, a net gain.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item concern">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">⚠️</div>
+          <div class="item-title">3. Steering assumes the project matches the detected stack perfectly</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">For non-standard projects — Next.js with a custom backend, React inside a monorepo with shared packages — the scanner can be significantly wrong and the generated steering won't reflect reality.</div>
+          <div class="rebuttal">
+            <div class="rebuttal-label">Response</div>
+            <div class="rebuttal-text"><strong>Scanner stays simple; <code>/audit</code> fills the gap.</strong> Keeping scanners lean is a deliberate tradeoff — complex heuristics create complex bugs. The scanner gets you 80% correct on day one. <code>/audit</code> reads the actual live codebase and corrects what the scanner got wrong. If a new pattern appears at the stack's core level, audit detects the drift. Division: scanner = initial approximation, audit = ground truth verified against real code.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item concern">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">⚠️</div>
+          <div class="item-title">4. Commands are enormously long prompt documents — context cost and fragility</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc"><code>/audit</code> is ~500 lines of instructions. <code>/assess</code> and <code>/backlog</code> are similar. These consume significant context window and are fragile — if the AI deviates from rigid formatting requirements or context fills mid-command, the run produces incomplete output with no recovery other than starting over.</div>
+          <div class="rebuttal">
+            <div class="rebuttal-label">Response</div>
+            <div class="rebuttal-text"><strong>These are periodic team-lead tools, not daily developer commands.</strong> <code>/audit</code>, <code>/assess</code>, and <code>/backlog</code> are run at release checkpoints or sprint boundaries — not in the daily development flow. Daily commands (<code>/fix</code>, <code>/new-feature</code>, <code>/explore</code>) are significantly shorter. The long commands produce structured batch reports used for team planning — the context cost is acceptable at that cadence.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item concern">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">⚠️</div>
+          <div class="item-title">5. Knowledge capture is ambitious but brittle — depends on AI correctly classifying every fix</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">Silent knowledge capture depends on the AI correctly distinguishing "technical fix" from "business rule fix" every single time. False positives pollute the knowledge base; false negatives lose institutional memory. There is no easy audit trail for what was captured.</div>
+          <div class="rebuttal">
+            <div class="rebuttal-label">Response</div>
+            <div class="rebuttal-text"><strong>Knowledge commands are a release cadence activity — not silent background drift.</strong> The team lead runs <code>/tech-knowledge</code> and <code>/product-knowledge</code> explicitly before each release. This checkpoint, followed by <code>/audit</code> to validate health, prevents silent drift. Knowledge isn't passively accumulating unreviewed — it is actively regenerated and verified at known points in the release cycle.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item concern">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">⚠️</div>
+          <div class="item-title">6. No runtime validation — AI can drift from steering in subtle ways</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">The framework validates at generation time and commit time, but there is no mechanism to verify the AI actually followed steering during a session. A developer could bypass git hooks and the AI could put logic in the wrong layer without triggering the architecture hook.</div>
+          <div class="rebuttal">
+            <div class="rebuttal-label">Response</div>
+            <div class="rebuttal-text"><strong>Correct — and stated openly in the README.</strong> The framework gives a better starting point, not absolute control. Steering is context, not a constraint system. <code>/audit</code> catches architectural drift after the fact. A developer who deliberately runs <code>--no-verify</code> has made a conscious choice. Governance cannot prevent deliberate circumvention — it can only make it visible and raise the cost of bypassing.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="item concern">
+        <div class="item-header" onclick="toggle(this)">
+          <div class="item-icon">⚠️</div>
+          <div class="item-title">7. Single-author bus factor — concentrated ownership risk</div>
+          <div class="item-toggle">▾</div>
+        </div>
+        <div class="item-body">
+          <div class="item-desc">One person authored the package. For a governance tool that teams depend on, concentrated ownership is a real dependency risk.</div>
+          <div class="rebuttal">
+            <div class="rebuttal-label">Response</div>
+            <div class="rebuttal-text"><strong>Valid concern for production dependency — honest to name it.</strong> For internal team use this is manageable. The architecture (pure generators, zero runtime dependencies, clean TypeScript) makes it straightforward to fork or extend. A CONTRIBUTING guide exists. For broader external adoption, this is a people-and-process problem that needs addressed over time — not a technical one.</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="philosophy" style="margin-top:36px">
+      <div class="philosophy-quote">"AI generating fast is actually the problem without this gate — it produces unreviewed architecture at speed. The spec forces human thought before machine execution."</div>
+      <div class="philosophy-attr">Core design philosophy — spec-first workflow</div>
+    </div>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="section" id="verdict">
+    <div class="section-label">Summary</div>
+    <h2 class="section-title">The <em>verdict</em></h2>
+
+    <div class="verdict-grid">
+      <div class="verdict-box">
+        <div class="verdict-box-title">Technical quality</div>
+        <div class="verdict-item">TypeScript, clean architecture, pure generators, one-way data flow</div>
+        <div class="verdict-item">Zero runtime dependencies — easy to fork and maintain</div>
+        <div class="verdict-item">1704 tests across 50 suites including property-based tests</div>
+        <div class="verdict-item">All 8 production-ready acceptance criteria passing</div>
+        <div class="verdict-item">Knowledge freshness check in CI/PR pipeline (v20.3)</div>
+        <div class="verdict-item">Steering consolidated 9 → 5 files — less noise, same coverage</div>
+      </div>
+      <div class="verdict-box">
+        <div class="verdict-box-title">Honest limitations</div>
+        <div class="verdict-item">Single author — fork is viable, CONTRIBUTING guide exists</div>
+        <div class="verdict-item">Long commands depend on AI model behaviour that can shift between versions</div>
+        <div class="verdict-item">No runtime constraint — governance is context, not a hard enforcement system</div>
+        <div class="verdict-item">Value is proportional to team-lead engagement at release time</div>
+        <div class="verdict-item">Stack detection can be wrong on non-standard projects — audit corrects it</div>
+      </div>
+    </div>
+
+    <div class="callout warn" style="margin-top:4px">
+      <div class="callout-icon">⚠️</div>
+      <div class="callout-body"><strong>Known detection issue:</strong> The framework's own <code>governance-state.json</code> declares it as a "React" project because <code>"react"</code> appears in its keywords field and the scanner matches against the full <code>package.json</code> text. The framework is actually a Node.js CLI tool. This is a cosmetic false positive that affects only the framework's self-governance — not any project it governs. Fix: scope detector to <code>dependencies</code>/<code>devDependencies</code> only. Tracked for next release.</div>
+    </div>
+
+    <div class="final-box">
+      <div class="final-title">For teams of 3+ developers using Claude Code or Kiro on production codebases</div>
+      <div class="final-row">The hooks alone — secrets guard, dangerous command block, spec-first gate — provide immediate, mechanical value on day one without any workflow change</div>
+      <div class="final-row">The knowledge hub solves the AI memory problem correctly: git-committed, auto-growing, drift-detected, verified before each release</div>
+      <div class="final-row">Zero-knowledge developer onboarding: a developer with no backend experience opens one file and finds everything needed to get from git clone to a running server with a connected database</div>
+      <div class="final-row">The spec-first gate is an equalizer — junior or senior, AI generates only after a human has reviewed requirements, design, and task breakdown</div>
+      <div class="final-row">The upgrade path is safe and explicit: <code>ai-gov upgrade --force</code> writes new files first, then deletes retired files — specs, knowledge, and custom content are never touched</div>
+      <div class="final-caveat">The honest remaining limitation: the framework is a discipline multiplier, not a discipline substitute. A team lead who runs knowledge commands and audit before each release gets compounding returns — every sprint the knowledge base gets more accurate and code generation gets more contextually correct. A team that installs it and never runs audit will see hooks fire but miss the knowledge and drift-detection benefits entirely.</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggle(header) {
+  const item = header.closest('.item');
+  const isOpen = item.classList.contains('open');
+  item.classList.toggle('open', !isOpen);
+  header.querySelector('.item-toggle').textContent = isOpen ? '▾' : '▴';
+}
+const sections = document.querySelectorAll('.section[id]');
+const navLinks = document.querySelectorAll('.nav-link');
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const l = document.querySelector(`.nav-link[href="#${e.target.id}"]`);
+      if (l) l.classList.add('active');
+    }
+  });
+}, { rootMargin: '-20% 0px -70% 0px' });
+sections.forEach(s => io.observe(s));
+document.querySelectorAll('.item.open .item-toggle').forEach(t => t.textContent = '▴');
+</script>
+</body>
+</html>

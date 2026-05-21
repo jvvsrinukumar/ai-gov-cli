@@ -209,45 +209,45 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
 
   <nav class="sidebar-nav" id="sidebar-nav">
     <div class="nav-section-label">Always Loaded</div>
-    <div class="nav-item active" onclick="scrollTo('steering')" id="nav-steering">
+    <div class="nav-item active" onclick="scrollTo('steering')" id="nav-steering" data-agent="both">
       <div class="nav-dot" style="background:var(--steering)"></div>Steering Files<span class="nav-count">5</span>
     </div>
-    <div class="nav-section-label">Commands</div>
-    <div class="nav-item" onclick="scrollTo('commands')" id="nav-commands">
+    <div class="nav-section-label" data-agent="cc">Commands</div>
+    <div class="nav-item" onclick="scrollTo('commands')" id="nav-commands" data-agent="cc">
       <div class="nav-dot" style="background:var(--commands)"></div>Slash Commands<span class="nav-count">14</span>
     </div>
-    <div class="nav-section-label">Hooks — Kiro</div>
-    <div class="nav-item" onclick="scrollTo('pretool')" id="nav-pretool">
+    <div class="nav-section-label" data-agent="kiro">Hooks — Kiro</div>
+    <div class="nav-item" onclick="scrollTo('pretool')" id="nav-pretool" data-agent="kiro">
       <div class="nav-dot" style="background:var(--pretool)"></div>preToolUse<span class="nav-count">4</span>
     </div>
-    <div class="nav-item" onclick="scrollTo('posttool')" id="nav-posttool">
+    <div class="nav-item" onclick="scrollTo('posttool')" id="nav-posttool" data-agent="kiro">
       <div class="nav-dot" style="background:var(--posttool)"></div>postToolUse<span class="nav-count">1</span>
     </div>
-    <div class="nav-item" onclick="scrollTo('filedited')" id="nav-filedited">
+    <div class="nav-item" onclick="scrollTo('filedited')" id="nav-filedited" data-agent="kiro">
       <div class="nav-dot" style="background:var(--filedited)"></div>fileEdited<span class="nav-count">1</span>
     </div>
-    <div class="nav-item" onclick="scrollTo('promptsubmit')" id="nav-promptsubmit">
+    <div class="nav-item" onclick="scrollTo('promptsubmit')" id="nav-promptsubmit" data-agent="kiro">
       <div class="nav-dot" style="background:var(--promptsubmit)"></div>promptSubmit<span class="nav-count">1</span>
     </div>
-    <div class="nav-item" onclick="scrollTo('posttask')" id="nav-posttask">
+    <div class="nav-item" onclick="scrollTo('posttask')" id="nav-posttask" data-agent="kiro">
       <div class="nav-dot" style="background:var(--posttask)"></div>postTaskExecution<span class="nav-count">2</span>
     </div>
-    <div class="nav-item" onclick="scrollTo('usertriggered')" id="nav-usertriggered">
+    <div class="nav-item" onclick="scrollTo('usertriggered')" id="nav-usertriggered" data-agent="kiro">
       <div class="nav-dot" style="background:var(--usertriggered)"></div>userTriggered<span class="nav-count">14</span>
     </div>
-    <div class="nav-section-label">Hooks — Claude Code</div>
-    <div class="nav-item" onclick="scrollTo('cchooks')" id="nav-cchooks">
+    <div class="nav-section-label" data-agent="cc">Hooks — Claude Code</div>
+    <div class="nav-item" onclick="scrollTo('cchooks')" id="nav-cchooks" data-agent="cc">
       <div class="nav-dot" style="background:var(--pretool)"></div>Shell Hooks (.sh)<span class="nav-count">8</span>
     </div>
-    <div class="nav-section-label">Git &amp; CI</div>
-    <div class="nav-item" onclick="scrollTo('githooks')" id="nav-githooks">
+    <div class="nav-section-label" data-agent="both">Git &amp; CI</div>
+    <div class="nav-item" onclick="scrollTo('githooks')" id="nav-githooks" data-agent="both">
       <div class="nav-dot" style="background:var(--githook)"></div>Git Hooks<span class="nav-count">3</span>
     </div>
-    <div class="nav-section-label">Knowledge Hub</div>
-    <div class="nav-item" onclick="scrollTo('knowledge')" id="nav-knowledge">
+    <div class="nav-section-label" data-agent="both">Knowledge Hub</div>
+    <div class="nav-item" onclick="scrollTo('knowledge')" id="nav-knowledge" data-agent="both">
       <div class="nav-dot" style="background:var(--knowledge)"></div>knowledge/<span class="nav-count">4+</span>
     </div>
-    <div class="nav-item" onclick="scrollTo('tree')" id="nav-tree">
+    <div class="nav-item" onclick="scrollTo('tree')" id="nav-tree" data-agent="both">
       <div class="nav-dot" style="background:var(--text-muted)"></div>Full Directory Tree
     </div>
   </nav>
@@ -286,7 +286,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
   <div class="sections-wrap">
 
     <!-- STEERING -->
-    <div class="file-section section-anchor" id="steering">
+    <div class="file-section section-anchor" id="steering" data-agent="both">
       <div class="section-header">
         <div class="section-icon" style="background:var(--steering-bg);border:1px solid var(--steering-border)">📐</div>
         <div>
@@ -330,7 +330,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- SLASH COMMANDS -->
-    <div class="file-section section-anchor" id="commands">
+    <div class="file-section section-anchor" id="commands" data-agent="cc">
       <div class="section-header">
         <div class="section-icon" style="background:var(--commands-bg);border:1px solid var(--commands-border)">⚡</div>
         <div>
@@ -414,7 +414,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- KIRO HOOKS: preToolUse -->
-    <div class="file-section section-anchor" id="pretool">
+    <div class="file-section section-anchor" id="pretool" data-agent="kiro">
       <div class="section-header">
         <div class="section-icon" style="background:var(--pretool-bg);border:1px solid var(--pretool-border)">🛡️</div>
         <div>
@@ -448,7 +448,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- KIRO HOOKS: postToolUse -->
-    <div class="file-section section-anchor" id="posttool">
+    <div class="file-section section-anchor" id="posttool" data-agent="kiro">
       <div class="section-header">
         <div class="section-icon" style="background:var(--posttool-bg);border:1px solid var(--posttool-border)">✨</div>
         <div>
@@ -467,7 +467,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- KIRO HOOKS: fileEdited -->
-    <div class="file-section section-anchor" id="filedited">
+    <div class="file-section section-anchor" id="filedited" data-agent="kiro">
       <div class="section-header">
         <div class="section-icon" style="background:var(--filedited-bg);border:1px solid var(--filedited-border)">🔍</div>
         <div>
@@ -486,7 +486,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- KIRO HOOKS: promptSubmit -->
-    <div class="file-section section-anchor" id="promptsubmit">
+    <div class="file-section section-anchor" id="promptsubmit" data-agent="kiro">
       <div class="section-header">
         <div class="section-icon" style="background:var(--promptsubmit-bg);border:1px solid var(--promptsubmit-border)">💬</div>
         <div>
@@ -505,7 +505,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- KIRO HOOKS: postTaskExecution -->
-    <div class="file-section section-anchor" id="posttask">
+    <div class="file-section section-anchor" id="posttask" data-agent="kiro">
       <div class="section-header">
         <div class="section-icon" style="background:var(--posttask-bg);border:1px solid var(--posttask-border)">✅</div>
         <div>
@@ -529,7 +529,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- KIRO HOOKS: userTriggered -->
-    <div class="file-section section-anchor" id="usertriggered">
+    <div class="file-section section-anchor" id="usertriggered" data-agent="kiro">
       <div class="section-header">
         <div class="section-icon" style="background:var(--usertriggered-bg);border:1px solid var(--usertriggered-border)">🎯</div>
         <div>
@@ -582,7 +582,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- CLAUDE CODE HOOKS -->
-    <div class="file-section section-anchor" id="cchooks">
+    <div class="file-section section-anchor" id="cchooks" data-agent="cc">
       <div class="section-header">
         <div class="section-icon" style="background:var(--pretool-bg);border:1px solid var(--pretool-border)">🐚</div>
         <div>
@@ -605,7 +605,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- GIT HOOKS -->
-    <div class="file-section section-anchor" id="githooks">
+    <div class="file-section section-anchor" id="githooks" data-agent="both">
       <div class="section-header">
         <div class="section-icon" style="background:var(--githook-bg);border:1px solid var(--githook-border)">🔒</div>
         <div>
@@ -634,7 +634,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- KNOWLEDGE HUB -->
-    <div class="file-section section-anchor" id="knowledge">
+    <div class="file-section section-anchor" id="knowledge" data-agent="both">
       <div class="section-header">
         <div class="section-icon" style="background:var(--knowledge-bg);border:1px solid var(--knowledge-border)">🧠</div>
         <div>
@@ -669,7 +669,7 @@ pre.drawer-code{background:var(--bg);border:1px solid var(--border);border-radiu
     </div>
 
     <!-- DIRECTORY TREE -->
-    <div class="file-section section-anchor" id="tree">
+    <div class="file-section section-anchor" id="tree" data-agent="both">
       <div class="section-header">
         <div class="section-icon" style="background:rgba(100,116,139,0.1);border:1px solid rgba(100,116,139,0.25)">🗂️</div>
         <div>
@@ -900,10 +900,38 @@ function scrollTo(id){
   document.getElementById('nav-'+id)?.classList.add('active');
 }
 
-// ── agent tab (UI only — all sections shown for both) ────────────────────────
+// ── agent tab — filter sections and nav by data-agent ────────────────────────
 function switchAgent(agent, btn){
   document.querySelectorAll('.agent-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
+
+  // Show/hide content sections
+  document.querySelectorAll('.file-section[data-agent]').forEach(el=>{
+    const a=el.getAttribute('data-agent');
+    el.style.display=(a==='both'||a===agent)?'':'none';
+  });
+
+  // Show/hide nav items and nav section labels
+  document.querySelectorAll('[data-agent]').forEach(el=>{
+    if(el.classList.contains('file-section')) return; // already handled
+    const a=el.getAttribute('data-agent');
+    el.style.display=(a==='both'||a===agent)?'':'none';
+  });
+
+  // Update stats bar
+  const chips=document.querySelectorAll('.stat-chip');
+  if(agent==='cc'){
+    if(chips[1]){chips[1].querySelector('.stat-num').textContent='14';chips[1].querySelector('.stat-label').innerHTML='Slash commands<br>(Claude Code)';}
+    if(chips[2]){chips[2].querySelector('.stat-num').textContent='8';chips[2].querySelector('.stat-label').innerHTML='Shell hooks<br>(.sh files)';}
+  } else {
+    if(chips[1]){chips[1].querySelector('.stat-num').textContent='23';chips[1].querySelector('.stat-label').innerHTML='Kiro hooks<br>(all triggers)';}
+    if(chips[2]){chips[2].querySelector('.stat-num').textContent='14';chips[2].querySelector('.stat-label').innerHTML='userTriggered<br>workflows';}
+  }
+
+  // Re-activate first visible nav item after filter
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const first=document.querySelector('.nav-item[data-agent]:not([style*="none"])');
+  if(first) first.classList.add('active');
 }
 
 // ── IntersectionObserver for active nav ──────────────────────────────────────
